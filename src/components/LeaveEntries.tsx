@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { LeaveEntry, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
 import { colors, fonts } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
@@ -38,12 +38,14 @@ function describe(entry: LeaveEntry): string {
 }
 
 export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const sorted = [...entries].sort((a, b) => entryOrderKey(a) - entryOrderKey(b));
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isMobile && styles.cardMobile]}>
       <Text style={styles.title}>Congés saisis</Text>
 
       {isAdding ? (
@@ -113,6 +115,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.panel,
     padding: 0,
+  },
+  cardMobile: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#0B1D33',
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 4 },
   },
   title: {
     fontFamily: fonts.base,
