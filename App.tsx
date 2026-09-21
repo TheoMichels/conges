@@ -12,11 +12,14 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useYearPlans } from "./src/hooks/useYearPlans";
 import { Sidebar } from "./src/components/Sidebar";
 import { SummaryFields } from "./src/components/SummaryFields";
 import { LeaveEntries } from "./src/components/LeaveEntries";
+import { MobileDashboard } from "./src/components/MobileDashboard";
+import { YearSelectorMobile } from "./src/components/YearSelectorMobile";
 import { Logo } from "./src/components/Logo";
 import { colors, fonts, gradient } from "./src/theme/colors";
 import { cursorPointer } from "./src/theme/webCursor";
@@ -30,6 +33,8 @@ import {
 const SIDEBAR_TOTAL_WIDTH = 240;
 
 export default function App() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const {
     plans,
     loading,
@@ -51,8 +56,12 @@ export default function App() {
     }
   }, [plans, selectedId]);
 
-  const [sidebarVisible, setSidebarVisible] = useState(true);
-  const sidebarAnim = useRef(new Animated.Value(1)).current;
+  const [sidebarVisible, setSidebarVisible] = useState(!isMobile);
+  const sidebarAnim = useRef(new Animated.Value(!isMobile ? 1 : 0)).current;
+
+  useEffect(() => {
+    setSidebarVisible(!isMobile);
+  }, [isMobile]);
 
   useEffect(() => {
     Animated.timing(sidebarAnim, {
@@ -134,46 +143,59 @@ export default function App() {
           style={styles.flex}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={styles.pageContent}>
-            <View style={styles.topBar}>
-              <Pressable
-                style={[styles.sidebarToggle, cursorPointer]}
-                onPress={() => setSidebarVisible((v) => !v)}
-                hitSlop={8}
-              >
-                <Text style={styles.sidebarToggleIcon}>☰</Text>
-              </Pressable>
+          <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
+            <View style={[styles.topBar, isMobile && styles.topBarMobile]}>
+              {!isMobile && (
+                <Pressable
+                  style={[styles.sidebarToggle, cursorPointer]}
+                  onPress={() => setSidebarVisible((v) => !v)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.sidebarToggleIcon}>☰</Text>
+                </Pressable>
+              )}
 
               <View style={styles.brand}>
                 <Logo size={44} />
                 <Text style={styles.brandTitle}>Mes congés</Text>
               </View>
 
-              <View style={styles.topBarSpacer} />
+              {!isMobile && <View style={styles.topBarSpacer} />}
             </View>
 
+            {isMobile && (
+              <YearSelectorMobile
+                plans={plans}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onAdd={handleAddYear}
+              />
+            )}
+
             <View style={styles.layout}>
-              <Animated.View
-                style={[
-                  styles.sidebarWrapper,
-                  {
-                    width: sidebarAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, SIDEBAR_TOTAL_WIDTH],
-                    }),
-                    opacity: sidebarAnim,
-                  },
-                ]}
-              >
-                <Sidebar
-                  plans={plans}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  onAdd={handleAddYear}
-                  onRename={handleRenameYear}
-                  onDelete={handleRemoveYear}
-                />
-              </Animated.View>
+              {!isMobile && (
+                <Animated.View
+                  style={[
+                    styles.sidebarWrapper,
+                    {
+                      width: sidebarAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, SIDEBAR_TOTAL_WIDTH],
+                      }),
+                      opacity: sidebarAnim,
+                    },
+                  ]}
+                >
+                  <Sidebar
+                    plans={plans}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    onAdd={handleAddYear}
+                    onRename={handleRenameYear}
+                    onDelete={handleRemoveYear}
+                  />
+                </Animated.View>
+              )}
 
               <View style={styles.mainArea}>
                 {actionError && (
@@ -197,22 +219,37 @@ export default function App() {
                     <Text style={styles.empty}>Chargement...</Text>
                   </View>
                 ) : (
-                  <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    <Text style={styles.header}>{selectedPlan.year}</Text>
+                  <ScrollView style={[styles.content, isMobile && styles.contentMobile]} showsVerticalScrollIndicator={false}>
+                    {!isMobile && <Text style={styles.header}>{selectedPlan.year}</Text>}
 
-                    <SummaryFields
-                      year={selectedPlan.year}
-                      initialLeave={selectedPlan.initialLeave}
-                      carriedOver={selectedPlan.carriedOver}
-                      csupp={selectedPlan.csupp}
-                      publicHolidays={selectedPlan.publicHolidays}
-                      taken={totalPlanned}
-                      remaining={remaining}
-                      previousYear={previousPlan?.year}
-                      onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
-                      onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
-                      onChangeCsupp={(value) => handleUpdate({ csupp: value })}
-                    />
+                    {isMobile ? (
+                      <MobileDashboard
+                        year={selectedPlan.year}
+                        initialLeave={selectedPlan.initialLeave}
+                        carriedOver={selectedPlan.carriedOver}
+                        csupp={selectedPlan.csupp}
+                        publicHolidays={selectedPlan.publicHolidays}
+                        taken={totalPlanned}
+                        remaining={remaining}
+                        onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
+                        onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
+                        onChangeCsupp={(value) => handleUpdate({ csupp: value })}
+                      />
+                    ) : (
+                      <SummaryFields
+                        year={selectedPlan.year}
+                        initialLeave={selectedPlan.initialLeave}
+                        carriedOver={selectedPlan.carriedOver}
+                        csupp={selectedPlan.csupp}
+                        publicHolidays={selectedPlan.publicHolidays}
+                        taken={totalPlanned}
+                        remaining={remaining}
+                        previousYear={previousPlan?.year}
+                        onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
+                        onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
+                        onChangeCsupp={(value) => handleUpdate({ csupp: value })}
+                      />
+                    )}
 
                     <LeaveEntries
                       year={selectedPlan.year}
@@ -244,10 +281,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  pageContentMobile: {
+    paddingHorizontal: 0,
+    paddingTop: 10,
+  },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 24,
+  },
+  topBarMobile: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   brand: {
     flex: 1,
@@ -277,6 +322,24 @@ const styles = StyleSheet.create({
   sidebarWrapper: {
     overflow: "hidden",
   },
+  sidebarWrapperMobile: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
+    height: "100%",
+  },
+  mobileOverlay: {
+    position: "absolute",
+    top: -20,
+    bottom: -20,
+    left: -20,
+    right: -20,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    zIndex: 5,
+    borderRadius: 14,
+  },
   content: {
     flex: 1,
     borderRadius: 14,
@@ -284,6 +347,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: 24,
+  },
+  contentMobile: {
+    padding: 20,
+    backgroundColor: "transparent",
+    borderWidth: 0,
   },
   sidebarToggle: {
     width: 36,

@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
   entry: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: 14,
     borderRadius: 10,
     borderWidth: 1,
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
   },
   entryMain: {
     flex: 1,
+    minWidth: 150,
   },
   entryLabel: {
     fontFamily: fonts.base,

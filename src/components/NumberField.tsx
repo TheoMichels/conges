@@ -60,7 +60,8 @@ export function NumberField({ label, hint, value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   field: {
-    width: 160,
+    minWidth: 140,
+    flex: 1,
   },
   labelContainer: {
     flexDirection: "row",

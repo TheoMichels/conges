@@ -48,6 +48,19 @@ export function Sidebar({
   const [editDraft, setEditDraft] = useState("");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleExport = () => {
+    const jsonString = JSON.stringify(plans, null, 2);
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(jsonString).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      });
+    } else if (typeof window !== "undefined") {
+      window.prompt("Copiez votre JSON :", jsonString);
+    }
+  };
 
   const currentCalendarYear = new Date().getFullYear();
   const sortedPlans = sortPlansChronologically(plans);
@@ -264,6 +277,20 @@ export function Sidebar({
           <Text style={styles.addButtonText}>+ Ajouter une année</Text>
         </Pressable>
       )}
+
+      <Pressable
+        style={[styles.exportButton, cursorPointer]}
+        onPress={handleExport}
+      >
+        <Text
+          style={[
+            styles.exportButtonText,
+            copied && styles.exportButtonTextCopied,
+          ]}
+        >
+          {copied ? "✓ JSON copié dans le presse-papier !" : "📋 Exporter le JSON"}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -463,5 +490,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     marginBottom: 4,
+  },
+  exportButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+  },
+  exportButtonText: {
+    fontFamily: fonts.base,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  exportButtonTextCopied: {
+    color: colors.positive,
+    fontWeight: "700",
   },
 });

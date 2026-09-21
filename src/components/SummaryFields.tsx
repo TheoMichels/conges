@@ -166,7 +166,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   field: {
-    width: 160,
+    minWidth: 140,
+    flex: 1,
   },
   labelContainer: {
     flexDirection: "row",
