@@ -52,7 +52,9 @@ export default function App() {
 
   useEffect(() => {
     if (!selectedId && plans.length > 0) {
-      setSelectedId(plans[0].id);
+      const currentYear = new Date().getFullYear().toString();
+      const currentPlan = plans.find(p => p.year === currentYear);
+      setSelectedId(currentPlan ? currentPlan.id : plans[0].id);
     }
   }, [plans, selectedId]);
 

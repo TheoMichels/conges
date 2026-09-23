@@ -1,4 +1,5 @@
 import { HalfDay, LeaveEntry, SHORT_MONTH_LABELS } from "../types/yearPlan";
+import { getLuxembourgPublicHolidays } from "./luxembourgHolidays";
 
 export function toISODate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -19,7 +20,7 @@ export function formatDateFr(iso: string): string {
   return `${date.getDate()} ${SHORT_MONTH_LABELS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-// Leave is counted in working days: Saturdays and Sundays never count.
+// Leave is counted in working days: Saturdays, Sundays, and public holidays never count.
 export function workingDaysCount(
   startIso: string,
   endIso: string,
@@ -30,10 +31,19 @@ export function workingDaysCount(
   const end = parseISODate(endIso);
   if (!start || !end || end < start) return 0;
 
+  const holidaysCache = new Map<number, Set<string>>();
+  const isHoliday = (d: Date) => {
+    const y = d.getFullYear();
+    if (!holidaysCache.has(y)) {
+      holidaysCache.set(y, new Set(getLuxembourgPublicHolidays(y).map(h => toISODate(h.date))));
+    }
+    return holidaysCache.get(y)!.has(toISODate(d));
+  };
+
   // Single-day case
   if (startIso === endIso) {
     const weekday = start.getDay();
-    if (weekday === 0 || weekday === 6) return 0;
+    if (weekday === 0 || weekday === 6 || isHoliday(start)) return 0;
     if (startHalf === "afternoon" && endHalf === "morning") return 0;
     if (startHalf === "afternoon" || endHalf === "morning") return 0.5;
     return 1;
@@ -45,7 +55,7 @@ export function workingDaysCount(
   while (cursor <= end) {
     const weekday = cursor.getDay();
     const isWeekend = weekday === 0 || weekday === 6;
-    if (!isWeekend) {
+    if (!isWeekend && !isHoliday(cursor)) {
       const isStartDay = cursor.getTime() === start.getTime();
       const isEndDay = cursor.getTime() === end.getTime();
 
