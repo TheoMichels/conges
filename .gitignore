@@ -43,3 +43,9 @@ yarn-error.*
 
 # IDE / agents
 .claude/
+
+# Artefacts d'agents (rapports, captures, logs)
+.agents/handoff/
+.agents/state/
+test-results/
+playwright-report/
