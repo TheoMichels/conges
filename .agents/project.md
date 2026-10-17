@@ -6,9 +6,9 @@
 - Utilisateur : moi seul · Plateformes : web PWA (Vercel), vue mobile dédiée.
 
 ## Stack
-- Expo SDK 57 (RN Web 0.21, React 19.2, RN 0.86), TS · `expo-linear-gradient`, `react-native-svg`.
-- Stockage : AsyncStorage localement ; synchro hybride / migration Supabase en cours.
-- Schéma : types TS dans `src/types/yearPlan.ts`.
+- Expo SDK 57 (RN Web 0.21, React 19.2, RN 0.86), TS, Zod · `expo-linear-gradient`, `react-native-svg`.
+- Stockage : AsyncStorage localement (`@holidays_year_plans_v1`, migration transparente `conges:yearPlans`).
+- Mode de stockage : `src/config/storageMode.ts` (local loopback vs supabase cloud).
 
 ## Commandes
 | Action | Commande |
@@ -22,9 +22,9 @@
 | Test E2E | `npm run test:e2e` (`playwright test`) |
 
 ## Modèle de données
-| Entité | Type | Repository |
+| Entité | Type / Schémas | Repository |
 |---|---|---|
-| YearPlan (+ LeaveEntry, HalfDay) | `src/types/yearPlan.ts` | `src/storage/yearPlanRepository.ts` |
+| YearPlan (+ LeaveEntry, HalfDay) | `src/types/yearPlan.ts` (Zod) | `src/storage/yearPlanRepository.ts` (CRUD, v1) |
 
 ## Design
 - Tokens §2 `src/theme/colors.ts` · brand `#072939` · primary `#E85315` · gradient 4 teintes · glass panels & surfaces · radius 12-24 · shadows.
@@ -32,4 +32,4 @@
 
 ## Zones sensibles et déploiement
 - Vercel (`vercel.json`) : build `npm run build`, SPA rewrites.
-- Mode de stockage piloté par `app.config.js` (`extra.storageMode`).
+- Mode de stockage piloté par `app.config.js` (`extra.storageMode`) et résolu par `src/config/storageMode.ts`.

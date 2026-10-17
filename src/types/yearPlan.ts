@@ -1,31 +1,59 @@
-export type HalfDay = "morning" | "afternoon";
+import { z } from "zod";
 
-export type LeaveEntryDraft =
-  | {
-      kind: "dates";
-      label: string;
-      startDate: string;
-      endDate: string;
-      startHalf?: HalfDay;
-      endHalf?: HalfDay;
-    }
-  | { kind: "month"; label: string; month: number; days: number };
+export const halfDaySchema = z.enum(["morning", "afternoon"]);
+export type HalfDay = z.infer<typeof halfDaySchema>;
 
-export type LeaveEntry = LeaveEntryDraft & {
-  id: string;
-  createdAt: number;
-};
+export const datesLeaveEntryDraftSchema = z.object({
+  kind: z.literal("dates"),
+  label: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+  startHalf: halfDaySchema.optional(),
+  endHalf: halfDaySchema.optional(),
+});
 
-export type YearPlan = {
-  id: string;
-  year: string;
-  createdAt: number;
-  initialLeave: number;
-  carriedOver: number;
-  csupp: number;
-  publicHolidays: number;
-  entries: LeaveEntry[];
-};
+export const monthLeaveEntryDraftSchema = z.object({
+  kind: z.literal("month"),
+  label: z.string(),
+  month: z.number().int().min(0).max(11),
+  days: z.number().min(0),
+});
+
+export const leaveEntryDraftSchema = z.discriminatedUnion("kind", [
+  datesLeaveEntryDraftSchema,
+  monthLeaveEntryDraftSchema,
+]);
+export type LeaveEntryDraft = z.infer<typeof leaveEntryDraftSchema>;
+
+export const datesLeaveEntrySchema = datesLeaveEntryDraftSchema.extend({
+  id: z.string(),
+  createdAt: z.number(),
+});
+
+export const monthLeaveEntrySchema = monthLeaveEntryDraftSchema.extend({
+  id: z.string(),
+  createdAt: z.number(),
+});
+
+export const leaveEntrySchema = z.discriminatedUnion("kind", [
+  datesLeaveEntrySchema,
+  monthLeaveEntrySchema,
+]);
+export type LeaveEntry = z.infer<typeof leaveEntrySchema>;
+
+export const yearPlanSchema = z.object({
+  id: z.string(),
+  year: z.string(),
+  createdAt: z.number(),
+  initialLeave: z.number(),
+  carriedOver: z.number(),
+  csupp: z.number(),
+  publicHolidays: z.number(),
+  entries: z.array(leaveEntrySchema),
+});
+export type YearPlan = z.infer<typeof yearPlanSchema>;
+
+export const yearPlansSchema = z.array(yearPlanSchema);
 
 export const MONTH_LABELS = [
   "Janvier",
