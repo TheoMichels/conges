@@ -15,13 +15,14 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useYearPlans } from "./src/hooks/useYearPlans";
+import { Header } from "./src/components/Header";
+import { KpiCards } from "./src/components/KpiCards";
 import { Sidebar } from "./src/components/Sidebar";
 import { SummaryFields } from "./src/components/SummaryFields";
 import { LeaveEntries } from "./src/components/LeaveEntries";
 import { MobileDashboard } from "./src/components/MobileDashboard";
 import { YearSelectorMobile } from "./src/components/YearSelectorMobile";
-import { Logo } from "./src/components/Logo";
-import { colors, fonts, gradient } from "./src/theme/colors";
+import { colors, fonts, gradient, radius, shadows, spacing } from "./src/theme/colors";
 import { cursorPointer } from "./src/theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -53,7 +54,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedId && plans.length > 0) {
       const currentYear = new Date().getFullYear().toString();
-      const currentPlan = plans.find(p => p.year === currentYear);
+      const currentPlan = plans.find((p) => p.year === currentYear);
       setSelectedId(currentPlan ? currentPlan.id : plans[0].id);
     }
   }, [plans, selectedId]);
@@ -101,8 +102,8 @@ export default function App() {
       }
       removeYear(id);
       if (id === selectedId) {
-        const remaining = plans.filter((p) => p.id !== id);
-        setSelectedId(remaining[0]?.id);
+        const remainingPlans = plans.filter((p) => p.id !== id);
+        setSelectedId(remainingPlans[0]?.id);
       }
     });
 
@@ -131,6 +132,12 @@ export default function App() {
   const previousPlan = selectedPlan ? findPreviousYearPlan(plans, selectedPlan) : undefined;
   const totalPlanned = selectedPlan ? calculatePlanTaken(selectedPlan) : 0;
   const remaining = selectedPlan ? calculatePlanRemaining(selectedPlan) : 0;
+  const totalEntitlement = selectedPlan
+    ? selectedPlan.initialLeave +
+      selectedPlan.carriedOver +
+      selectedPlan.csupp +
+      selectedPlan.publicHolidays
+    : 0;
 
   return (
     <LinearGradient
@@ -146,24 +153,11 @@ export default function App() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
-            <View style={[styles.topBar, isMobile && styles.topBarMobile]}>
-              {!isMobile && (
-                <Pressable
-                  style={[styles.sidebarToggle, cursorPointer]}
-                  onPress={() => setSidebarVisible((v) => !v)}
-                  hitSlop={8}
-                >
-                  <Text style={styles.sidebarToggleIcon}>☰</Text>
-                </Pressable>
-              )}
-
-              <View style={styles.brand}>
-                <Logo size={44} />
-                <Text style={styles.brandTitle}>Mes congés</Text>
-              </View>
-
-              {!isMobile && <View style={styles.topBarSpacer} />}
-            </View>
+            <Header
+              isMobile={isMobile}
+              sidebarOpen={sidebarVisible}
+              onToggleSidebar={() => setSidebarVisible((v) => !v)}
+            />
 
             {isMobile && (
               <YearSelectorMobile
@@ -203,26 +197,55 @@ export default function App() {
                 {actionError && (
                   <View style={styles.errorBanner}>
                     <Text style={styles.errorBannerText}>{actionError}</Text>
-                    <Pressable onPress={() => setActionError(null)} hitSlop={8}>
+                    <Pressable
+                      accessibilityLabel="Fermer l'alerte"
+                      accessibilityRole="button"
+                      onPress={() => setActionError(null)}
+                      hitSlop={8}
+                    >
                       <Text style={styles.errorBannerClose}>✕</Text>
                     </Pressable>
                   </View>
                 )}
 
                 {error ? (
-                  <View style={styles.content}>
-                    <Text style={styles.empty}>{error}</Text>
-                    <Pressable style={[styles.retryButton, cursorPointer]} onPress={retry}>
+                  <View testID="error-state" style={styles.stateContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={[styles.retryButton, cursorPointer]}
+                      onPress={retry}
+                    >
                       <Text style={styles.retryText}>Réessayer</Text>
                     </Pressable>
                   </View>
-                ) : loading || !selectedPlan ? (
-                  <View style={styles.content}>
+                ) : loading ? (
+                  <View testID="loading-state" style={styles.stateContainer}>
                     <Text style={styles.empty}>Chargement...</Text>
                   </View>
+                ) : !selectedPlan || plans.length === 0 ? (
+                  <View testID="empty-state" style={styles.stateContainer}>
+                    <Text style={styles.empty}>Aucune année de congés enregistrée.</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={[styles.retryButton, cursorPointer]}
+                      onPress={() => handleAddYear(new Date().getFullYear().toString())}
+                    >
+                      <Text style={styles.retryText}>+ Créer une année</Text>
+                    </Pressable>
+                  </View>
                 ) : (
-                  <ScrollView style={[styles.content, isMobile && styles.contentMobile]} showsVerticalScrollIndicator={false}>
+                  <ScrollView
+                    style={[styles.content, isMobile && styles.contentMobile]}
+                    showsVerticalScrollIndicator={false}
+                  >
                     {!isMobile && <Text style={styles.header}>{selectedPlan.year}</Text>}
+
+                    <KpiCards
+                      remaining={remaining}
+                      taken={totalPlanned}
+                      total={totalEntitlement}
+                    />
 
                     {isMobile ? (
                       <MobileDashboard
@@ -281,37 +304,11 @@ const styles = StyleSheet.create({
   },
   pageContent: {
     flex: 1,
-    padding: 20,
+    padding: spacing.xl,
   },
   pageContentMobile: {
-    paddingHorizontal: 0,
-    paddingTop: 10,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  topBarMobile: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  brand: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-  },
-  brandTitle: {
-    fontFamily: fonts.base,
-    fontSize: 26,
-    fontWeight: "700",
-    color: colors.brand,
-    letterSpacing: 0.2,
-  },
-  topBarSpacer: {
-    width: 36,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   layout: {
     flex: 1,
@@ -324,100 +321,96 @@ const styles = StyleSheet.create({
   sidebarWrapper: {
     overflow: "hidden",
   },
-  sidebarWrapperMobile: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: 10,
-    height: "100%",
-  },
-  mobileOverlay: {
-    position: "absolute",
-    top: -20,
-    bottom: -20,
-    left: -20,
-    right: -20,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    zIndex: 5,
-    borderRadius: 14,
-  },
   content: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 24,
+    padding: spacing.xl,
+    ...shadows.sm,
   },
   contentMobile: {
-    padding: 20,
+    padding: 0,
     backgroundColor: "transparent",
     borderWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  sidebarToggle: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+  stateContainer: {
+    flex: 1,
+    borderRadius: radius.lg,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.panel,
+    padding: spacing.xl,
     alignItems: "center",
     justifyContent: "center",
-  },
-  sidebarToggleIcon: {
-    fontFamily: fonts.base,
-    fontSize: 16,
-    color: colors.textSecondary,
+    minHeight: 220,
+    ...shadows.sm,
   },
   header: {
     fontFamily: fonts.base,
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 20,
+    fontSize: 26,
+    fontWeight: "800",
+    marginBottom: spacing.lg,
     color: colors.brand,
+    letterSpacing: -0.5,
   },
   empty: {
     fontFamily: fonts.base,
     textAlign: "center",
     color: colors.textMuted,
-    marginTop: 40,
+    fontSize: 15,
+  },
+  errorText: {
+    fontFamily: fonts.base,
+    textAlign: "center",
+    color: colors.danger,
+    fontSize: 16,
+    fontWeight: "600",
   },
   retryButton: {
     alignSelf: "center",
     marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceActive,
   },
   retryText: {
     fontFamily: fonts.base,
-    color: colors.textSecondary,
-    fontWeight: "600",
+    color: colors.brand,
+    fontWeight: "700",
   },
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FBEDEB",
+    backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: "#E9C4BF",
-    borderRadius: 8,
+    borderColor: colors.danger,
+    borderRadius: radius.sm,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    minHeight: 44,
     marginBottom: 16,
   },
   errorBannerText: {
     fontFamily: fonts.base,
     color: colors.danger,
     flex: 1,
+    fontWeight: "600",
   },
   errorBannerClose: {
     fontFamily: fonts.base,
     color: colors.danger,
     fontWeight: "700",
     marginLeft: 12,
+    padding: 4,
   },
 });

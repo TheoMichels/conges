@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
-import { colors, fonts } from "../theme/colors";
+import { colors, fonts, radius } from "../theme/colors";
 
 type Props = {
   label: string;
@@ -89,12 +89,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    backgroundColor: colors.panel,
-    borderRadius: 8,
+    backgroundColor: colors.surfaceActive,
+    borderRadius: radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
     fontWeight: "600",
     color: colors.textPrimary,
+    minHeight: 44,
   },
 });

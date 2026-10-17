@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts } from '../theme/colors';
+import { colors, fonts, radius, shadows } from '../theme/colors';
 import { ProgressRing } from './ProgressRing';
 import { NumberField } from './NumberField';
 
@@ -75,14 +75,13 @@ export function MobileDashboard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    backgroundColor: colors.panel,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#0B1D33',
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 4 },
+    ...shadows.sm,
   },
   ringSection: {
     flexDirection: 'row',
@@ -120,7 +119,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.divider,
     marginBottom: 20,
   },
   grid: {
@@ -143,11 +142,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   readOnlyBox: {
-    backgroundColor: '#EDF2F5',
-    borderRadius: 8,
+    backgroundColor: colors.surfaceActive,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    minHeight: 42,
+    minHeight: 44,
     justifyContent: 'center',
   },
   readOnlyValue: {

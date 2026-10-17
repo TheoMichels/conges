@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { YearPlan } from "../types/yearPlan";
-import { colors, fonts } from "../theme/colors";
+import { colors, fonts, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -299,12 +299,13 @@ const styles = StyleSheet.create({
   sidebar: {
     flex: 1,
     width: 220,
-    borderRadius: 14,
-    backgroundColor: colors.sidebar,
+    borderRadius: radius.lg,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,
     marginRight: 20,
+    ...shadows.sm,
   },
   headerRow: {
     marginBottom: 14,
@@ -328,7 +329,8 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 9,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: radius.sm,
     marginBottom: 4,
   },
   itemSelected: {
@@ -455,7 +457,9 @@ const styles = StyleSheet.create({
   addButton: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: "center",
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderStyle: "dashed",
@@ -471,7 +475,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     paddingHorizontal: 12,
     paddingVertical: 9,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.accent,
     color: colors.textPrimary,
@@ -483,7 +488,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.accent,
     color: colors.textPrimary,
@@ -495,7 +501,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: "center",
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,

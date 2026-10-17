@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, fonts } from "../theme/colors";
+import { colors, fonts, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDayNumber } from "../utils/format";
 import { getLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
@@ -77,7 +77,7 @@ export function SummaryFields({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Solde de l&apos;année</Text>
+      <Text style={styles.title}>Détail des droits et soldes</Text>
       <View style={styles.row}>
         <NumberField
           label="Congés (initialement)"
@@ -114,7 +114,7 @@ export function SummaryFields({
             <Pressable
               style={cursorPointer}
               onPress={() => setShowHolidaysDetail(false)}
-              hitSlop={8}
+              hitSlop={12}
             >
               <Text style={styles.holidaysCardClose}>✕</Text>
             </Pressable>
@@ -144,12 +144,13 @@ export function SummaryFields({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 20,
     marginBottom: 20,
+    ...shadows.sm,
   },
   title: {
     fontFamily: fonts.base,
@@ -197,11 +198,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#EDF2F5",
-    borderRadius: 8,
+    backgroundColor: colors.surfaceActive,
+    borderRadius: radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    minHeight: 42,
+    minHeight: 44,
   },
   readOnlyBoxInteractive: {
     borderColor: colors.borderStrong,
@@ -223,8 +224,8 @@ const styles = StyleSheet.create({
   holidaysCard: {
     marginTop: 16,
     padding: 14,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceActive,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -242,9 +243,10 @@ const styles = StyleSheet.create({
   },
   holidaysCardClose: {
     fontFamily: fonts.base,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: colors.textMuted,
+    padding: 4,
   },
   holidaysEmpty: {
     fontFamily: fonts.base,

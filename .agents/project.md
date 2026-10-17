@@ -27,8 +27,8 @@
 | YearPlan (+ LeaveEntry, HalfDay) | `src/types/yearPlan.ts` | `src/storage/yearPlanRepository.ts` |
 
 ## Design
-- Tokens `src/theme/colors.ts` · fond `#FFFFFF` `#F5F8FA` `#EDF2F5` · brand `#072939` · accent `#E85315` / `#FBAE40`.
-- Style desktop / mobile responsive.
+- Tokens §2 `src/theme/colors.ts` · brand `#072939` · primary `#E85315` · gradient 4 teintes · glass panels & surfaces · radius 12-24 · shadows.
+- Composants types : `Header` (badge stockage local), `KpiCards` (statistiques clés), vue responsive desktop/mobile sans scroll à 375px.
 
 ## Zones sensibles et déploiement
 - Vercel (`vercel.json`) : build `npm run build`, SPA rewrites.

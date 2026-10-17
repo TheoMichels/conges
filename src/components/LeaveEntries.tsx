@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { LeaveEntry, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts } from "../theme/colors";
+import { colors, fonts, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { entryOrderKey, entryTotalDays, formatDateFr } from "../utils/leaveDays";
 import { formatDays } from "../utils/format";
@@ -58,7 +58,12 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
           onCancel={() => setIsAdding(false)}
         />
       ) : (
-        <Pressable style={[styles.addButton, cursorPointer]} onPress={() => setIsAdding(true)}>
+        <Pressable
+          testID="add-leave-button"
+          accessibilityRole="button"
+          style={[styles.addButton, cursorPointer]}
+          onPress={() => setIsAdding(true)}
+        >
           <Text style={styles.addButtonText}>+ Ajouter un congé</Text>
         </Pressable>
       )}
@@ -89,14 +94,18 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
               </View>
               <Text style={styles.entryDays}>{formatDays(entryTotalDays(entry))}</Text>
               <Pressable
-                style={cursorPointer}
+                accessibilityLabel="Modifier le congé"
+                accessibilityRole="button"
+                style={[styles.iconButton, cursorPointer]}
                 onPress={() => setEditingId(entry.id)}
                 hitSlop={8}
               >
                 <Text style={styles.entryEdit}>✎</Text>
               </Pressable>
               <Pressable
-                style={cursorPointer}
+                accessibilityLabel="Supprimer le congé"
+                accessibilityRole="button"
+                style={[styles.iconButton, cursorPointer]}
                 onPress={() => onRemove(entry.id)}
                 hitSlop={8}
               >
@@ -112,19 +121,21 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: radius.lg,
     backgroundColor: colors.panel,
-    padding: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    ...shadows.sm,
   },
   cardMobile: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    backgroundColor: colors.panel,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#0B1D33',
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 4 },
+    ...shadows.sm,
   },
   title: {
     fontFamily: fonts.base,
@@ -137,10 +148,12 @@ const styles = StyleSheet.create({
   },
   addButton: {
     alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
     marginBottom: 16,
   },
   addButtonText: {
@@ -159,13 +172,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexWrap: "wrap",
     gap: 14,
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
+    minHeight: 44,
   },
   entryMain: {
     flex: 1,
@@ -189,14 +203,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.brand,
   },
+  iconButton: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.sm,
+  },
   entryEdit: {
     fontFamily: fonts.base,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textMuted,
   },
   entryDelete: {
     fontFamily: fonts.base,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textMuted,
   },
 });
