@@ -8,28 +8,27 @@
 ## Stack
 - Expo SDK 57 (RN Web 0.21, React 19.2, RN 0.86), TS, Zod · `expo-linear-gradient`, `react-native-svg`.
 - Stockage : AsyncStorage localement (`@holidays_year_plans_v1`, migration transparente `conges:yearPlans`).
+- Base de données : Prisma multiSchema (`holidays`, `auth`), RLS 100 %, Supabase Postgres partagé.
 - Mode de stockage : `src/config/storageMode.ts` (local loopback vs supabase cloud).
 
 ## Commandes
 | Action | Commande |
 |---|---|
-| Dev | `npm run web` (port 8081) |
-| Build web | `npm run build` (sortie `dist/`, cf. `vercel.json`) |
-| Preview QA | `npm run preview` (port 4173, cf. `.agents/harness.config`) |
-| Typecheck | `npm run typecheck` (`tsc --noEmit`) |
-| Lint | `npm run lint` (`expo lint`) |
-| Test unit | `npm test` (`node --test tests/*.test.mjs`) |
-| Test E2E | `npm run test:e2e` (`playwright test`) |
+| Dev / Build / Preview | `npm run web` (8081) · `npm run build` (`dist/`) · `npm run preview` (4173) |
+| QA (Harness) | `npm run typecheck` · `npm run lint` · `npm test` · `npm run test:e2e` |
+| DB Deploy / Studio | `npm run db:deploy` (DIRECT_URL) · `npm run db:studio` |
 
 ## Modèle de données
-| Entité | Type / Schémas | Repository |
+| Entité | Tables Postgres (`holidays`) | Repository / Schéma |
 |---|---|---|
-| YearPlan (+ LeaveEntry, HalfDay) | `src/types/yearPlan.ts` (Zod) | `src/storage/yearPlanRepository.ts` (CRUD, v1) |
+| YearPlan | `year_plans` (FK `auth.users`, RLS 100%) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
+| LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
+| UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
 
 ## Design
-- Tokens §2 `src/theme/colors.ts` · brand `#072939` · primary `#E85315` · gradient 4 teintes · glass panels & surfaces · radius 12-24 · shadows.
-- Composants types : `Header` (badge stockage local), `KpiCards` (statistiques clés), vue responsive desktop/mobile sans scroll à 375px.
+- Tokens §2 `src/theme/colors.ts` · brand `#072939` · primary `#E85315` · gradient 4 teintes · radius 12-24.
+- Composants types : `Header` (badge stockage local), `KpiCards`, vue responsive sans scroll à 375px.
 
-## Zones sensibles et déploiement
+## Déploiement & Sécurité
 - Vercel (`vercel.json`) : build `npm run build`, SPA rewrites.
-- Mode de stockage piloté par `app.config.js` (`extra.storageMode`) et résolu par `src/config/storageMode.ts`.
+- Mode piloté par `app.config.js` (`extra.storageMode`) et résolu par `src/config/storageMode.ts`.

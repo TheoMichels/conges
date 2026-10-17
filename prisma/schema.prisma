@@ -1,0 +1,71 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["holidays", "auth"]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+// -----------------------------------------------------------------------------
+// 1. Year Plans (Plans de congés par année)
+// -----------------------------------------------------------------------------
+model YearPlan {
+  id             String       @id @default(cuid())
+  userId         String       @map("user_id") @db.Uuid
+  year           String
+  initialLeave   Decimal      @default(26) @map("initial_leave") @db.Decimal(5, 1)
+  carriedOver    Decimal      @default(0) @map("carried_over") @db.Decimal(5, 1)
+  csupp          Decimal      @default(0) @map("csupp") @db.Decimal(5, 1)
+  publicHolidays Decimal      @default(11) @map("public_holidays") @db.Decimal(5, 1)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  entries        LeaveEntry[]
+
+  @@unique([userId, year], map: "idx_year_plans_user_year")
+  @@index([userId], map: "idx_year_plans_user_id")
+  @@map("year_plans")
+  @@schema("holidays")
+}
+
+// -----------------------------------------------------------------------------
+// 2. Leave Entries (Saisies et poses de congés)
+// -----------------------------------------------------------------------------
+model LeaveEntry {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id") @db.Uuid
+  planId    String    @map("plan_id")
+  kind      String
+  label     String
+  startDate String?   @map("start_date")
+  endDate   String?   @map("end_date")
+  startHalf String?   @map("start_half")
+  endHalf   String?   @map("end_half")
+  month     Int?
+  days      Decimal?  @db.Decimal(5, 1)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  plan      YearPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_leave_entries_user_id")
+  @@index([planId], map: "idx_leave_entries_plan_id")
+  @@map("leave_entries")
+  @@schema("holidays")
+}
+
+// -----------------------------------------------------------------------------
+// 3. User Settings (Paramètres globaux utilisateur)
+// -----------------------------------------------------------------------------
+model UserSettings {
+  userId              String   @id @map("user_id") @db.Uuid
+  defaultInitialLeave Decimal  @default(26) @map("default_initial_leave") @db.Decimal(5, 1)
+  country             String   @default("LU")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_settings")
+  @@schema("holidays")
+}
