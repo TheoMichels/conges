@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { User } from "@supabase/supabase-js";
 import { Logo } from "./Logo";
 import { colors, fonts, radius, shadows, spacing } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
@@ -8,6 +9,8 @@ type Props = {
   sidebarOpen?: boolean;
   onToggleSidebar?: () => void;
   storageModeLabel?: string;
+  user?: User | null;
+  onSignOut?: () => void;
 };
 
 export function Header({
@@ -15,6 +18,8 @@ export function Header({
   sidebarOpen = true,
   onToggleSidebar,
   storageModeLabel = "Stockage local",
+  user,
+  onSignOut,
 }: Props) {
   return (
     <View
@@ -43,10 +48,31 @@ export function Header({
       </View>
 
       <View style={styles.right}>
-        <View testID="local-badge" style={styles.badge}>
-          <View style={styles.badgeDot} />
-          <Text style={styles.badgeText}>{storageModeLabel}</Text>
-        </View>
+        {user ? (
+          <View style={styles.authArea}>
+            <View testID="user-badge" style={styles.badge}>
+              <Text style={styles.badgeText}>🟢 {user.email}</Text>
+            </View>
+            {onSignOut && (
+              <Pressable
+                testID="sign-out-button"
+                accessibilityLabel="Se déconnecter"
+                accessibilityRole="button"
+                style={[styles.signOutButton, cursorPointer]}
+                onPress={onSignOut}
+              >
+                <Text style={styles.signOutText}>
+                  {isMobile ? "Quitter" : "Se déconnecter"}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <View testID="local-badge" style={styles.badge}>
+            <View style={styles.badgeDot} />
+            <Text style={styles.badgeText}>{storageModeLabel}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -80,6 +106,11 @@ const styles = StyleSheet.create({
   right: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  authArea: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   sidebarToggle: {
     width: 44,
@@ -135,5 +166,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: colors.textSecondary,
+  },
+  signOutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceActive,
+    minHeight: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  signOutText: {
+    fontFamily: fonts.base,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.brand,
   },
 });

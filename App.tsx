@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
+import type { User } from "@supabase/supabase-js";
 import {
   Animated,
   Easing,
@@ -14,7 +15,12 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { isLocalMode } from "./src/config/storageMode";
+import { useAuth } from "./src/hooks/useAuth";
+import { pullFromCloud } from "./src/services/syncService";
 import { useYearPlans } from "./src/hooks/useYearPlans";
+import { AuthScreen } from "./src/components/AuthScreen";
+import { LoadingScreen } from "./src/components/LoadingScreen";
 import { Header } from "./src/components/Header";
 import { KpiCards } from "./src/components/KpiCards";
 import { Sidebar } from "./src/components/Sidebar";
@@ -33,7 +39,12 @@ import {
 // Matches Sidebar's own width (220) + marginRight (20).
 const SIDEBAR_TOTAL_WIDTH = 240;
 
-export default function App() {
+interface MainAppProps {
+  user?: User | null;
+  onSignOut?: () => void;
+}
+
+function MainApp({ user, onSignOut }: MainAppProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const {
@@ -157,6 +168,8 @@ export default function App() {
               isMobile={isMobile}
               sidebarOpen={sidebarVisible}
               onToggleSidebar={() => setSidebarVisible((v) => !v)}
+              user={user}
+              onSignOut={onSignOut}
             />
 
             {isMobile && (
@@ -293,6 +306,42 @@ export default function App() {
       <StatusBar style="dark" />
     </LinearGradient>
   );
+}
+
+export default function App() {
+  const { isAuthenticated, isLoading, user, signOut } = useAuth();
+  const [isPulling, setIsPulling] = useState(false);
+  const pulledFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isLocalMode || !user) {
+      pulledFor.current = null;
+      setIsPulling(false);
+      return;
+    }
+    if (pulledFor.current === user.id) return;
+    pulledFor.current = user.id;
+
+    let cancelled = false;
+    setIsPulling(true);
+    pullFromCloud(user.id).finally(() => {
+      if (!cancelled) setIsPulling(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  if (!isLocalMode && (isLoading || isPulling)) {
+    return <LoadingScreen />;
+  }
+
+  if (!isLocalMode && !isAuthenticated) {
+    return <AuthScreen />;
+  }
+
+  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} />;
 }
 
 const styles = StyleSheet.create({

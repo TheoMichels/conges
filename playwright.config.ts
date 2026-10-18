@@ -1,6 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
+import fs from "node:fs";
+import { execSync } from "node:child_process";
 
-const PORT = Number(process.env.PREVIEW_PORT ?? 4173);
+// S'assure que les 3 builds de test sont présents
+if (
+  !fs.existsSync(".agents/state/test-builds/local/index.html") ||
+  !fs.existsSync(".agents/state/test-builds/cloud/index.html") ||
+  !fs.existsSync(".agents/state/test-builds/cloud-unconfigured/index.html")
+) {
+  execSync("node scripts/prepare-test-builds.mjs", { stdio: "inherit" });
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -8,7 +17,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: "http://localhost:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     locale: "fr-FR",
@@ -23,10 +32,24 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: "npm run preview",
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: "npx serve .agents/state/test-builds/local --listen 4173",
+      port: 4173,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: "npx serve .agents/state/test-builds/cloud --listen 4174",
+      port: 4174,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: "npx serve .agents/state/test-builds/cloud-unconfigured --listen 4175",
+      port: 4175,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+  ],
 });
