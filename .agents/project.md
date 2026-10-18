@@ -7,7 +7,7 @@
 
 ## Stack
 - Expo SDK 57 (RN Web 0.21, React 19.2, RN 0.86), TS strict, Zod · `@supabase/supabase-js`.
-- Stockage : AsyncStorage / localStorage hybride (`@holy_year_plans_v1` avec migration auto depuis `@holidays_year_plans_v1`).
+- Stockage : `src/storage/localStorage.ts`, `yearPlanRepository.ts` (`@holy_year_plans_v1` avec migration auto depuis `@holidays_year_plans_v1`).
 - Base de données : Prisma multiSchema (`holy`, `auth`), RLS 100 %, Supabase Postgres partagé.
 - Auth & Sync : `src/services/authService.ts`, `useAuth`, `src/services/syncService.ts`.
 

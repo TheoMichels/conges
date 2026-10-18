@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabaseClient";
 import { HalfDay, LeaveEntry, YearPlan } from "../types/yearPlan";
-import { STORAGE_KEY, loadFromLocalStorage } from "../storage/yearPlanRepository";
+import { STORAGE_KEY, loadFromLocalStorage } from "../storage/localStorage";
 
 interface DbLeaveEntry {
   id: string;
@@ -68,6 +68,17 @@ function mapDbPlanToYearPlan(row: DbYearPlan): YearPlan {
   };
 }
 
+async function resolveUserId(userId?: string): Promise<string | null> {
+  if (userId) return userId;
+  if (!supabase) return null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function clearLocalCache(): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
@@ -97,8 +108,13 @@ export async function clearLocalCache(): Promise<void> {
   }
 }
 
-export async function pullFromCloud(userId: string): Promise<YearPlan[]> {
+export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
   if (!supabase) {
+    return loadFromLocalStorage();
+  }
+
+  const uid = await resolveUserId(userId);
+  if (!uid) {
     return loadFromLocalStorage();
   }
 
@@ -106,7 +122,7 @@ export async function pullFromCloud(userId: string): Promise<YearPlan[]> {
     const { data, error } = await supabase
       .from("year_plans")
       .select("*, leave_entries(*)")
-      .eq("user_id", userId)
+      .eq("user_id", uid)
       .order("year", { ascending: true });
 
     if (error) {
@@ -122,7 +138,7 @@ export async function pullFromCloud(userId: string): Promise<YearPlan[]> {
 
     // Premier accès utilisateur sans données cloud : initialisation
     const localPlans = await loadFromLocalStorage();
-    await pushToCloud(localPlans, userId);
+    await pushToCloud(localPlans, uid);
     return localPlans;
   } catch (err) {
     console.warn("Échec du pull cloud:", err);
@@ -130,15 +146,17 @@ export async function pullFromCloud(userId: string): Promise<YearPlan[]> {
   }
 }
 
-export async function upsertCloudPlan(plan: YearPlan, userId: string): Promise<void> {
+export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<void> {
   if (!supabase) return;
+  const uid = await resolveUserId(userId);
+  if (!uid) return;
 
   const nowIso = new Date().toISOString();
   const planIso = new Date(plan.createdAt).toISOString();
 
   const { error: planError } = await supabase.from("year_plans").upsert({
     id: plan.id,
-    user_id: userId,
+    user_id: uid,
     year: plan.year,
     initial_leave: plan.initialLeave,
     carried_over: plan.carriedOver,
@@ -155,7 +173,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId: string): Promise<v
   if (plan.entries && plan.entries.length > 0) {
     const entriesRows = plan.entries.map((entry) => ({
       id: entry.id,
-      user_id: userId,
+      user_id: uid,
       plan_id: plan.id,
       kind: entry.kind,
       label: entry.label,
@@ -173,26 +191,100 @@ export async function upsertCloudPlan(plan: YearPlan, userId: string): Promise<v
     if (entriesError) {
       throw new Error(`Erreur d'enregistrement des entrées: ${entriesError.message}`);
     }
+
+    // Suppression des entrées orphelines (retirées du plan)
+    const currentEntryIds = new Set(plan.entries.map((e) => e.id));
+    const { data: existingEntries, error: fetchEntriesError } = await supabase
+      .from("leave_entries")
+      .select("id")
+      .eq("user_id", uid)
+      .eq("plan_id", plan.id);
+
+    if (fetchEntriesError) {
+      throw new Error(`Erreur lors de la vérification des entrées: ${fetchEntriesError.message}`);
+    }
+
+    if (existingEntries) {
+      const orphanIds = existingEntries
+        .map((e) => e.id)
+        .filter((id) => !currentEntryIds.has(id));
+
+      if (orphanIds.length > 0) {
+        const { error: delError } = await supabase
+          .from("leave_entries")
+          .delete()
+          .eq("user_id", uid)
+          .eq("plan_id", plan.id)
+          .in("id", orphanIds);
+
+        if (delError) {
+          throw new Error(`Erreur lors du nettoyage des entrées orphelines: ${delError.message}`);
+        }
+      }
+    }
+  } else {
+    // Aucune entrée dans le plan : suppression de toutes les entrées orphelines en base
+    const { error: delError } = await supabase
+      .from("leave_entries")
+      .delete()
+      .eq("user_id", uid)
+      .eq("plan_id", plan.id);
+
+    if (delError) {
+      throw new Error(`Erreur lors de la suppression des entrées orphelines: ${delError.message}`);
+    }
   }
 }
 
-export async function deleteCloudPlan(planId: string, userId: string): Promise<void> {
+export async function deleteCloudPlan(planId: string, userId?: string): Promise<void> {
   if (!supabase) return;
+  const uid = await resolveUserId(userId);
+  if (!uid) return;
+
+  await supabase
+    .from("leave_entries")
+    .delete()
+    .eq("user_id", uid)
+    .eq("plan_id", planId);
+
   const { error } = await supabase
     .from("year_plans")
     .delete()
     .eq("id", planId)
-    .eq("user_id", userId);
+    .eq("user_id", uid);
+
   if (error) {
     throw new Error(`Erreur lors de la suppression du plan: ${error.message}`);
   }
 }
 
-export async function pushToCloud(plans: YearPlan[], userId: string): Promise<void> {
+export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<void> {
   if (!supabase) return;
+  const uid = await resolveUserId(userId);
+  if (!uid) return;
 
+  // 1. Détection et suppression des plans supprimés
+  const { data: remotePlans, error: fetchPlansError } = await supabase
+    .from("year_plans")
+    .select("id")
+    .eq("user_id", uid);
+
+  if (fetchPlansError) {
+    throw new Error(`Erreur lors de la récupération des plans distants: ${fetchPlansError.message}`);
+  }
+
+  const currentPlanIds = new Set(plans.map((p) => p.id));
+  const deletedPlanIds = (remotePlans ?? [])
+    .map((p) => p.id)
+    .filter((id) => !currentPlanIds.has(id));
+
+  for (const planId of deletedPlanIds) {
+    await deleteCloudPlan(planId, uid);
+  }
+
+  // 2. Enregistrement des plans actuels et nettoyage des entrées orphelines
   for (const plan of plans) {
-    await upsertCloudPlan(plan, userId);
+    await upsertCloudPlan(plan, uid);
   }
 }
 

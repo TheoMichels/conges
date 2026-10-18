@@ -29,13 +29,51 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     };
   }
+  if (specifier === "react-native") {
+    return {
+      url: "virtual:react-native",
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./supabaseClient" ||
+    specifier.endsWith("/supabaseClient") ||
+    specifier.endsWith("/supabaseClient.ts")
+  ) {
+    return {
+      url: "virtual:supabase-client",
+      shortCircuit: true,
+    };
+  }
+
+  const contextQuery =
+    context.parentURL && context.parentURL.includes("?")
+      ? "?" + context.parentURL.split("?")[1]
+      : "";
+  const [baseSpecifier, specQuery] = specifier.split("?");
+  const effectiveQuery = specQuery ? "?" + specQuery : contextQuery;
+
   try {
-    return await nextResolve(specifier, context);
+    const resolved = await nextResolve(baseSpecifier, context);
+    if (effectiveQuery && resolved.url.startsWith("file:")) {
+      return {
+        url: resolved.url + effectiveQuery,
+        shortCircuit: true,
+      };
+    }
+    return resolved;
   } catch (err) {
     if (err.code === "ERR_MODULE_NOT_FOUND") {
       for (const ext of [".ts", ".tsx", ".js", "/index.ts", "/index.js"]) {
         try {
-          return await nextResolve(specifier + ext, context);
+          const resolved = await nextResolve(baseSpecifier + ext, context);
+          if (effectiveQuery && resolved.url.startsWith("file:")) {
+            return {
+              url: resolved.url + effectiveQuery,
+              shortCircuit: true,
+            };
+          }
+          return resolved;
         } catch {}
       }
     }
@@ -44,6 +82,28 @@ export async function resolve(specifier, context, nextResolve) {
 }
 
 export async function load(url, context, nextLoad) {
+  if (url === "virtual:supabase-client") {
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: \`
+        export let supabase = null;
+        export function setTestSupabase(client) {
+          supabase = client;
+        }
+      \`,
+    };
+  }
+  if (url === "virtual:react-native") {
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: \`
+        export const Platform = { OS: "web" };
+        export default { Platform };
+      \`,
+    };
+  }
   if (url === "virtual:async-storage") {
     return {
       format: "module",
@@ -56,6 +116,7 @@ export async function load(url, context, nextLoad) {
           async removeItem(key) { store.delete(key); },
           async clear() { store.clear(); },
           async getAllKeys() { return Array.from(store.keys()); },
+          async multiRemove(keys) { for (const k of keys) store.delete(k); },
           _getStore() { return store; }
         };
         export default AsyncStorage;
@@ -68,15 +129,18 @@ export async function load(url, context, nextLoad) {
       shortCircuit: true,
       source: \`
         export default {
-          expoConfig: {
-            extra: { storageMode: "local" }
+          get expoConfig() {
+            return {
+              extra: { storageMode: globalThis.__TEST_STORAGE_MODE__ || "local" }
+            };
           }
         };
       \`,
     };
   }
-  if (url.endsWith(".ts") || url.endsWith(".tsx")) {
-    const filePath = fileURLToPath(url);
+  const cleanUrl = url.split("?")[0];
+  if (cleanUrl.endsWith(".ts") || cleanUrl.endsWith(".tsx")) {
+    const filePath = fileURLToPath(cleanUrl);
     const source = fs.readFileSync(filePath, "utf8");
     const result = ts.transpileModule(source, {
       compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
@@ -117,6 +181,9 @@ const {
   yearPlanRepository,
   loadFromLocalStorage,
 } = await import("../src/storage/yearPlanRepository.ts");
+
+const { setTestSupabase } = await import("virtual:supabase-client");
+const { syncService } = await import("../src/services/syncService.ts");
 
 describe("Lot 3 — Zod Schemas (AC-01)", () => {
   it("validates HalfDay enum values", () => {
@@ -444,3 +511,455 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     }
   });
 });
+
+describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () => {
+  it("AC-01: yearPlanRepository has permanently removed getApiUrl and never calls /api/conges", () => {
+    assert.equal("getApiUrl" in yearPlanRepository, false);
+    assert.equal(typeof yearPlanRepository.getApiUrl, "undefined");
+  });
+
+  it("AC-03: In local mode (isLocalMode === true), saveAll persists to AsyncStorage and makes 0 remote calls", async () => {
+    let pushCalled = false;
+    const originalPush = syncService.pushToCloud;
+    syncService.pushToCloud = async () => {
+      pushCalled = true;
+    };
+
+    let fetchCalled = false;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      fetchCalled = true;
+      throw new Error("HTTP fetch called!");
+    };
+
+    try {
+      const plans = await yearPlanRepository.list();
+      await yearPlanRepository.saveAll(plans);
+      assert.equal(pushCalled, false, "syncService.pushToCloud must not be called in local mode");
+      assert.equal(fetchCalled, false, "fetch must not be called in local mode");
+
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      assert.ok(raw !== null);
+      assert.equal(JSON.parse(raw).length, plans.length);
+    } finally {
+      syncService.pushToCloud = originalPush;
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("AC-01: In remote mode (!isLocalMode), saveAll delegates to syncService.pushToCloud with 0 HTTP calls to /api/conges", async () => {
+    globalThis.__TEST_STORAGE_MODE__ = "supabase";
+    globalThis.window = { location: { hostname: "holidays.vercel.app" } };
+
+    const remoteSync = await import("../src/services/syncService.ts?mode=supabase-save");
+    const remoteRepo = await import("../src/storage/yearPlanRepository.ts?mode=supabase-save");
+
+    let pushedPlans = null;
+    remoteSync.syncService.pushToCloud = async (plans) => {
+      pushedPlans = plans;
+    };
+
+    let fetchCalled = false;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      fetchCalled = true;
+      throw new Error("fetch called unexpectedly in remote mode!");
+    };
+
+    try {
+      const testPlan = {
+        id: "plan-remote-2025",
+        year: "2025",
+        createdAt: 1735689600000,
+        initialLeave: 26,
+        carriedOver: 0,
+        csupp: 0,
+        publicHolidays: 11,
+        entries: [],
+      };
+
+      await remoteRepo.yearPlanRepository.saveAll([testPlan]);
+
+      assert.equal(fetchCalled, false, "fetch (/api/conges) must never be called");
+      assert.ok(pushedPlans !== null, "syncService.pushToCloud must have been called");
+      assert.equal(pushedPlans[0].id, "plan-remote-2025");
+
+      // Verifies local cache was also updated
+      const cached = await AsyncStorage.getItem(STORAGE_KEY);
+      assert.ok(cached !== null);
+      assert.equal(JSON.parse(cached)[0].id, "plan-remote-2025");
+    } finally {
+      globalThis.fetch = originalFetch;
+      delete globalThis.window;
+      delete globalThis.__TEST_STORAGE_MODE__;
+    }
+  });
+
+  it("AC-01: In remote mode, list() delegates to syncService.pullFromCloud()", async () => {
+    globalThis.__TEST_STORAGE_MODE__ = "supabase";
+    globalThis.window = { location: { hostname: "holidays.vercel.app" } };
+
+    const remoteSync = await import("../src/services/syncService.ts?mode=supabase-list");
+    const remoteRepo = await import("../src/storage/yearPlanRepository.ts?mode=supabase-list");
+
+    let pullCalled = false;
+    remoteSync.syncService.pullFromCloud = async () => {
+      pullCalled = true;
+      return [
+        {
+          id: "plan-pulled",
+          year: "2026",
+          createdAt: Date.now(),
+          initialLeave: 26,
+          carriedOver: 0,
+          csupp: 0,
+          publicHolidays: 11,
+          entries: [],
+        },
+      ];
+    };
+
+    try {
+      const plans = await remoteRepo.yearPlanRepository.list();
+      assert.equal(pullCalled, true, "list() must delegate to pullFromCloud()");
+      assert.equal(plans[0].id, "plan-pulled");
+    } finally {
+      delete globalThis.window;
+      delete globalThis.__TEST_STORAGE_MODE__;
+    }
+  });
+
+  it("AC-02: syncService.upsertCloudPlan cleans up orphan leave entries and resolves userId autonomously", async () => {
+    let deletedEntries = null;
+    let upsertedEntries = null;
+    let upsertedPlan = null;
+
+    const mockSupabase = {
+      auth: {
+        async getSession() {
+          return { data: { session: { user: { id: "user-auto-123" } } } };
+        },
+      },
+      from(table) {
+        if (table === "year_plans") {
+          return {
+            async upsert(row) {
+              upsertedPlan = row;
+              return { error: null };
+            },
+          };
+        }
+        if (table === "leave_entries") {
+          return {
+            async upsert(rows) {
+              upsertedEntries = rows;
+              return { error: null };
+            },
+            select() {
+              return {
+                eq() {
+                  return {
+                    async eq() {
+                      // Simule 3 entrées existantes en base: e1, e2, et l'orpheline e3-deleted
+                      return {
+                        data: [{ id: "e1" }, { id: "e2" }, { id: "e3-deleted" }],
+                        error: null,
+                      };
+                    },
+                  };
+                },
+              };
+            },
+            delete() {
+              return {
+                eq(c1, v1) {
+                  return {
+                    eq(c2, v2) {
+                      return {
+                        async in(c3, ids) {
+                          deletedEntries = ids;
+                          return { error: null };
+                        },
+                      };
+                    },
+                  };
+                },
+              };
+            },
+          };
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      },
+    };
+
+    setTestSupabase(mockSupabase);
+    try {
+      const plan = {
+        id: "plan-cleanup",
+        year: "2025",
+        createdAt: 1735689600000,
+        initialLeave: 26,
+        carriedOver: 0,
+        csupp: 0,
+        publicHolidays: 11,
+        entries: [
+          { id: "e1", kind: "month", label: "M1", month: 1, days: 2, createdAt: 1000 },
+          { id: "e2", kind: "dates", label: "V1", startDate: "2025-07-01", endDate: "2025-07-05", createdAt: 2000 },
+        ],
+      };
+
+      // Appelé SANS userId pour tester la résolution autonome
+      await syncService.upsertCloudPlan(plan);
+
+      assert.equal(upsertedPlan.id, "plan-cleanup");
+      assert.equal(upsertedPlan.user_id, "user-auto-123");
+      assert.equal(upsertedEntries.length, 2);
+      assert.deepEqual(deletedEntries, ["e3-deleted"]);
+    } finally {
+      setTestSupabase(null);
+    }
+  });
+
+  it("AC-02: syncService.upsertCloudPlan removes all leave entries when plan entries array is empty", async () => {
+    let deletedAllEntries = false;
+
+    const mockSupabase = {
+      auth: {
+        async getSession() {
+          return { data: { session: { user: { id: "user-auto-123" } } } };
+        },
+      },
+      from(table) {
+        if (table === "year_plans") {
+          return {
+            async upsert() {
+              return { error: null };
+            },
+          };
+        }
+        if (table === "leave_entries") {
+          return {
+            delete() {
+              return {
+                eq() {
+                  return {
+                    async eq() {
+                      deletedAllEntries = true;
+                      return { error: null };
+                    },
+                  };
+                },
+              };
+            },
+          };
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      },
+    };
+
+    setTestSupabase(mockSupabase);
+    try {
+      const emptyPlan = {
+        id: "plan-empty",
+        year: "2025",
+        createdAt: 1735689600000,
+        initialLeave: 26,
+        carriedOver: 0,
+        csupp: 0,
+        publicHolidays: 11,
+        entries: [],
+      };
+
+      await syncService.upsertCloudPlan(emptyPlan);
+      assert.equal(deletedAllEntries, true, "All entries for empty plan must be deleted");
+    } finally {
+      setTestSupabase(null);
+    }
+  });
+
+  it("AC-02: syncService.pushToCloud deletes removed plans from Supabase and upserts remaining ones", async () => {
+    const deletedPlanIds = [];
+    const upsertedPlanIds = [];
+
+    const mockSupabase = {
+      auth: {
+        async getSession() {
+          return { data: { session: { user: { id: "user-auto-123" } } } };
+        },
+      },
+      from(table) {
+        if (table === "year_plans") {
+          return {
+            select() {
+              return {
+                async eq() {
+                  // Remote has plan-2023, plan-2024, plan-2025
+                  return {
+                    data: [{ id: "plan-2023" }, { id: "plan-2024" }, { id: "plan-2025" }],
+                    error: null,
+                  };
+                },
+              };
+            },
+            delete() {
+              return {
+                eq(c1, planId) {
+                  return {
+                    async eq() {
+                      deletedPlanIds.push(planId);
+                      return { error: null };
+                    },
+                  };
+                },
+              };
+            },
+            async upsert(row) {
+              upsertedPlanIds.push(row.id);
+              return { error: null };
+            },
+          };
+        }
+        if (table === "leave_entries") {
+          return {
+            delete() {
+              return {
+                eq() {
+                  return {
+                    async eq() {
+                      return { error: null };
+                    },
+                  };
+                },
+              };
+            },
+            select() {
+              return {
+                eq() {
+                  return {
+                    async eq() {
+                      return { data: [], error: null };
+                    },
+                  };
+                },
+              };
+            },
+            async upsert() {
+              return { error: null };
+            },
+          };
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      },
+    };
+
+    setTestSupabase(mockSupabase);
+    try {
+      // Local state: plan-2023 was deleted, only 2024 and 2025 remain
+      const remainingPlans = [
+        {
+          id: "plan-2024",
+          year: "2024",
+          createdAt: 1704067200000,
+          initialLeave: 26,
+          carriedOver: 0,
+          csupp: 0,
+          publicHolidays: 11,
+          entries: [],
+        },
+        {
+          id: "plan-2025",
+          year: "2025",
+          createdAt: 1735689600000,
+          initialLeave: 26,
+          carriedOver: 0,
+          csupp: 0,
+          publicHolidays: 11,
+          entries: [],
+        },
+      ];
+
+      await syncService.pushToCloud(remainingPlans);
+
+      assert.deepEqual(deletedPlanIds, ["plan-2023"]);
+      assert.deepEqual(upsertedPlanIds, ["plan-2024", "plan-2025"]);
+    } finally {
+      setTestSupabase(null);
+    }
+  });
+
+  it("AC-01 / AC-02: syncService.pullFromCloud fetches plans and caches into AsyncStorage", async () => {
+    const mockSupabase = {
+      auth: {
+        async getSession() {
+          return { data: { session: { user: { id: "user-auto-123" } } } };
+        },
+      },
+      from(table) {
+        if (table === "year_plans") {
+          return {
+            select() {
+              return {
+                eq() {
+                  return {
+                    async order() {
+                      return {
+                        data: [
+                          {
+                            id: "db-plan-2025",
+                            user_id: "user-auto-123",
+                            year: "2025",
+                            initial_leave: 26,
+                            carried_over: 2,
+                            csupp: 0,
+                            public_holidays: 11,
+                            created_at: "2025-01-01T00:00:00Z",
+                            updated_at: "2025-01-01T00:00:00Z",
+                            leave_entries: [
+                              {
+                                id: "e-remote-1",
+                                user_id: "user-auto-123",
+                                plan_id: "db-plan-2025",
+                                kind: "month",
+                                label: "Congés",
+                                start_date: null,
+                                end_date: null,
+                                start_half: null,
+                                end_half: null,
+                                month: 6,
+                                days: 5,
+                                created_at: "2025-01-01T00:00:00Z",
+                                updated_at: "2025-01-01T00:00:00Z",
+                              },
+                            ],
+                          },
+                        ],
+                        error: null,
+                      };
+                    },
+                  };
+                },
+              };
+            },
+          };
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      },
+    };
+
+    setTestSupabase(mockSupabase);
+    try {
+      const plans = await syncService.pullFromCloud();
+      assert.equal(plans.length, 1);
+      assert.equal(plans[0].id, "db-plan-2025");
+      assert.equal(plans[0].entries.length, 1);
+      assert.equal(plans[0].entries[0].id, "e-remote-1");
+
+      const cachedRaw = await AsyncStorage.getItem(STORAGE_KEY);
+      assert.ok(cachedRaw !== null);
+      assert.equal(JSON.parse(cachedRaw)[0].id, "db-plan-2025");
+    } finally {
+      setTestSupabase(null);
+    }
+  });
+});
+

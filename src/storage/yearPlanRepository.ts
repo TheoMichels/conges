@@ -1,175 +1,33 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isLocalMode } from "../config/storageMode";
+import { syncService } from "../services/syncService";
 import {
   LeaveEntry,
   YearPlan,
   yearPlanSchema,
   yearPlansSchema,
 } from "../types/yearPlan";
-import { SEED_PLANS } from "./seedPlans";
+import {
+  STORAGE_KEY,
+  LEGACY_STORAGE_KEY,
+  LEGACY_CONGES_KEY,
+  loadFromLocalStorage,
+  normalize,
+  StoredPlan,
+  legacyMonthEntries,
+  readRawKey,
+} from "./localStorage";
 
-export const STORAGE_KEY = "@holy_year_plans_v1";
-export const LEGACY_STORAGE_KEY = "@holidays_year_plans_v1";
-export const LEGACY_CONGES_KEY = "conges:yearPlans";
-
-// Format historique d'un plan avant l'introduction des entrées de congés
-type StoredPlan = Partial<YearPlan> & { months?: number[] };
-
-function legacyMonthEntries(months: number[] | undefined): LeaveEntry[] {
-  if (!months) return [];
-  return months.flatMap((days, month) =>
-    days > 0
-      ? [
-          {
-            id: `legacy-${month}`,
-            label: "Congés",
-            createdAt: Date.now(),
-            kind: "month" as const,
-            month,
-            days,
-          },
-        ]
-      : []
-  );
-}
-
-function normalize(raw: StoredPlan): YearPlan {
-  const rawEntries = Array.isArray(raw.entries)
-    ? raw.entries
-    : legacyMonthEntries(raw.months);
-
-  return {
-    id: String(raw.id ?? `plan-${raw.year ?? Date.now()}`),
-    year: String(raw.year ?? new Date().getFullYear()),
-    createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
-    initialLeave: typeof raw.initialLeave === "number" ? raw.initialLeave : 0,
-    carriedOver: typeof raw.carriedOver === "number" ? raw.carriedOver : 0,
-    csupp: typeof raw.csupp === "number" ? raw.csupp : 0,
-    publicHolidays: typeof raw.publicHolidays === "number" ? raw.publicHolidays : 0,
-    entries: rawEntries as LeaveEntry[],
-  };
-}
-
-/**
- * Détermine l'URL de l'API en mode distant (non-local) :
- * - Si EXPO_PUBLIC_API_URL est défini, l'utilise.
- * - En web déployé (non-localhost), utilise le chemin relatif '/api/conges'.
- * - Retourne null si aucun endpoint distant n'est disponible.
- */
-export function getApiUrl(): string | null {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl && envUrl.trim().length > 0) {
-    return `${envUrl.trim().replace(/\/$/, "")}/api/conges`;
-  }
-
-  if (typeof window !== "undefined" && window.location) {
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-
-    if (!isLocalhost) {
-      return "/api/conges";
-    }
-  }
-
-  return null;
-}
-
-async function readRawKey(key: string): Promise<string | null> {
-  const fromAsync = await AsyncStorage.getItem(key);
-  if (fromAsync !== null) {
-    return fromAsync;
-  }
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-export async function loadFromLocalStorage(): Promise<YearPlan[]> {
-  // 1. Lecture de la clé canonique @holy_year_plans_v1
-  const rawCanonical = await readRawKey(STORAGE_KEY);
-  if (rawCanonical) {
-    try {
-      const parsed = JSON.parse(rawCanonical);
-      if (Array.isArray(parsed)) {
-        const normalized = parsed.map((item) => normalize(item as StoredPlan));
-        const validation = yearPlansSchema.safeParse(normalized);
-        if (validation.success && validation.data.length > 0) {
-          let plans = validation.data;
-          const isOnlyPlaceholder =
-            plans.length === 1 &&
-            plans[0].initialLeave === 0 &&
-            plans[0].entries.length === 0;
-
-          if (isOnlyPlaceholder) {
-            plans = SEED_PLANS;
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(plans));
-            return plans;
-          }
-          return plans;
-        }
-      }
-    } catch (e) {
-      console.warn("Erreur de parsing/validation du stockage canonique:", e);
-    }
-  }
-
-  // 2. Migration transparente depuis '@holidays_year_plans_v1' vers '@holy_year_plans_v1'
-  const rawHolidaysLegacy = await readRawKey(LEGACY_STORAGE_KEY);
-  if (rawHolidaysLegacy) {
-    try {
-      const parsedLegacy = JSON.parse(rawHolidaysLegacy);
-      if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
-        const normalized = parsedLegacy.map((item) => normalize(item as StoredPlan));
-        const validation = yearPlansSchema.safeParse(normalized);
-        if (validation.success && validation.data.length > 0) {
-          const migratedPlans = validation.data;
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migratedPlans));
-          await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
-          if (typeof window !== "undefined" && window.localStorage) {
-            try {
-              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedPlans));
-              window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-            } catch {
-              // Ignorer erreurs localStorage
-            }
-          }
-          return migratedPlans;
-        }
-      }
-    } catch (e) {
-      console.warn("Erreur lors de la migration depuis @holidays_year_plans_v1:", e);
-    }
-  }
-
-  // 3. Migration transparente depuis la clé historique 'conges:yearPlans'
-  const rawCongesLegacy = await readRawKey(LEGACY_CONGES_KEY);
-  if (rawCongesLegacy) {
-    try {
-      const parsedLegacy = JSON.parse(rawCongesLegacy);
-      if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
-        const normalized = parsedLegacy.map((item) => normalize(item as StoredPlan));
-        const validation = yearPlansSchema.safeParse(normalized);
-        if (validation.success && validation.data.length > 0) {
-          const migratedPlans = validation.data;
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migratedPlans));
-          return migratedPlans;
-        }
-      }
-    } catch (e) {
-      console.warn("Erreur lors de la migration des données legacy:", e);
-    }
-  }
-
-  // 4. Fallback initial : aucune donnée trouvée, injection des graines
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PLANS));
-  return SEED_PLANS;
-}
+export {
+  STORAGE_KEY,
+  LEGACY_STORAGE_KEY,
+  LEGACY_CONGES_KEY,
+  loadFromLocalStorage,
+  normalize,
+  legacyMonthEntries,
+  readRawKey,
+};
+export type { StoredPlan };
 
 export interface CreateYearPlanInput {
   id?: string;
@@ -188,49 +46,7 @@ export const yearPlanRepository = {
       return loadFromLocalStorage();
     }
 
-    const apiUrl = getApiUrl();
-    if (!apiUrl) {
-      return loadFromLocalStorage();
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Erreur serveur (${response.status})`);
-      }
-
-      const remoteData = await response.json();
-
-      if (Array.isArray(remoteData) && remoteData.length > 0) {
-        const normalized = (remoteData as unknown[]).map((raw) =>
-          normalize(raw as StoredPlan)
-        );
-        const parsed = yearPlansSchema.safeParse(normalized);
-        if (parsed.success && parsed.data.length > 0) {
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(parsed.data));
-          return parsed.data;
-        }
-      }
-
-      const initialPlans = await loadFromLocalStorage();
-      await this.saveAll(initialPlans);
-      return initialPlans;
-    } catch (err) {
-      console.warn(
-        "Connexion à l'API distante impossible, bascule sur le cache local:",
-        err
-      );
-      return loadFromLocalStorage();
-    }
+    return syncService.pullFromCloud();
   },
 
   async get(id: string): Promise<YearPlan | null> {
@@ -289,34 +105,6 @@ export const yearPlanRepository = {
       return;
     }
 
-    const apiUrl = getApiUrl();
-    if (!apiUrl) {
-      return;
-    }
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(validated),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        throw new Error(
-          `Échec de synchronisation distante (${response.status}): ${errorText || response.statusText}`
-        );
-      }
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Impossible de synchroniser avec le serveur distant.";
-      console.error("Erreur lors de la synchronisation distante:", err);
-      throw new Error(message);
-    }
+    await syncService.pushToCloud(validated);
   },
 };
