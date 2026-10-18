@@ -18,10 +18,10 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
 
-    // 1. Verify Header, HOLY title, and isolated boat logo
+    // 1. Verify Header, Holy title, and isolated boat logo
     const header = page.locator('[data-testid="app-header"]');
     await expect(header).toBeVisible({ timeout: 15_000 });
-    await expect(header.locator("text=HOLY").first()).toBeVisible();
+    await expect(header.locator("text=Holy").first()).toBeVisible();
     await expect(page.locator('[data-testid="app-logo"]').first()).toBeVisible();
 
     // 2. Verify Local storage badge
@@ -112,10 +112,7 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     await expect(progressCircle).toHaveCount(0);
 
     const mobileTotals = page.locator('[data-testid="mobile-dashboard-totals"]');
-    await expect(mobileTotals).toBeVisible();
-    await expect(page.locator('[data-testid="mobile-total-remaining"]')).toBeVisible();
-    await expect(page.locator('[data-testid="mobile-total-taken"]')).toBeVisible();
-    await expect(page.locator('[data-testid="mobile-total-entitlement"]')).toBeVisible();
+    await expect(mobileTotals).toHaveCount(0);
 
     // 3. Verify no horizontal overflow at 375px
     const hasHorizontalOverflow = await page.evaluate(() => {

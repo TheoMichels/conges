@@ -42,7 +42,7 @@ export function Header({
         <View style={styles.brand}>
           <Logo size={isMobile ? 28 : 34} />
           <Text style={[styles.brandTitle, isMobile && styles.brandTitleMobile]}>
-            HOLY
+            Holy
           </Text>
         </View>
       </View>

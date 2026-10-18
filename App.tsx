@@ -262,13 +262,10 @@ function MainApp({ user, onSignOut }: MainAppProps) {
 
                     {isMobile ? (
                       <MobileDashboard
-                        year={selectedPlan.year}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}
                         csupp={selectedPlan.csupp}
                         publicHolidays={selectedPlan.publicHolidays}
-                        taken={totalPlanned}
-                        remaining={remaining}
                         onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
                         onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
                         onChangeCsupp={(value) => handleUpdate({ csupp: value })}

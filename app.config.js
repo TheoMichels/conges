@@ -1,6 +1,6 @@
 module.exports = {
   expo: {
-    name: "HOLY",
+    name: "Holy",
     slug: "holy",
     version: "1.0.0",
     orientation: "portrait",

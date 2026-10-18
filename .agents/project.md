@@ -1,4 +1,4 @@
-# HOLY — fiche projet
+# Holy — fiche projet
 > Faits uniquement, maintenus par l'agent (≤ 40 lignes). Les règles sont dans ~/.gemini/AGENTS.md.
 
 ## Produit
@@ -28,7 +28,7 @@
 
 ## Design
 - Tokens §2 `src/theme/colors.ts` · brand `#072939` · primary `#E85315` · surfaces glassmorphism translucides (`glassStyle`) · radius 12-24.
-- Composants types : `Header` (logo voilier détouré `home-boat-logo.png`, titre `HOLY`), `AuthScreen`, `LoadingScreen`, `KpiCards`.
+- Composants types : `Header` (logo voilier détouré `home-boat-logo.png`, titre `Holy`), `AuthScreen`, `LoadingScreen`, `KpiCards`.
 
 ## Déploiement & Sécurité
 - Vercel (`vercel.json`) : build `npm run build`, SPA rewrites.

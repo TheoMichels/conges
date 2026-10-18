@@ -86,7 +86,7 @@ export function AuthScreen() {
         <View style={styles.card} testID="auth-card">
           <View style={styles.header}>
             <Logo size={48} />
-            <Text style={styles.brandTitle}>HOLY</Text>
+            <Text style={styles.brandTitle}>Holy</Text>
             <Text style={styles.subtitle} testID="auth-title">
               {mode === "signin" ? "Connexion à votre espace" : "Créer un nouveau compte"}
             </Text>
