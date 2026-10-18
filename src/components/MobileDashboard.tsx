@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, fonts, radius, shadows } from '../theme/colors';
-import { ProgressRing } from './ProgressRing';
+import { formatDayNumber } from '../utils/format';
 import { NumberField } from './NumberField';
 
 type Props = {
@@ -29,22 +29,41 @@ export function MobileDashboard({
   onChangeCsupp,
 }: Props) {
   const total = initialLeave + carriedOver + csupp + publicHolidays;
+  const isNegative = remaining < 0;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.ringSection}>
-        <ProgressRing taken={taken} remaining={remaining} total={total} />
-        <View style={styles.ringStats}>
-          <View style={styles.statRow}>
-            <View style={[styles.dot, { backgroundColor: colors.brand }]} />
-            <Text style={styles.statLabel}>Pris</Text>
-            <Text style={styles.statValue}>{taken} j</Text>
-          </View>
-          <View style={styles.statRow}>
-            <View style={[styles.dot, { backgroundColor: '#EDF2F5' }]} />
-            <Text style={styles.statLabel}>Total</Text>
-            <Text style={styles.statValue}>{total} j</Text>
-          </View>
+    <View testID="mobile-dashboard" style={styles.card}>
+      <View testID="mobile-dashboard-totals" style={styles.totalsContainer}>
+        <View
+          testID="mobile-total-remaining"
+          style={[
+            styles.totalCard,
+            isNegative ? styles.totalCardDanger : styles.totalCardPositive,
+          ]}
+        >
+          <Text style={styles.totalLabel}>Restant</Text>
+          <Text
+            style={[
+              styles.totalValue,
+              isNegative ? styles.totalValueDanger : styles.totalValuePositive,
+            ]}
+          >
+            {formatDayNumber(remaining)} j
+          </Text>
+        </View>
+
+        <View testID="mobile-total-taken" style={styles.totalCard}>
+          <Text style={styles.totalLabel}>Pris</Text>
+          <Text style={[styles.totalValue, styles.totalValuePrimary]}>
+            {formatDayNumber(taken)} j
+          </Text>
+        </View>
+
+        <View testID="mobile-total-entitlement" style={styles.totalCard}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={[styles.totalValue, styles.totalValueBrand]}>
+            {formatDayNumber(total)} j
+          </Text>
         </View>
       </View>
 
@@ -79,53 +98,71 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 20,
+    padding: 16,
     marginBottom: 20,
     ...shadows.sm,
   },
-  ringSection: {
+  totalsContainer: {
     flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  totalCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
-    marginBottom: 20,
   },
-  ringStats: {
-    justifyContent: 'center',
-    gap: 12,
+  totalCardPositive: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.positive,
   },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  totalCardDanger: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  statLabel: {
+  totalLabel: {
     fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    width: 40,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 4,
   },
-  statValue: {
+  totalValue: {
     fontFamily: fonts.base,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
-    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  totalValuePositive: {
+    color: colors.positive,
+  },
+  totalValueDanger: {
+    color: colors.danger,
+  },
+  totalValuePrimary: {
+    color: colors.primary,
+  },
+  totalValueBrand: {
+    color: colors.brand,
   },
   divider: {
     height: 1,
     backgroundColor: colors.divider,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
   gridItem: {
     flex: 1,

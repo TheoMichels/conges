@@ -104,6 +104,18 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     const kpiCards = page.locator('[data-testid="kpi-cards"]');
     await expect(kpiCards).toBeVisible();
 
+    // 2b. Verify Mobile Dashboard and absence of pie chart / progress ring SVG
+    const mobileDashboard = page.locator('[data-testid="mobile-dashboard"]');
+    await expect(mobileDashboard).toBeVisible();
+    const progressCircle = page.locator('[data-testid="mobile-dashboard"] svg circle');
+    await expect(progressCircle).toHaveCount(0);
+
+    const mobileTotals = page.locator('[data-testid="mobile-dashboard-totals"]');
+    await expect(mobileTotals).toBeVisible();
+    await expect(page.locator('[data-testid="mobile-total-remaining"]')).toBeVisible();
+    await expect(page.locator('[data-testid="mobile-total-taken"]')).toBeVisible();
+    await expect(page.locator('[data-testid="mobile-total-entitlement"]')).toBeVisible();
+
     // 3. Verify no horizontal overflow at 375px
     const hasHorizontalOverflow = await page.evaluate(() => {
       return (
