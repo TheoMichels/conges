@@ -1,28 +1,33 @@
-import Svg, { Path } from "react-native-svg";
-import { colors } from "../theme/colors";
+import { Image, StyleSheet } from "react-native";
 
 type Props = {
   size?: number;
 };
 
-// Reprend le double chevron de la marque ITS4U : pétrole à gauche, orange à droite.
+// Icône 3D Holidays : chevrons ITS4U en voilier sur mer au coucher de soleil, rendu squircle
 export function Logo({ size = 32 }: Props) {
+  const borderRadius = Math.round(size * 0.2237);
   return (
-    <Svg width={size} height={size} viewBox="0 0 120 120">
-      <Path
-        d="M55 26 L27 60 L55 94"
-        fill="none"
-        stroke={colors.brand}
-        strokeWidth={15}
-        strokeLinejoin="miter"
-      />
-      <Path
-        d="M65 26 L93 60 L65 94"
-        fill="none"
-        stroke={colors.accent}
-        strokeWidth={15}
-        strokeLinejoin="miter"
-      />
-    </Svg>
+    <Image
+      testID="app-logo"
+      source={require("../../assets/icon.png")}
+      accessibilityRole="image"
+      accessibilityLabel="Logo Holidays"
+      style={[
+        styles.icon,
+        {
+          width: size,
+          height: size,
+          borderRadius,
+        },
+      ]}
+    />
   );
 }
+
+const styles = StyleSheet.create({
+  icon: {
+    resizeMode: "cover",
+    overflow: "hidden",
+  },
+});
