@@ -7,7 +7,7 @@ export type Json =
   | Json[];
 
 export interface Database {
-  holidays: {
+  holy: {
     Tables: {
       year_plans: {
         Row: {

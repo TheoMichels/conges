@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Smoke test — Holidays application loading", () => {
+test.describe("Smoke test — HOLY application loading", () => {
   test("loads the application without errors and displays year or leave content", async ({
     page,
   }) => {
@@ -20,7 +20,7 @@ test.describe("Smoke test — Holidays application loading", () => {
     await page.goto("/");
 
     // Verify page title and ensure root container is rendered
-    await expect(page).toHaveTitle(/Holidays|Congés/i);
+    await expect(page).toHaveTitle(/HOLY/i);
 
     // Wait for the app to finish loading (loading placeholder disappears or content appears)
     // The main view displays either year plan header (e.g. 2026), or sidebar years, or leave entries

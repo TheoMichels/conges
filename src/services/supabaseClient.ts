@@ -48,10 +48,10 @@ export const hybridAuthStorage: SupportedStorage = {
   },
 };
 
-export const supabase: SupabaseClient<Database, "holidays"> | null =
+export const supabase: SupabaseClient<Database, "holy"> | null =
   !isLocalMode && isSupabaseConfigured
-    ? createClient<Database, "holidays">(supabaseUrl, supabaseAnonKey, {
-        db: { schema: "holidays" },
+    ? createClient<Database, "holy">(supabaseUrl, supabaseAnonKey, {
+        db: { schema: "holy" },
         auth: {
           storage: hybridAuthStorage,
           persistSession: true,

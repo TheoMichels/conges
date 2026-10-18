@@ -71,9 +71,9 @@ function mapDbPlanToYearPlan(row: DbYearPlan): YearPlan {
 export async function clearLocalCache(): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const holidaysKeys = keys.filter((k) => k.startsWith("@holidays_"));
-    if (holidaysKeys.length > 0) {
-      await AsyncStorage.multiRemove(holidaysKeys);
+    const appKeys = keys.filter((k) => k.startsWith("@holy_") || k.startsWith("@holidays_"));
+    if (appKeys.length > 0) {
+      await AsyncStorage.multiRemove(appKeys);
     }
   } catch (err) {
     console.warn("Erreur lors de la purge AsyncStorage:", err);
@@ -84,7 +84,7 @@ export async function clearLocalCache(): Promise<void> {
       const keysToRemove: string[] = [];
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i);
-        if (key && key.startsWith("@holidays_")) {
+        if (key && (key.startsWith("@holy_") || key.startsWith("@holidays_"))) {
           keysToRemove.push(key);
         }
       }

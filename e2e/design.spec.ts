@@ -18,10 +18,11 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
 
-    // 1. Verify Header and contents
+    // 1. Verify Header, HOLY title, and isolated boat logo
     const header = page.locator('[data-testid="app-header"]');
     await expect(header).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator("text=Mes congés").first()).toBeVisible();
+    await expect(header.locator("text=HOLY").first()).toBeVisible();
+    await expect(page.locator('[data-testid="app-logo"]').first()).toBeVisible();
 
     // 2. Verify Local storage badge
     const localBadge = page.locator('[data-testid="local-badge"]');

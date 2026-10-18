@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, fonts, radius, shadows } from "../theme/colors";
+import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDayNumber } from "../utils/format";
 import { getLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
@@ -145,11 +145,12 @@ export function SummaryFields({
 const styles = StyleSheet.create({
   card: {
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 20,
     marginBottom: 20,
+    ...glassStyle,
     ...shadows.sm,
   },
   title: {
@@ -187,7 +188,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "500",
     color: colors.brandMuted,
-    backgroundColor: "#EDF2F5",
+    backgroundColor: colors.panelSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, fonts, radius, shadows, spacing } from "../theme/colors";
+import { colors, fonts, glassStyle, radius, shadows, spacing } from "../theme/colors";
 import { formatDayNumber } from "../utils/format";
 
 type Props = {
@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
+    ...glassStyle,
     ...shadows.sm,
   },
   cardPositive: {

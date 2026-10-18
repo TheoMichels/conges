@@ -1,7 +1,7 @@
 module.exports = {
   expo: {
-    name: "Holidays",
-    slug: "holidays",
+    name: "HOLY",
+    slug: "holy",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",

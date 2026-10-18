@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { User } from "@supabase/supabase-js";
 import { Logo } from "./Logo";
-import { colors, fonts, radius, shadows, spacing } from "../theme/colors";
+import { colors, fonts, glassStyle, radius, shadows, spacing } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 
 type Props = {
@@ -42,7 +42,7 @@ export function Header({
         <View style={styles.brand}>
           <Logo size={isMobile ? 28 : 34} />
           <Text style={[styles.brandTitle, isMobile && styles.brandTitleMobile]}>
-            Mes congés
+            HOLY
           </Text>
         </View>
       </View>
@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
+    ...glassStyle,
     ...shadows.sm,
   },
   containerMobile: {

@@ -263,9 +263,9 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     await AsyncStorage.clear();
   });
 
-  it("uses the canonical storage key @holidays_year_plans_v1", () => {
-    assert.equal(STORAGE_KEY, "@holidays_year_plans_v1");
-    assert.equal(LEGACY_STORAGE_KEY, "conges:yearPlans");
+  it("uses the canonical storage key @holy_year_plans_v1 and legacy key @holidays_year_plans_v1", () => {
+    assert.equal(STORAGE_KEY, "@holy_year_plans_v1");
+    assert.equal(LEGACY_STORAGE_KEY, "@holidays_year_plans_v1");
   });
 
   it("initializes with seed plans when storage is empty", async () => {
@@ -281,7 +281,7 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     assert.equal(stored.length, plans.length);
   });
 
-  it("migrates transparently from conges:yearPlans without deleting legacy key", async () => {
+  it("migrates automatically from @holidays_year_plans_v1 to @holy_year_plans_v1 and removes the old key", async () => {
     const legacyData = [
       {
         id: "legacy-2023",
@@ -304,7 +304,7 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
       },
     ];
 
-    // Seed only legacy key
+    // Seed only legacy @holidays_year_plans_v1 key
     await AsyncStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyData));
     assert.equal(await AsyncStorage.getItem(STORAGE_KEY), null);
 
@@ -320,10 +320,28 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     const canonicalParsed = JSON.parse(canonicalRaw);
     assert.equal(canonicalParsed[0].year, "2023");
 
-    // Legacy key must STILL exist and remain untouched
+    // Legacy @holidays_year_plans_v1 key is removed after migration
     const legacyRawAfter = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
-    assert.ok(legacyRawAfter !== null, "Legacy key must not be deleted");
-    assert.equal(JSON.parse(legacyRawAfter)[0].year, "2023");
+    assert.equal(legacyRawAfter, null, "Legacy @holidays_year_plans_v1 key must be deleted after migration");
+  });
+
+  it("migrates transparently from conges:yearPlans when both canonical and @holidays_year_plans_v1 are empty", async () => {
+    const legacyCongesData = [
+      {
+        id: "conges-2021",
+        year: "2021",
+        createdAt: 1609459200000,
+        initialLeave: 26,
+        carriedOver: 1,
+        csupp: 0,
+        publicHolidays: 0,
+        entries: [],
+      },
+    ];
+    await AsyncStorage.setItem("conges:yearPlans", JSON.stringify(legacyCongesData));
+    const plans = await yearPlanRepository.list();
+    assert.equal(plans.length, 1);
+    assert.equal(plans[0].year, "2021");
   });
 
   it("normalizes legacy months: number[] format during migration", async () => {

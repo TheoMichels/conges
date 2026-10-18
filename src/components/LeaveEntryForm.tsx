@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { HalfDay, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts } from "../theme/colors";
+import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, toISODate, workingDaysCount } from "../utils/leaveDays";
 import { formatDays } from "../utils/format";
@@ -313,12 +313,14 @@ export function LeaveEntryForm({
 
 const styles = StyleSheet.create({
   form: {
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
     padding: 18,
     marginBottom: 16,
+    ...glassStyle,
+    ...shadows.sm,
   },
   fieldLabel: {
     fontFamily: fonts.base,
@@ -338,7 +340,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.surfaceActive,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,

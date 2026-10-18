@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts } from "../theme/colors";
+import { colors, fonts, glassStyle } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, parseISODate, toISODate } from "../utils/leaveDays";
 
@@ -220,10 +220,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F0F4F7",
+    backgroundColor: colors.panelSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 6,
     marginBottom: 12,
+    ...glassStyle,
   },
   rangeChip: {
     flexDirection: "row",
@@ -232,13 +235,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: colors.panel,
+    backgroundColor: "rgba(255, 255, 255, 0.82)",
     borderWidth: 1,
     borderColor: colors.border,
   },
   rangeChipActive: {
     borderColor: colors.brand,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surfaceActive,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,

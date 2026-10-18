@@ -1,6 +1,6 @@
 import { ScrollView, Pressable, Text, View, StyleSheet } from 'react-native';
 import { YearPlan } from '../types/yearPlan';
-import { colors, fonts, radius } from '../theme/colors';
+import { colors, fonts, glassStyle, radius } from '../theme/colors';
 import { cursorPointer } from '../theme/webCursor';
 import { sortPlansChronologically } from '../utils/yearPlanUtils';
 
@@ -63,9 +63,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     borderRadius: radius.xl,
-    backgroundColor: '#EDF2F5',
+    backgroundColor: colors.panelSubtle,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.border,
+    ...glassStyle,
   },
   chipSelected: {
     backgroundColor: colors.brand,

@@ -2,7 +2,7 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-  schemas   = ["holidays", "auth"]
+  schemas   = ["holy", "auth"]
 }
 
 generator client {
@@ -28,7 +28,7 @@ model YearPlan {
   @@unique([userId, year], map: "idx_year_plans_user_year")
   @@index([userId], map: "idx_year_plans_user_id")
   @@map("year_plans")
-  @@schema("holidays")
+  @@schema("holy")
 }
 
 // -----------------------------------------------------------------------------
@@ -53,7 +53,7 @@ model LeaveEntry {
   @@index([userId], map: "idx_leave_entries_user_id")
   @@index([planId], map: "idx_leave_entries_plan_id")
   @@map("leave_entries")
-  @@schema("holidays")
+  @@schema("holy")
 }
 
 // -----------------------------------------------------------------------------
@@ -67,5 +67,5 @@ model UserSettings {
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("user_settings")
-  @@schema("holidays")
+  @@schema("holy")
 }

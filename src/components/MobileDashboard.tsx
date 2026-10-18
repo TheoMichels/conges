@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts, radius, shadows } from '../theme/colors';
+import { colors, fonts, glassStyle, radius, shadows } from '../theme/colors';
 import { formatDayNumber } from '../utils/format';
 import { NumberField } from './NumberField';
 
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 16,
     marginBottom: 20,
+    ...glassStyle,
     ...shadows.sm,
   },
   totalsContainer: {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { LeaveEntry, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts, radius, shadows } from "../theme/colors";
+import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { entryOrderKey, entryTotalDays, formatDateFr } from "../utils/leaveDays";
 import { formatDays } from "../utils/format";
@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: 20,
+    ...glassStyle,
     ...shadows.sm,
   },
   cardMobile: {
@@ -135,6 +136,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 20,
     marginBottom: 20,
+    ...glassStyle,
     ...shadows.sm,
   },
   title: {

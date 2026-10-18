@@ -4,21 +4,19 @@ type Props = {
   size?: number;
 };
 
-// Icône 3D Holidays : chevrons ITS4U en voilier sur mer au coucher de soleil, rendu squircle
-export function Logo({ size = 32 }: Props) {
-  const borderRadius = Math.round(size * 0.2237);
+// Logo HOLY page d'accueil : voilier 3D avec les deux chevrons ITS4U détourés sur fond transparent
+export function Logo({ size = 36 }: Props) {
   return (
     <Image
       testID="app-logo"
-      source={require("../../assets/icon.png")}
+      source={require("../../assets/home-boat-logo.png")}
       accessibilityRole="image"
-      accessibilityLabel="Logo Holidays"
+      accessibilityLabel="Logo HOLY"
       style={[
         styles.icon,
         {
           width: size,
           height: size,
-          borderRadius,
         },
       ]}
     />
@@ -27,7 +25,6 @@ export function Logo({ size = 32 }: Props) {
 
 const styles = StyleSheet.create({
   icon: {
-    resizeMode: "cover",
-    overflow: "hidden",
+    resizeMode: "contain",
   },
 });

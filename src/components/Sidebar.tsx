@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { YearPlan } from "../types/yearPlan";
-import { colors, fonts, radius, shadows } from "../theme/colors";
+import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -305,6 +305,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 16,
     marginRight: 20,
+    ...glassStyle,
     ...shadows.sm,
   },
   headerRow: {
@@ -358,7 +359,9 @@ const styles = StyleSheet.create({
     color: colors.textOnBrand,
   },
   currentBadge: {
-    backgroundColor: "#E8EDF2",
+    backgroundColor: colors.panelSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,

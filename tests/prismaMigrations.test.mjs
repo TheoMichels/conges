@@ -28,12 +28,12 @@ async function database() {
   return db;
 }
 
-test('AC-01 / AC-02: prisma/schema.prisma est configuré en multiSchema (holidays, auth) avec les modèles canoniques', () => {
+test('AC-01 / AC-02: prisma/schema.prisma est configuré en multiSchema (holy, auth) avec les modèles canoniques', () => {
   const schemaPath = path.join(rootDir, 'prisma', 'schema.prisma');
   assert.ok(existsSync(schemaPath), 'prisma/schema.prisma doit exister');
 
   const content = readFileSync(schemaPath, 'utf8');
-  assert.match(content, /schemas\s*=\s*\["holidays",\s*"auth"\]/);
+  assert.match(content, /schemas\s*=\s*\["holy",\s*"auth"\]/);
   assert.match(content, /previewFeatures\s*=\s*\["multiSchema"\]/);
   assert.match(content, /url\s*=\s*env\("DATABASE_URL"\)/);
   assert.match(content, /directUrl\s*=\s*env\("DIRECT_URL"\)/);
@@ -41,7 +41,7 @@ test('AC-01 / AC-02: prisma/schema.prisma est configuré en multiSchema (holiday
   for (const table of tables) {
     assert.match(content, new RegExp(`@@map\\("${table}"\\)`));
   }
-  assert.match(content, /@@schema\("holidays"\)/);
+  assert.match(content, /@@schema\("holy"\)/);
   assert.match(content, /@map\("user_id"\)/);
   assert.match(content, /@map\("created_at"\)/);
   assert.match(content, /@map\("updated_at"\)/);
@@ -87,9 +87,9 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
   assert.ok(existsSync(migrationPath), 'Le fichier de migration SQL doit exister');
 
   const sql = readFileSync(migrationPath, 'utf8');
-  assert.match(sql, /CREATE SCHEMA IF NOT EXISTS holidays;/);
-  assert.match(sql, /GRANT USAGE ON SCHEMA holidays TO anon, authenticated, service_role;/);
-  assert.match(sql, /CREATE OR REPLACE FUNCTION holidays\.set_updated_at\(\)/);
+  assert.match(sql, /CREATE SCHEMA IF NOT EXISTS holy;/);
+  assert.match(sql, /GRANT USAGE ON SCHEMA holy TO anon, authenticated, service_role;/);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION holy\.set_updated_at\(\)/);
 
   const db = await database();
   try {
@@ -97,7 +97,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
 
     // Initialisation des plans pour userA et userB
     await db.exec(`
-      INSERT INTO holidays.year_plans (id, user_id, year, initial_leave, carried_over, csupp, public_holidays)
+      INSERT INTO holy.year_plans (id, user_id, year, initial_leave, carried_over, csupp, public_holidays)
       VALUES
         ('plan_test_a', '${userA}', '2026', 26.0, 0.0, 0.0, 11.0),
         ('plan_test_b', '${userB}', '2026', 26.0, 0.0, 0.0, 11.0);
@@ -105,7 +105,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
 
     // Initialisation des entrées pour userA et userB
     await db.exec(`
-      INSERT INTO holidays.leave_entries (id, user_id, plan_id, kind, label, start_date, end_date, days)
+      INSERT INTO holy.leave_entries (id, user_id, plan_id, kind, label, start_date, end_date, days)
       VALUES
         ('entry_test_a', '${userA}', 'plan_test_a', 'dates', 'Été', '2026-07-01', '2026-07-15', 10.0),
         ('entry_test_b', '${userB}', 'plan_test_b', 'dates', 'Été', '2026-07-01', '2026-07-15', 10.0);
@@ -113,7 +113,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
 
     // Initialisation des paramètres pour userA et userB
     await db.exec(`
-      INSERT INTO holidays.user_settings (user_id, default_initial_leave, country)
+      INSERT INTO holy.user_settings (user_id, default_initial_leave, country)
       VALUES
         ('${userA}', 26.0, 'LU'),
         ('${userB}', 26.0, 'LU');
@@ -124,7 +124,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
       const policies = (
         await db.query(
           'SELECT cmd, roles, qual, with_check FROM pg_policies WHERE schemaname = $1 AND tablename = $2 ORDER BY cmd',
-          ['holidays', table]
+          ['holy', table]
         )
       ).rows;
       assert.deepEqual(policies.map((p) => p.cmd), ['DELETE', 'INSERT', 'SELECT', 'UPDATE']);
@@ -132,7 +132,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
 
       // 2. RLS activé sur la table
       const rls = (
-        await db.query(`SELECT relrowsecurity FROM pg_class WHERE oid = 'holidays.${table}'::regclass`)
+        await db.query(`SELECT relrowsecurity FROM pg_class WHERE oid = 'holy.${table}'::regclass`)
       ).rows[0];
       assert.equal(rls.relrowsecurity, true);
 
@@ -142,7 +142,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
           const check = (
             await db.query('SELECT has_table_privilege($1, $2, $3) AS allowed', [
               role,
-              `holidays.${table}`,
+              `holy.${table}`,
               privilege,
             ])
           ).rows[0];
@@ -152,7 +152,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
       const anonCheck = (
         await db.query('SELECT has_table_privilege($1, $2, $3) AS allowed', [
           'anon',
-          `holidays.${table}`,
+          `holy.${table}`,
           'SELECT',
         ])
       ).rows[0];
@@ -161,17 +161,17 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
       // 4. Contrainte FK vers auth.users(id) ON DELETE CASCADE
       if (table === 'year_plans') {
         await assert.rejects(
-          db.exec(`INSERT INTO holidays.year_plans (id, user_id, year) VALUES ('inv_plan', '${missingUser}', '2026');`),
+          db.exec(`INSERT INTO holy.year_plans (id, user_id, year) VALUES ('inv_plan', '${missingUser}', '2026');`),
           /foreign key/i
         );
       } else if (table === 'leave_entries') {
         await assert.rejects(
-          db.exec(`INSERT INTO holidays.leave_entries (id, user_id, plan_id, kind, label) VALUES ('inv_entry', '${missingUser}', 'plan_test_a', 'dates', 'inv');`),
+          db.exec(`INSERT INTO holy.leave_entries (id, user_id, plan_id, kind, label) VALUES ('inv_entry', '${missingUser}', 'plan_test_a', 'dates', 'inv');`),
           /foreign key/i
         );
       } else if (table === 'user_settings') {
         await assert.rejects(
-          db.exec(`INSERT INTO holidays.user_settings (user_id) VALUES ('${missingUser}');`),
+          db.exec(`INSERT INTO holy.user_settings (user_id) VALUES ('${missingUser}');`),
           /foreign key/i
         );
       }
@@ -180,57 +180,57 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
       await db.exec(`SET ROLE authenticated; SET request.jwt.claim.sub = '${userA}';`);
 
       // SELECT voit uniquement userA
-      const rowsA = (await db.query(`SELECT user_id FROM holidays.${table}`)).rows;
+      const rowsA = (await db.query(`SELECT user_id FROM holy.${table}`)).rows;
       assert.ok(rowsA.length > 0, `userA doit voir au moins une ligne dans ${table}`);
       assert.ok(rowsA.every((r) => r.user_id === userA), `userA ne doit voir que ses propres lignes dans ${table}`);
 
       // INSERT pour userB rejeté par RLS WITH CHECK
       if (table === 'year_plans') {
         await assert.rejects(
-          db.exec(`INSERT INTO holidays.year_plans (id, user_id, year) VALUES ('illegal_b', '${userB}', '2027');`),
+          db.exec(`INSERT INTO holy.year_plans (id, user_id, year) VALUES ('illegal_b', '${userB}', '2027');`),
           /row-level security/i
         );
       } else if (table === 'leave_entries') {
         await assert.rejects(
-          db.exec(`INSERT INTO holidays.leave_entries (id, user_id, plan_id, kind, label) VALUES ('illegal_b', '${userB}', 'plan_test_b', 'dates', 'illegal');`),
+          db.exec(`INSERT INTO holy.leave_entries (id, user_id, plan_id, kind, label) VALUES ('illegal_b', '${userB}', 'plan_test_b', 'dates', 'illegal');`),
           /row-level security/i
         );
       } else if (table === 'user_settings') {
         await assert.rejects(
-          db.exec(`INSERT INTO holidays.user_settings (user_id, country) VALUES ('${userB}', 'FR');`),
+          db.exec(`INSERT INTO holy.user_settings (user_id, country) VALUES ('${userB}', 'FR');`),
           /row-level security/i
         );
       }
 
       // UPDATE userB affecte 0 ligne
       const updateB = await db.query(
-        `UPDATE holidays.${table} SET updated_at = '2000-01-01' WHERE user_id = '${userB}' RETURNING *`
+        `UPDATE holy.${table} SET updated_at = '2000-01-01' WHERE user_id = '${userB}' RETURNING *`
       );
       assert.equal(updateB.rows.length, 0);
 
       // UPDATE changeant le user_id vers userB rejeté
       await assert.rejects(
-        db.exec(`UPDATE holidays.${table} SET user_id = '${userB}' WHERE user_id = '${userA}';`),
+        db.exec(`UPDATE holy.${table} SET user_id = '${userB}' WHERE user_id = '${userA}';`),
         /row-level security/i
       );
 
       // UPDATE sur userA déclenche le trigger set_updated_at()
       const updatedRow = (
         await db.query(
-          `UPDATE holidays.${table} SET updated_at = '2000-01-01' WHERE user_id = '${userA}' RETURNING updated_at`
+          `UPDATE holy.${table} SET updated_at = '2000-01-01' WHERE user_id = '${userA}' RETURNING updated_at`
         )
       ).rows[0];
       assert.ok(new Date(updatedRow.updated_at).getFullYear() >= 2026);
 
       // DELETE userB affecte 0 ligne
       const deleteB = await db.query(
-        `DELETE FROM holidays.${table} WHERE user_id = '${userB}' RETURNING *`
+        `DELETE FROM holy.${table} WHERE user_id = '${userB}' RETURNING *`
       );
       assert.equal(deleteB.rows.length, 0);
 
       // Bascule vers userB et vérification de visibilité
       await db.exec(`SET request.jwt.claim.sub = '${userB}';`);
-      const rowsB = (await db.query(`SELECT user_id FROM holidays.${table}`)).rows;
+      const rowsB = (await db.query(`SELECT user_id FROM holy.${table}`)).rows;
       assert.ok(rowsB.length > 0);
       assert.ok(rowsB.every((r) => r.user_id === userB));
 
@@ -240,7 +240,7 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
     // 7. Fonction set_updated_at durcie (search_path=pg_catalog, invoker)
     const fn = (
       await db.query(
-        "SELECT proconfig, prosecdef FROM pg_proc WHERE oid = 'holidays.set_updated_at()'::regprocedure"
+        "SELECT proconfig, prosecdef FROM pg_proc WHERE oid = 'holy.set_updated_at()'::regprocedure"
       )
     ).rows[0];
     assert.deepEqual(fn.proconfig, ['search_path=pg_catalog']);
@@ -248,23 +248,23 @@ test('AC-02 / AC-04: la migration SQL multischema applique RLS 100%, 4 policies 
 
     // 8. Contrainte FK et Cascade de plan_id vers leave_entries
     await assert.rejects(
-      db.exec(`INSERT INTO holidays.leave_entries (id, user_id, plan_id, kind, label) VALUES ('fk_inv_entry', '${userA}', 'non_existent_plan', 'dates', 'x');`),
+      db.exec(`INSERT INTO holy.leave_entries (id, user_id, plan_id, kind, label) VALUES ('fk_inv_entry', '${userA}', 'non_existent_plan', 'dates', 'x');`),
       /foreign key/i
     );
     await db.exec(`
-      INSERT INTO holidays.year_plans (id, user_id, year) VALUES ('plan_cascade', '${userA}', '2030');
-      INSERT INTO holidays.leave_entries (id, user_id, plan_id, kind, label) VALUES ('entry_cascade', '${userA}', 'plan_cascade', 'dates', 'Cascade');
+      INSERT INTO holy.year_plans (id, user_id, year) VALUES ('plan_cascade', '${userA}', '2030');
+      INSERT INTO holy.leave_entries (id, user_id, plan_id, kind, label) VALUES ('entry_cascade', '${userA}', 'plan_cascade', 'dates', 'Cascade');
     `);
-    const entriesBefore = (await db.query("SELECT * FROM holidays.leave_entries WHERE id = 'entry_cascade'")).rows;
+    const entriesBefore = (await db.query("SELECT * FROM holy.leave_entries WHERE id = 'entry_cascade'")).rows;
     assert.equal(entriesBefore.length, 1);
-    await db.exec("DELETE FROM holidays.year_plans WHERE id = 'plan_cascade';");
-    const entriesAfter = (await db.query("SELECT * FROM holidays.leave_entries WHERE id = 'entry_cascade'")).rows;
+    await db.exec("DELETE FROM holy.year_plans WHERE id = 'plan_cascade';");
+    const entriesAfter = (await db.query("SELECT * FROM holy.leave_entries WHERE id = 'entry_cascade'")).rows;
     assert.equal(entriesAfter.length, 0);
 
     // 9. Suppression en CASCADE depuis auth.users
     await db.exec(`DELETE FROM auth.users WHERE id = '${userB}';`);
     for (const table of tables) {
-      const remaining = (await db.query(`SELECT * FROM holidays.${table} WHERE user_id = '${userB}'`))
+      const remaining = (await db.query(`SELECT * FROM holy.${table} WHERE user_id = '${userB}'`))
         .rows;
       assert.equal(remaining.length, 0);
     }

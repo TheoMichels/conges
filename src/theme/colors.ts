@@ -1,8 +1,10 @@
+import type { ViewStyle } from "react-native";
+
 // Charte ITS4U : pétrole profond #072939 et orange #E85315,
 // sur des surfaces majoritairement blanches translucides ("glass").
 
 export const gradient = {
-  colors: ["#FFFFFF", "#F7FAFC", "#EEF4F8", "#E5EEF5"] as const,
+  colors: ["#F4F9FD", "#EAF2F8", "#E3EEF7", "#F9F1EC"] as const,
   locations: [0, 0.35, 0.7, 1] as const,
   start: { x: 0, y: 0 },
   end: { x: 1, y: 1 },
@@ -29,15 +31,15 @@ export const colors = {
   textOnBrand: "#FFFFFF",
 
   // Glassmorphism & surfaces
-  panel: "rgba(255, 255, 255, 0.85)",
-  panelSubtle: "rgba(255, 255, 255, 0.60)",
-  surface: "rgba(245, 248, 250, 0.90)",
-  surfaceActive: "#FFFFFF",
+  panel: "rgba(255, 255, 255, 0.78)",
+  panelSubtle: "rgba(255, 255, 255, 0.58)",
+  surface: "rgba(255, 255, 255, 0.68)",
+  surfaceActive: "rgba(255, 255, 255, 0.94)",
 
   // Bordures & séparateurs
-  border: "#E3EAEF",
-  borderStrong: "#CCD9E0",
-  divider: "#EBF0F3",
+  border: "rgba(7, 41, 57, 0.09)",
+  borderStrong: "rgba(7, 41, 57, 0.16)",
+  divider: "rgba(7, 41, 57, 0.06)",
 
   // États sémantiques
   warning: "#D97706",
@@ -53,8 +55,18 @@ export const colors = {
   // Alias rétrocompatibles
   accent: "#E85315",
   accentSoft: "#FBAE40",
-  sidebar: "rgba(255, 255, 255, 0.85)",
+  sidebar: "rgba(255, 255, 255, 0.78)",
 };
+
+const isNativeRuntime =
+  typeof navigator !== "undefined" && navigator.product === "ReactNative";
+
+export const glassStyle: ViewStyle = isNativeRuntime
+  ? {}
+  : ({
+      backdropFilter: "blur(16px)",
+      WebkitBackdropFilter: "blur(16px)",
+    } as unknown as ViewStyle);
 
 export const shadows = {
   sm: {
