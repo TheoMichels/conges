@@ -6,8 +6,6 @@ import { cursorPointer } from "../theme/webCursor";
 
 type Props = {
   isMobile: boolean;
-  sidebarOpen?: boolean;
-  onToggleSidebar?: () => void;
   storageModeLabel?: string;
   user?: User | null;
   onSignOut?: () => void;
@@ -15,8 +13,6 @@ type Props = {
 
 export function Header({
   isMobile,
-  sidebarOpen = true,
-  onToggleSidebar,
   storageModeLabel = "Stockage local",
   user,
   onSignOut,
@@ -27,18 +23,6 @@ export function Header({
       style={[styles.container, isMobile && styles.containerMobile]}
     >
       <View style={styles.left}>
-        {!isMobile && onToggleSidebar && (
-          <Pressable
-            testID="sidebar-toggle"
-            accessibilityLabel={sidebarOpen ? "Masquer le menu" : "Afficher le menu"}
-            accessibilityRole="button"
-            style={[styles.sidebarToggle, cursorPointer]}
-            onPress={onToggleSidebar}
-            hitSlop={4}
-          >
-            <Text style={styles.sidebarToggleIcon}>☰</Text>
-          </Pressable>
-        )}
         <View style={styles.brand}>
           <Logo size={isMobile ? 28 : 34} />
           <Text style={[styles.brandTitle, isMobile && styles.brandTitleMobile]}>
@@ -85,8 +69,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "transparent",
     borderRadius: radius.lg,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: 0,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
@@ -110,22 +92,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-  },
-  sidebarToggle: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceActive,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sidebarToggleIcon: {
-    fontFamily: fonts.base,
-    fontSize: 18,
-    color: colors.textSecondary,
-    fontWeight: "500",
   },
   brand: {
     flexDirection: "row",

@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { ActionIcon } from "./ActionIcon";
 import { YearPlan } from "../types/yearPlan";
 import { colors, fonts, radius } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
@@ -89,7 +90,7 @@ export function Sidebar({
   };
 
   return (
-    <View style={styles.sidebar}>
+    <View testID="year-sidebar" style={styles.sidebar}>
       <View style={styles.headerRow}>
         <Text style={styles.brand}>Années</Text>
       </View>
@@ -105,6 +106,8 @@ export function Sidebar({
             return (
               <TextInput
                 key={plan.id}
+                testID="section-name-input"
+                accessibilityLabel="Nom de la section"
                 style={styles.editInput}
                 value={editDraft}
                 onChangeText={setEditDraft}
@@ -135,6 +138,8 @@ export function Sidebar({
                 </Pressable>
                 <Pressable
                   style={cursorPointer}
+                  accessibilityRole="button"
+                  accessibilityLabel="Annuler la suppression"
                   onPress={() => setConfirmDeleteId(null)}
                   hitSlop={8}
                 >
@@ -159,6 +164,7 @@ export function Sidebar({
               <Pressable
                 style={[styles.itemPressable, cursorPointer]}
                 onPress={() => onSelect(plan.id)}
+                onFocus={() => setHoveredId(plan.id)}
               >
                 <View style={styles.itemContent}>
                   <View style={styles.yearRow}>
@@ -189,41 +195,33 @@ export function Sidebar({
                 </View>
               </Pressable>
 
-              {hoveredId === plan.id ? (
+              {selected || hoveredId === plan.id ? (
                 <View style={styles.actionButtons}>
                   <Pressable
-                    style={cursorPointer}
+                    testID={`edit-section-${plan.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Modifier la section ${plan.year}`}
+                    style={({ pressed }) => [styles.iconButton, cursorPointer, pressed && styles.iconButtonPressed]}
                     onPress={(e) => {
                       e.stopPropagation();
                       startEditing(plan);
                     }}
                     hitSlop={8}
                   >
-                    <Text
-                      style={[
-                        styles.editIcon,
-                        selected && styles.editIconSelected,
-                      ]}
-                    >
-                      ✎
-                    </Text>
+                    <ActionIcon name="edit" />
                   </Pressable>
                   <Pressable
-                    style={cursorPointer}
+                    testID={`delete-section-${plan.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Supprimer la section ${plan.year}`}
+                    style={({ pressed }) => [styles.iconButton, cursorPointer, pressed && styles.iconButtonPressed]}
                     onPress={(e) => {
                       e.stopPropagation();
                       setConfirmDeleteId(plan.id);
                     }}
                     hitSlop={8}
                   >
-                    <Text
-                      style={[
-                        styles.deleteIcon,
-                        selected && styles.deleteIconSelected,
-                      ]}
-                    >
-                      🗑
-                    </Text>
+                    <ActionIcon name="delete" />
                   </Pressable>
                 </View>
               ) : (
@@ -336,6 +334,7 @@ const styles = StyleSheet.create({
   },
   itemPressable: {
     flex: 1,
+    minWidth: 0,
   },
   itemContent: {
     flexDirection: "column",
@@ -343,6 +342,7 @@ const styles = StyleSheet.create({
   },
   yearRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: 6,
   },
@@ -410,23 +410,17 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 0,
   },
-  editIcon: {
-    fontFamily: fonts.base,
-    fontSize: 13,
-    color: colors.textMuted,
+  iconButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.sm,
   },
-  editIconSelected: {
-    color: colors.textPrimary,
-  },
-  deleteIcon: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  deleteIconSelected: {
-    color: colors.textPrimary,
+  iconButtonPressed: {
+    backgroundColor: colors.surfaceActive,
   },
   confirmItem: {
     backgroundColor: colors.dangerSoft,

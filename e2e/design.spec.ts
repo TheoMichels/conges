@@ -29,9 +29,9 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     await expect(localBadge).toBeVisible();
     await expect(localBadge).toContainText("Stockage local");
 
-    // 3. Verify Sidebar toggle on desktop
+    // 3. Desktop navigation remains visible without a collapse control
     const sidebarToggle = page.locator('[data-testid="sidebar-toggle"]');
-    await expect(sidebarToggle).toBeVisible();
+    await expect(sidebarToggle).toHaveCount(0);
 
     // 4. Verify KPI Cards are rendered
     const kpiCards = page.locator('[data-testid="kpi-cards"]');
@@ -53,22 +53,15 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     expect(errors, "Expected no browser console errors on desktop").toEqual([]);
   });
 
-  test("toggles sidebar on desktop when clicking sidebar toggle button", async ({
-    page,
-  }) => {
+  test("keeps desktop sidebar visible across viewport changes", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
-
-    const sidebarToggle = page.locator('[data-testid="sidebar-toggle"]');
-    await expect(sidebarToggle).toBeVisible({ timeout: 15_000 });
-
-    // Click toggle to close
-    await sidebarToggle.click();
-    await page.waitForTimeout(350);
-
-    // Click toggle to reopen
-    await sidebarToggle.click();
-    await page.waitForTimeout(350);
+    await expect(page.getByTestId("sidebar-toggle")).toHaveCount(0);
+    await expect(page.getByTestId("year-sidebar")).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByTestId("year-sidebar")).toHaveCount(0);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await expect(page.getByTestId("year-sidebar")).toBeVisible();
   });
 
   test("renders cleanly on mobile (375px) without horizontal overflow and with accessible touch targets", async ({

@@ -5,6 +5,7 @@ import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { entryOrderKey, entryTotalDays, formatDateFr } from "../utils/leaveDays";
 import { formatDays } from "../utils/format";
+import { ActionIcon } from "./ActionIcon";
 import { LeaveEntryForm } from "./LeaveEntryForm";
 
 type Props = {
@@ -93,22 +94,24 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
               </View>
               <Text style={styles.entryDays}>{formatDays(entryTotalDays(entry))}</Text>
               <Pressable
+                testID={`edit-leave-${entry.id}`}
                 accessibilityLabel="Modifier le congé"
                 accessibilityRole="button"
-                style={[styles.iconButton, cursorPointer]}
+                style={({ pressed }) => [styles.iconButton, cursorPointer, pressed && styles.iconButtonPressed]}
                 onPress={() => setEditingId(entry.id)}
                 hitSlop={8}
               >
-                <Text style={styles.entryEdit}>✎</Text>
+                <ActionIcon name="edit" />
               </Pressable>
               <Pressable
+                testID={`delete-leave-${entry.id}`}
                 accessibilityLabel="Supprimer le congé"
                 accessibilityRole="button"
-                style={[styles.iconButton, cursorPointer]}
+                style={({ pressed }) => [styles.iconButton, cursorPointer, pressed && styles.iconButtonPressed]}
                 onPress={() => onRemove(entry.id)}
                 hitSlop={8}
               >
-                <Text style={styles.entryDelete}>🗑</Text>
+                <ActionIcon name="delete" />
               </Pressable>
             </View>
           )
@@ -206,21 +209,14 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: colors.brand,
   },
+  iconButtonPressed: {
+    backgroundColor: colors.surfaceActive,
+  },
   iconButton: {
     width: 44,
     height: 44,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.sm,
-  },
-  entryEdit: {
-    fontFamily: fonts.base,
-    fontSize: 15,
-    color: colors.textMuted,
-  },
-  entryDelete: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    color: colors.textMuted,
   },
 });

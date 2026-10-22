@@ -3,8 +3,6 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import type { User } from "@supabase/supabase-js";
 import {
-  Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -69,22 +67,6 @@ function MainApp({ user, onSignOut }: MainAppProps) {
       setSelectedId(currentPlan ? currentPlan.id : plans[0].id);
     }
   }, [plans, selectedId]);
-
-  const [sidebarVisible, setSidebarVisible] = useState(!isMobile);
-  const sidebarAnim = useRef(new Animated.Value(!isMobile ? 1 : 0)).current;
-
-  useEffect(() => {
-    setSidebarVisible(!isMobile);
-  }, [isMobile]);
-
-  useEffect(() => {
-    Animated.timing(sidebarAnim, {
-      toValue: sidebarVisible ? 1 : 0,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [sidebarVisible, sidebarAnim]);
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -166,8 +148,6 @@ function MainApp({ user, onSignOut }: MainAppProps) {
           <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
             <Header
               isMobile={isMobile}
-              sidebarOpen={sidebarVisible}
-              onToggleSidebar={() => setSidebarVisible((v) => !v)}
               user={user}
               onSignOut={onSignOut}
             />
@@ -183,18 +163,7 @@ function MainApp({ user, onSignOut }: MainAppProps) {
 
             <View style={styles.layout}>
               {!isMobile && (
-                <Animated.View
-                  style={[
-                    styles.sidebarWrapper,
-                    {
-                      width: sidebarAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, SIDEBAR_TOTAL_WIDTH],
-                      }),
-                      opacity: sidebarAnim,
-                    },
-                  ]}
-                >
+                <View style={styles.sidebarWrapper}>
                   <Sidebar
                     plans={plans}
                     selectedId={selectedId}
@@ -203,7 +172,7 @@ function MainApp({ user, onSignOut }: MainAppProps) {
                     onRename={handleRenameYear}
                     onDelete={handleRemoveYear}
                   />
-                </Animated.View>
+                </View>
               )}
 
               <View style={styles.mainArea}>
@@ -359,7 +328,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.xl,
     width: "100%",
-    maxWidth: 1320,
     alignSelf: "center",
   },
   pageContentMobile: {
@@ -375,6 +343,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   sidebarWrapper: {
+    width: SIDEBAR_TOTAL_WIDTH,
     overflow: "hidden",
   },
   content: {
