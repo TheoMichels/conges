@@ -105,6 +105,11 @@ export const yearPlanRepository = {
       return;
     }
 
-    await syncService.pushToCloud(validated);
+    const canonicalPlans = (await syncService.pushToCloud(validated)) ?? validated;
+    for (let index = 0; index < plans.length; index++) {
+      plans[index].id = canonicalPlans[index].id;
+      validated[index].id = canonicalPlans[index].id;
+    }
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
   },
 };

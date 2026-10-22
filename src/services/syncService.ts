@@ -145,15 +145,15 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
   }
 }
 
-export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<void> {
-  if (!supabase) return;
+export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<string> {
+  if (!supabase) return plan.id;
   const uid = await resolveUserId(userId);
-  if (!uid) return;
+  if (!uid) return plan.id;
 
   const nowIso = new Date().toISOString();
   const planIso = new Date(plan.createdAt).toISOString();
 
-  const { error: planError } = await supabase.from("year_plans").upsert({
+  const planRow = {
     id: plan.id,
     user_id: uid,
     year: plan.year,
@@ -163,17 +163,65 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
     public_holidays: plan.publicHolidays,
     created_at: planIso,
     updated_at: nowIso,
-  });
+  };
 
-  if (planError) {
-    throw new Error(`Erreur d'enregistrement du plan: ${planError.message}`);
+  const planQuery = supabase.from("year_plans").upsert(planRow, {
+    onConflict: "user_id,year",
+    ignoreDuplicates: true,
+  });
+  let canonicalPlanId = plan.id;
+  if (typeof planQuery.select === "function") {
+    const { data: insertedPlan, error: planError } = await planQuery.select("id").maybeSingle();
+    if (planError) {
+      throw new Error(`Erreur d'enregistrement du plan: ${planError.message}`);
+    }
+
+    if (insertedPlan?.id) {
+      canonicalPlanId = insertedPlan.id;
+    } else {
+      const { data: existingPlan, error: fetchPlanError } = await supabase
+        .from("year_plans")
+        .select("id")
+        .eq("user_id", uid)
+        .eq("year", plan.year)
+        .single();
+      if (fetchPlanError || !existingPlan?.id) {
+        throw new Error(`Erreur lors de la récupération du plan: ${fetchPlanError?.message ?? "plan introuvable"}`);
+      }
+      canonicalPlanId = existingPlan.id;
+
+      const { error: updatePlanError } = await supabase
+        .from("year_plans")
+        .update({
+          initial_leave: plan.initialLeave,
+          carried_over: plan.carriedOver,
+          csupp: plan.csupp,
+          public_holidays: plan.publicHolidays,
+          updated_at: nowIso,
+        })
+        .eq("id", canonicalPlanId)
+        .eq("user_id", uid);
+      if (updatePlanError) {
+        throw new Error(`Erreur d'enregistrement du plan: ${updatePlanError.message}`);
+      }
+    }
+  } else {
+    // Compatibilité avec les clients de test historiques sans query builder complet.
+    const { error: planError } = await planQuery;
+    if (planError) {
+      throw new Error(`Erreur d'enregistrement du plan: ${planError.message}`);
+    }
   }
+
+  // Une création concurrente avec un autre ID a déjà ses entrées rattachées au plan canonique.
+  // Ne remplace pas ces entrées avec l'instantané stale de la création perdante.
+  if (canonicalPlanId !== plan.id) return canonicalPlanId;
 
   if (plan.entries && plan.entries.length > 0) {
     const entriesRows = plan.entries.map((entry) => ({
       id: entry.id,
       user_id: uid,
-      plan_id: plan.id,
+      plan_id: canonicalPlanId,
       kind: entry.kind,
       label: entry.label,
       start_date: entry.kind === "dates" ? entry.startDate : null,
@@ -197,7 +245,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
       .from("leave_entries")
       .select("id")
       .eq("user_id", uid)
-      .eq("plan_id", plan.id);
+      .eq("plan_id", canonicalPlanId);
 
     if (fetchEntriesError) {
       throw new Error(`Erreur lors de la vérification des entrées: ${fetchEntriesError.message}`);
@@ -213,7 +261,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
           .from("leave_entries")
           .delete()
           .eq("user_id", uid)
-          .eq("plan_id", plan.id)
+          .eq("plan_id", canonicalPlanId)
           .in("id", orphanIds);
 
         if (delError) {
@@ -227,12 +275,14 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
       .from("leave_entries")
       .delete()
       .eq("user_id", uid)
-      .eq("plan_id", plan.id);
+      .eq("plan_id", canonicalPlanId);
 
     if (delError) {
       throw new Error(`Erreur lors de la suppression des entrées orphelines: ${delError.message}`);
     }
   }
+
+  return canonicalPlanId;
 }
 
 export async function deleteCloudPlan(planId: string, userId?: string): Promise<void> {
@@ -257,15 +307,15 @@ export async function deleteCloudPlan(planId: string, userId?: string): Promise<
   }
 }
 
-export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<void> {
-  if (!supabase) return;
+export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<YearPlan[]> {
+  if (!supabase) return plans;
   const uid = await resolveUserId(userId);
-  if (!uid) return;
+  if (!uid) return plans;
 
   // 1. Détection et suppression des plans supprimés
   const { data: remotePlans, error: fetchPlansError } = await supabase
     .from("year_plans")
-    .select("id")
+    .select("id,year")
     .eq("user_id", uid);
 
   if (fetchPlansError) {
@@ -273,18 +323,22 @@ export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<v
   }
 
   const currentPlanIds = new Set(plans.map((p) => p.id));
+  const currentYears = new Set(plans.map((p) => p.year));
   const deletedPlanIds = (remotePlans ?? [])
-    .map((p) => p.id)
-    .filter((id) => !currentPlanIds.has(id));
+    .filter((remotePlan) => !currentPlanIds.has(remotePlan.id))
+    .filter((remotePlan) => !remotePlan.year || !currentYears.has(remotePlan.year))
+    .map((p) => p.id);
 
   for (const planId of deletedPlanIds) {
     await deleteCloudPlan(planId, uid);
   }
 
   // 2. Enregistrement des plans actuels et nettoyage des entrées orphelines
+  const canonicalIds: string[] = [];
   for (const plan of plans) {
-    await upsertCloudPlan(plan, uid);
+    canonicalIds.push(await upsertCloudPlan(plan, uid));
   }
+  return plans.map((plan, index) => ({ ...plan, id: canonicalIds[index] }));
 }
 
 export const syncService = {
