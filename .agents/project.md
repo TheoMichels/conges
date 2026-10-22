@@ -28,8 +28,9 @@
 
 ## Design
 - Tokens §2 `src/theme/colors.ts` · brand `#14333E` · primary `#356859` · surfaces verre perle/menthe/sauge (`glassStyle`) · radius 12-24 · clair forcé sur web (`color-scheme: only light`).
-- Composants types : `Header` (logo voilier détouré `home-boat-logo.png`, titre `Holy`), `AuthScreen`, `LoadingScreen`, `KpiCards`.
+- Composants types : `Header` (logo voilier olive 3D détouré `home-boat-logo.png`, titre `Holy`), `AuthScreen`, `LoadingScreen`, `KpiCards`.
 
 ## Déploiement & Sécurité
-- Vercel (`vercel.json`) : build `npm run build`, SPA rewrites.
+- Logo officiel : masters 1024 px, fond perle `#F5F5EE` ; `scripts/generate-logo-icons.py --input <RGBA>` (Pillow).
+- Vercel (`vercel.json`) : build `npm run build`, SPA rewrites ; production `https://holy-its4u.vercel.app`.
 - Mode piloté par `app.config.js` (`extra.storageMode`) et résolu par `src/config/storageMode.ts`.

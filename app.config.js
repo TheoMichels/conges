@@ -8,10 +8,11 @@ module.exports = {
     userInterfaceStyle: "light",
     ios: {
       supportsTablet: true,
+      icon: "./assets/icon.png",
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: "#0B1D33",
+        backgroundColor: "#F5F5EE",
         foregroundImage: "./assets/android-icon-foreground.png",
         backgroundImage: "./assets/android-icon-background.png",
         monochromeImage: "./assets/android-icon-monochrome.png",
@@ -20,6 +21,9 @@ module.exports = {
     },
     web: {
       favicon: "./assets/favicon.png",
+      themeColor: "#F5F5EE",
+      backgroundColor: "#F5F5EE",
+      lang: "fr",
     },
     extra: {
       storageMode:
