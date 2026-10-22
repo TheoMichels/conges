@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceActive,
   },
   iconButton: {
-    width: 32,
+    width: 44,
     height: 44,
     alignItems: "center",
     justifyContent: "center",
