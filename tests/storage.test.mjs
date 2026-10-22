@@ -737,6 +737,165 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     }
   });
 
+  it("AC-01 / AC-02 / AC-03: sync keeps one canonical plan per user/year and preserves its entries", async () => {
+    const yearPlans = [];
+    const leaveEntries = [];
+    const mockSupabase = {
+      auth: {
+        async getSession() {
+          return { data: { session: { user: { id: "user-a" } } } };
+        },
+      },
+      from(table) {
+        if (table === "year_plans") {
+          return {
+            upsert(row, options) {
+              const execute = async () => {
+                const sameYear = yearPlans.find(
+                  (candidate) => candidate.user_id === row.user_id && candidate.year === row.year
+                );
+                if (sameYear && options?.onConflict === "user_id,year" && options.ignoreDuplicates) {
+                  return { data: null, error: null };
+                }
+                if (sameYear) {
+                  return { data: null, error: { message: "duplicate key value violates unique constraint idx_year_plans_user_year" } };
+                }
+                if (yearPlans.some((candidate) => candidate.id === row.id)) {
+                  return { data: null, error: { message: "duplicate key value violates unique constraint year_plans_pkey" } };
+                }
+                yearPlans.push({ ...row });
+                return { data: { id: row.id }, error: null };
+              };
+              return {
+                select() {
+                  return {
+                    maybeSingle: execute,
+                  };
+                },
+                then(resolve, reject) {
+                  return execute().then(resolve, reject);
+                },
+              };
+            },
+            select() {
+              return {
+                eq(_column, userId) {
+                  return {
+                    eq(_yearColumn, year) {
+                      return {
+                        async single() {
+                          return {
+                            data: yearPlans.find((row) => row.user_id === userId && row.year === year) ?? null,
+                            error: null,
+                          };
+                        },
+                      };
+                    },
+                  };
+                },
+              };
+            },
+            update(values) {
+              return {
+                eq(_column, id) {
+                  return {
+                    async eq(_userColumn, userId) {
+                      const row = yearPlans.find((candidate) => candidate.id === id && candidate.user_id === userId);
+                      Object.assign(row, values);
+                      return { error: null };
+                    },
+                  };
+                },
+              };
+            },
+          };
+        }
+        if (table === "leave_entries") {
+          return {
+            async upsert(rows) {
+              for (const row of rows) {
+                if (!leaveEntries.some((entry) => entry.id === row.id)) leaveEntries.push(row);
+              }
+              return { error: null };
+            },
+            select() {
+              return {
+                eq() {
+                  return {
+                    async eq() {
+                      return { data: leaveEntries.map(({ id }) => ({ id })), error: null };
+                    },
+                  };
+                },
+              };
+            },
+            delete() {
+              return { eq: () => ({ eq: async () => ({ error: null }) }) };
+            },
+          };
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      },
+    };
+
+    setTestSupabase(mockSupabase);
+    try {
+      const first = {
+        id: "plan-canonical",
+        year: "2026",
+        createdAt: 1735689600000,
+        initialLeave: 26,
+        carriedOver: 0,
+        csupp: 0,
+        publicHolidays: 11,
+        entries: [{ id: "entry-canonical", kind: "month", label: "Mai", month: 5, days: 2, createdAt: 1000 }],
+      };
+      const concurrent = { ...first, id: "plan-temporary", entries: [] };
+      const canonicalIds = await Promise.all([
+        syncService.upsertCloudPlan(first, "user-a"),
+        syncService.upsertCloudPlan(concurrent, "user-a"),
+      ]);
+
+      assert.deepEqual(canonicalIds, ["plan-canonical", "plan-canonical"]);
+      assert.equal(yearPlans.length, 1);
+      assert.equal(yearPlans[0].id, "plan-canonical");
+      assert.equal(leaveEntries.length, 1);
+      assert.equal(leaveEntries[0].plan_id, "plan-canonical");
+
+      await assert.rejects(
+        syncService.upsertCloudPlan({ ...first, year: "2027" }, "user-b"),
+        /year_plans_pkey/
+      );
+      assert.equal(yearPlans.length, 1, "a duplicate primary key from another account must not reassign its row");
+    } finally {
+      setTestSupabase(null);
+    }
+
+    const previousMode = globalThis.__TEST_STORAGE_MODE__;
+    globalThis.__TEST_STORAGE_MODE__ = "supabase";
+    const remoteSync = await import("../src/services/syncService.ts?canonical-plan");
+    const remoteRepository = await import("../src/storage/yearPlanRepository.ts?canonical-plan");
+    remoteSync.syncService.pushToCloud = async (plans) => plans.map((plan) => ({ ...plan, id: "plan-canonical" }));
+    const repositoryPlan = {
+      id: "plan-temporary",
+      year: "2026",
+      createdAt: 1735689600000,
+      initialLeave: 26,
+      carriedOver: 0,
+      csupp: 0,
+      publicHolidays: 11,
+      entries: [],
+    };
+    try {
+      await remoteRepository.yearPlanRepository.saveAll([repositoryPlan]);
+      assert.equal(repositoryPlan.id, "plan-canonical");
+      assert.match(await AsyncStorage.getItem(STORAGE_KEY), /plan-canonical/);
+    } finally {
+      if (previousMode === undefined) delete globalThis.__TEST_STORAGE_MODE__;
+      else globalThis.__TEST_STORAGE_MODE__ = previousMode;
+    }
+  });
+
   it("AC-02: syncService.upsertCloudPlan removes all leave entries when plan entries array is empty", async () => {
     let deletedAllEntries = false;
 
