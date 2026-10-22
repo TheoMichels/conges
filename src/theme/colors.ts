@@ -1,9 +1,9 @@
 import type { ViewStyle } from "react-native";
 
-// Verre dépoli clair : perle, menthe et pêche ; orange réservé aux CTA.
+// Verre dépoli clair : perle, menthe et sauge ; vert forêt pour les CTA.
 
 export const gradient = {
-  colors: ["#F8EDE6", "#F0F4F3", "#EAF2EE", "#DCEBE5"] as const,
+  colors: ["#F3F5F1", "#F0F4F3", "#EAF2EE", "#DCEBE5"] as const,
   locations: [0, 0.35, 0.7, 1] as const,
   start: { x: 0, y: 0 },
   end: { x: 1, y: 1 },
@@ -18,10 +18,10 @@ export const colors = {
   // Brand & DA
   brand: "#14333E",
   brandMuted: "#45616A",
-  primary: "#CE4D22",
-  primaryLight: "#E5AD98",
-  primarySoft: "rgba(206, 77, 34, 0.12)",
-  primaryBackground: "#FFF8F5",
+  primary: "#356859",
+  primaryLight: "#8FA99C",
+  primarySoft: "rgba(53, 104, 89, 0.12)",
+  primaryBackground: "#F2F6F2",
 
   // Typographie
   textPrimary: "#14333E",
@@ -45,8 +45,8 @@ export const colors = {
   divider: "rgba(20, 51, 62, 0.06)",
 
   // États sémantiques
-  warning: "#D97706",
-  warningSoft: "#FEF3C7",
+  warning: "#526B4F",
+  warningSoft: "#E9F0E5",
   danger: "#C0392B",
   dangerSoft: "#FDE8E8",
   positive: "#1F7A5C",
@@ -56,8 +56,8 @@ export const colors = {
   backdrop: "rgba(20, 51, 62, 0.40)",
 
   // Alias rétrocompatibles
-  accent: "#CE4D22",
-  accentSoft: "#E5AD98",
+  accent: "#356859",
+  accentSoft: "#8FA99C",
   sidebar: "rgba(255, 255, 255, 0.68)",
 };
 
@@ -72,7 +72,7 @@ export const glassStyle: ViewStyle = isNativeRuntime
     } as unknown as ViewStyle);
 
 export const pearlBackground: ViewStyle = isNativeRuntime ? {} : ({
-  backgroundImage: "radial-gradient(ellipse at 94% 0%, #F8E8DE, transparent 52%), radial-gradient(ellipse at 5% 70%, #DCEBE5, transparent 60%)",
+  backgroundImage: "radial-gradient(ellipse at 94% 0%, #E4ECE5, transparent 52%), radial-gradient(ellipse at 5% 70%, #DCEBE5, transparent 60%)",
   backgroundColor: colors.background,
 } as unknown as ViewStyle);
 
