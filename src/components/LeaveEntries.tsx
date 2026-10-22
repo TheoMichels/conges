@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 14,
+    gap: 4,
     borderRadius: 0,
     borderTopWidth: 1,
     borderColor: colors.border,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     minHeight: 44,
   },
-  entryMobile: { flexWrap: "nowrap", gap: 6, paddingHorizontal: 0 },
+  entryMobile: { flexWrap: "nowrap", gap: 4, paddingHorizontal: 0 },
   entryMainMobile: { minWidth: 0 },
   entryMain: {
     flex: 1,

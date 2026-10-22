@@ -49,19 +49,6 @@ export function Sidebar({
   const [editDraft, setEditDraft] = useState("");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const handleExport = () => {
-    const jsonString = JSON.stringify(plans, null, 2);
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(jsonString).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 3000);
-      });
-    } else if (typeof window !== "undefined") {
-      window.prompt("Copiez votre JSON :", jsonString);
-    }
-  };
 
   const currentCalendarYear = new Date().getFullYear();
   const sortedPlans = sortPlansChronologically(plans);
@@ -276,19 +263,6 @@ export function Sidebar({
         </Pressable>
       )}
 
-      <Pressable
-        style={[styles.exportButton, cursorPointer]}
-        onPress={handleExport}
-      >
-        <Text
-          style={[
-            styles.exportButtonText,
-            copied && styles.exportButtonTextCopied,
-          ]}
-        >
-          {copied ? "✓ JSON copié dans le presse-papier !" : "📋 Exporter le JSON"}
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -490,27 +464,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     marginBottom: 4,
-  },
-  exportButton: {
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    minHeight: 44,
-    justifyContent: "center",
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-  },
-  exportButtonText: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.textSecondary,
-  },
-  exportButtonTextCopied: {
-    color: colors.positive,
-    fontWeight: "500",
   },
 });
