@@ -69,20 +69,20 @@ const styles = StyleSheet.create({
     ...glassStyle,
   },
   chipSelected: {
-    backgroundColor: colors.brand,
+    backgroundColor: colors.selection,
     shadowColor: colors.brand,
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
   chipText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     color: colors.textSecondary,
   },
   chipTextSelected: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   chipAdd: {
     backgroundColor: 'transparent',
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   chipTextAdd: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.textMuted,
   },
 });

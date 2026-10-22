@@ -27,7 +27,7 @@
 | UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
 
 ## Design
-- Tokens §2 `src/theme/colors.ts` · brand `#072939` · primary `#E85315` · surfaces glassmorphism translucides (`glassStyle`) · radius 12-24.
+- Tokens §2 `src/theme/colors.ts` · brand `#14333E` · primary `#CE4D22` · surfaces verre perle/menthe/pêche (`glassStyle`) · radius 12-24 · clair forcé sur web (`color-scheme: only light`).
 - Composants types : `Header` (logo voilier détouré `home-boat-logo.png`, titre `Holy`), `AuthScreen`, `LoadingScreen`, `KpiCards`.
 
 ## Déploiement & Sécurité

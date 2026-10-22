@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { YearPlan } from "../types/yearPlan";
-import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
+import { colors, fonts, radius } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -300,13 +300,10 @@ const styles = StyleSheet.create({
     flex: 1,
     width: 220,
     borderRadius: radius.lg,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: "transparent",
+    borderWidth: 0,
     padding: 16,
     marginRight: 20,
-    ...glassStyle,
-    ...shadows.sm,
   },
   headerRow: {
     marginBottom: 14,
@@ -314,7 +311,7 @@ const styles = StyleSheet.create({
   brand: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     letterSpacing: 1,
     textTransform: "uppercase",
     color: colors.textMuted,
@@ -335,7 +332,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   itemSelected: {
-    backgroundColor: colors.brand,
+    backgroundColor: colors.selection,
   },
   itemPressable: {
     flex: 1,
@@ -352,11 +349,11 @@ const styles = StyleSheet.create({
   itemText: {
     fontFamily: fonts.base,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   itemTextSelected: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   currentBadge: {
     backgroundColor: colors.panelSubtle,
@@ -372,13 +369,13 @@ const styles = StyleSheet.create({
   currentBadgeText: {
     fontFamily: fonts.base,
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.brandMuted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   currentBadgeTextSelected: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   remainingBadge: {
     borderRadius: 6,
@@ -388,10 +385,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   remainingBadgePositive: {
-    backgroundColor: "#EBF5F1",
+    backgroundColor: colors.positiveSoft,
   },
   remainingBadgeNegative: {
-    backgroundColor: "#FBEDEB",
+    backgroundColor: colors.dangerSoft,
   },
   remainingBadgeSelected: {
     backgroundColor: "rgba(255, 255, 255, 0.18)",
@@ -399,7 +396,7 @@ const styles = StyleSheet.create({
   remainingBadgeText: {
     fontFamily: fonts.base,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   remainingBadgeTextPositive: {
     color: colors.positive,
@@ -408,7 +405,7 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   remainingBadgeTextSelected: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   actionButtons: {
     flexDirection: "row",
@@ -421,7 +418,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   editIconSelected: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   deleteIcon: {
     fontFamily: fonts.base,
@@ -429,31 +426,31 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   deleteIconSelected: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   confirmItem: {
-    backgroundColor: "#FBEDEB",
+    backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: "#E9C4BF",
+    borderColor: colors.borderStrong,
   },
   confirmText: {
     fontFamily: fonts.base,
     flex: 1,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.danger,
   },
   confirmYes: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.danger,
     paddingHorizontal: 4,
   },
   confirmNo: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textMuted,
     paddingHorizontal: 4,
   },
@@ -471,7 +468,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontFamily: fonts.base,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   addInput: {
@@ -484,7 +481,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     color: colors.textPrimary,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     textAlign: "center",
   },
   editInput: {
@@ -497,7 +494,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     color: colors.textPrimary,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "500",
     marginBottom: 4,
   },
   exportButton: {
@@ -515,11 +512,11 @@ const styles = StyleSheet.create({
   exportButtonText: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   exportButtonTextCopied: {
     color: colors.positive,
-    fontWeight: "700",
+    fontWeight: "500",
   },
 });

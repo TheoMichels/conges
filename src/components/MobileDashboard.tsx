@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   readOnlyLabel: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.textSecondary,
     marginBottom: 6,
   },
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     fontFamily: fonts.base,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     color: colors.brand,
   },
 });

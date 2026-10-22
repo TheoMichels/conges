@@ -46,7 +46,15 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
 
   return (
     <View style={[styles.card, isMobile && styles.cardMobile]}>
+      <View style={styles.sectionHeader}>
       <Text style={styles.title}>Congés saisis</Text>
+      {!isAdding && <Pressable
+        testID="add-leave-button"
+        accessibilityRole="button"
+        style={[styles.addButton, cursorPointer]}
+        onPress={() => setIsAdding(true)}
+      ><Text style={styles.addButtonText}>+ Ajouter un congé</Text></Pressable>}
+      </View>
 
       {isAdding ? (
         <LeaveEntryForm
@@ -57,16 +65,7 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
           }}
           onCancel={() => setIsAdding(false)}
         />
-      ) : (
-        <Pressable
-          testID="add-leave-button"
-          accessibilityRole="button"
-          style={[styles.addButton, cursorPointer]}
-          onPress={() => setIsAdding(true)}
-        >
-          <Text style={styles.addButtonText}>+ Ajouter un congé</Text>
-        </Pressable>
-      )}
+      ) : null}
 
       {sorted.length === 0 ? (
         <Text style={styles.empty}>Aucun congé saisi pour {year}.</Text>
@@ -85,8 +84,8 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
               onCancel={() => setEditingId(null)}
             />
           ) : (
-            <View key={entry.id} style={styles.entry}>
-              <View style={styles.entryMain}>
+            <View key={entry.id} style={[styles.entry, isMobile && styles.entryMobile]}>
+              <View style={[styles.entryMain, isMobile && styles.entryMainMobile]}>
                 <Text style={styles.entryLabel} numberOfLines={1}>
                   {entry.label}
                 </Text>
@@ -134,19 +133,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 20,
+    padding: 12,
     marginBottom: 20,
     ...glassStyle,
     ...shadows.sm,
   },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 },
   title: {
     fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+    fontSize: 15,
+    fontWeight: "500",
+    letterSpacing: -0.2,
     color: colors.textMuted,
-    marginBottom: 16,
+    marginBottom: 0,
   },
   addButton: {
     alignSelf: "flex-start",
@@ -156,12 +155,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: radius.sm,
     backgroundColor: colors.primary,
-    marginBottom: 16,
+    marginBottom: 0,
   },
   addButtonText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textOnBrand,
   },
   empty: {
@@ -174,15 +173,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexWrap: "wrap",
     gap: 14,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderTopWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
     minHeight: 44,
   },
+  entryMobile: { flexWrap: "nowrap", gap: 6, paddingHorizontal: 0 },
+  entryMainMobile: { minWidth: 0 },
   entryMain: {
     flex: 1,
     minWidth: 150,
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   entryLabel: {
     fontFamily: fonts.base,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textPrimary,
     marginBottom: 2,
   },
@@ -202,12 +203,12 @@ const styles = StyleSheet.create({
   entryDays: {
     fontFamily: fonts.base,
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.brand,
   },
   iconButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.sm,

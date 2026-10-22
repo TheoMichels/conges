@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { isSupabaseConfigured } from "../config/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { credentialsSchema } from "../services/authService";
-import { colors, fonts, gradient, radius, shadows, spacing } from "../theme/colors";
+import { colors, fonts, gradient, pearlBackground, radius, shadows, spacing } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { Logo } from "./Logo";
 
@@ -189,6 +189,7 @@ export function AuthScreen() {
 
 const styles = StyleSheet.create({
   root: {
+    ...pearlBackground,
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontFamily: fonts.base,
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "400",
     color: colors.brand,
     marginTop: spacing.sm,
     letterSpacing: -0.5,
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   warningBannerTitle: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.brand,
     marginBottom: spacing.xs,
   },
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     fontSize: 14,
     color: colors.danger,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   successBanner: {
     backgroundColor: colors.positiveSoft,
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     fontSize: 14,
     color: colors.positive,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   form: {
     gap: spacing.lg,
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.base,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   input: {
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontFamily: fonts.base,
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textOnBrand,
   },
   toggleButton: {
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
   toggleButtonText: {
     fontFamily: fonts.base,
     fontSize: 13,
-    fontWeight: "600",
-    color: colors.primary,
+    fontWeight: "500",
+    color: colors.textSecondary,
   },
 });

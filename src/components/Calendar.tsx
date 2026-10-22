@@ -210,7 +210,7 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
   );
 }
 
-const CELL_SIZE = 36;
+const CELL_SIZE = 44;
 
 const styles = StyleSheet.create({
   container: {
@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
     ...glassStyle,
   },
   rangeChip: {
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -250,20 +251,20 @@ const styles = StyleSheet.create({
   rangeChipPrefix: {
     fontFamily: fonts.base,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textMuted,
     textTransform: "uppercase",
   },
   rangeChipDate: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textPrimary,
   },
   rangeSeparator: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textMuted,
   },
   header: {
@@ -276,12 +277,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     fontSize: 20,
     color: colors.textSecondary,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    minWidth: 44,
+    textAlign: "center",
   },
   monthLabel: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textPrimary,
   },
   weekdayRow: {
@@ -293,7 +297,7 @@ const styles = StyleSheet.create({
     width: CELL_SIZE,
     textAlign: "center",
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textMuted,
   },
   grid: {
@@ -360,10 +364,10 @@ const styles = StyleSheet.create({
   },
   dayTextInRange: {
     color: colors.brand,
-    fontWeight: "700",
+    fontWeight: "500",
   },
   dayTextSelected: {
     color: colors.textOnBrand,
-    fontWeight: "700",
+    fontWeight: "500",
   },
 });

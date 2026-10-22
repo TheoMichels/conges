@@ -79,30 +79,30 @@ export function SummaryFields({
     <View style={styles.card}>
       <Text style={styles.title}>Détail des droits et soldes</Text>
       <View style={styles.row}>
-        <NumberField
+        <View style={styles.fieldCell}><NumberField
           label="Congés (initialement)"
           value={initialLeave}
           onChange={onChangeInitialLeave}
-        />
-        <NumberField
+        /></View>
+        <View style={styles.fieldCell}><NumberField
           label="Reportés"
           hint={previousYear ? `de ${previousYear}` : undefined}
           value={carriedOver}
           onChange={onChangeCarriedOver}
-        />
-        <NumberField
+        /></View>
+        <View style={styles.fieldCell}><NumberField
           label="Csupp"
           value={csupp}
           onChange={onChangeCsupp}
-        />
-        <ReadOnlyField
+        /></View>
+        <View style={styles.fieldCell}><ReadOnlyField
           label="Fériés (Lux.)"
           hint="auto"
           value={publicHolidays}
           onPress={() => setShowHolidaysDetail((v) => !v)}
-        />
-        <ReadOnlyField label="Pris" value={taken} />
-        <ReadOnlyField label="Restant" value={remaining} negative={remaining < 0} />
+        /></View>
+        <View style={styles.fieldCell}><ReadOnlyField label="Pris" value={taken} /></View>
+        <View style={styles.fieldCell}><ReadOnlyField label="Restant" value={remaining} negative={remaining < 0} /></View>
       </View>
 
       {showHolidaysDetail && (
@@ -155,10 +155,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+    fontSize: 15,
+    fontWeight: "500",
+    letterSpacing: -0.2,
     color: colors.textMuted,
     marginBottom: 16,
   },
@@ -167,8 +166,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 16,
   },
+  fieldCell: { flexBasis: "30%", flexGrow: 1, minWidth: 140 },
   field: {
-    minWidth: 140,
+    minWidth: 0,
     flex: 1,
   },
   labelContainer: {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   hint: {
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     fontFamily: fonts.base,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.brand,
   },
   readOnlyValueNegative: {
@@ -241,13 +241,13 @@ const styles = StyleSheet.create({
   holidaysCardTitle: {
     fontFamily: fonts.base,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.brand,
   },
   holidaysCardClose: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textMuted,
     padding: 4,
   },
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   holidayName: {
     fontFamily: fonts.base,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textPrimary,
   },
   holidayDesc: {

@@ -20,7 +20,7 @@ import { useAuth } from "./src/hooks/useAuth";
 import { pullFromCloud } from "./src/services/syncService";
 import { useYearPlans } from "./src/hooks/useYearPlans";
 import { AuthScreen } from "./src/components/AuthScreen";
-import { LoadingScreen } from "./src/components/LoadingScreen";
+import { LoadingScreen, LoadingSkeleton } from "./src/components/LoadingScreen";
 import { Header } from "./src/components/Header";
 import { KpiCards } from "./src/components/KpiCards";
 import { Sidebar } from "./src/components/Sidebar";
@@ -28,7 +28,7 @@ import { SummaryFields } from "./src/components/SummaryFields";
 import { LeaveEntries } from "./src/components/LeaveEntries";
 import { MobileDashboard } from "./src/components/MobileDashboard";
 import { YearSelectorMobile } from "./src/components/YearSelectorMobile";
-import { colors, fonts, gradient, radius, shadows, spacing } from "./src/theme/colors";
+import { colors, fonts, gradient, pearlBackground, radius, shadows, spacing } from "./src/theme/colors";
 import { cursorPointer } from "./src/theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -234,7 +234,7 @@ function MainApp({ user, onSignOut }: MainAppProps) {
                   </View>
                 ) : loading ? (
                   <View testID="loading-state" style={styles.stateContainer}>
-                    <Text style={styles.empty}>Chargement...</Text>
+                    <LoadingSkeleton />
                   </View>
                 ) : !selectedPlan || plans.length === 0 ? (
                   <View testID="empty-state" style={styles.stateContainer}>
@@ -252,7 +252,7 @@ function MainApp({ user, onSignOut }: MainAppProps) {
                     style={[styles.content, isMobile && styles.contentMobile]}
                     showsVerticalScrollIndicator={false}
                   >
-                    {!isMobile && <Text style={styles.header}>{selectedPlan.year}</Text>}
+                    {!isMobile && <Text style={styles.header}>Mes congés <Text style={styles.headerYear}>{selectedPlan.year}</Text></Text>}
 
                     <KpiCards
                       remaining={remaining}
@@ -306,6 +306,12 @@ function MainApp({ user, onSignOut }: MainAppProps) {
 }
 
 export default function App() {
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      document.documentElement.style.colorScheme = "only light";
+      document.documentElement.style.backgroundColor = colors.background;
+    }
+  }, []);
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
   const [isPulling, setIsPulling] = useState(false);
   const pulledFor = useRef<string | null>(null);
@@ -343,6 +349,7 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: {
+    ...pearlBackground,
     flex: 1,
   },
   flex: {
@@ -351,6 +358,9 @@ const styles = StyleSheet.create({
   pageContent: {
     flex: 1,
     padding: spacing.xl,
+    width: "100%",
+    maxWidth: 1320,
+    alignSelf: "center",
   },
   pageContentMobile: {
     paddingHorizontal: spacing.lg,
@@ -370,11 +380,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     borderRadius: radius.lg,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: "transparent",
     padding: spacing.xl,
-    ...shadows.sm,
   },
   contentMobile: {
     padding: 0,
@@ -397,12 +404,13 @@ const styles = StyleSheet.create({
   },
   header: {
     fontFamily: fonts.base,
-    fontSize: 26,
-    fontWeight: "800",
+    fontSize: 29,
+    fontWeight: "400",
     marginBottom: spacing.lg,
     color: colors.brand,
     letterSpacing: -0.5,
   },
+  headerYear: { color: colors.textSecondary, fontWeight: "400" },
   empty: {
     fontFamily: fonts.base,
     textAlign: "center",
@@ -414,7 +422,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.danger,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   retryButton: {
     alignSelf: "center",
@@ -431,7 +439,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontFamily: fonts.base,
     color: colors.brand,
-    fontWeight: "700",
+    fontWeight: "500",
   },
   errorBanner: {
     flexDirection: "row",
@@ -450,12 +458,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     color: colors.danger,
     flex: 1,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   errorBannerClose: {
     fontFamily: fonts.base,
     color: colors.danger,
-    fontWeight: "700",
+    fontWeight: "500",
     marginLeft: 12,
     padding: 4,
   },

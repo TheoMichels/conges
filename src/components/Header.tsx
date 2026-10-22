@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { User } from "@supabase/supabase-js";
 import { Logo } from "./Logo";
-import { colors, fonts, glassStyle, radius, shadows, spacing } from "../theme/colors";
+import { colors, fonts, radius, spacing } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 
 type Props = {
@@ -83,15 +83,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.panel,
+    backgroundColor: "transparent",
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderBottomWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 0,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
-    ...glassStyle,
-    ...shadows.sm,
   },
   containerMobile: {
     paddingHorizontal: spacing.md,
@@ -127,7 +125,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     fontSize: 18,
     color: colors.textSecondary,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   brand: {
     flexDirection: "row",
@@ -136,13 +134,13 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontFamily: fonts.base,
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 27,
+    fontWeight: "500",
     color: colors.brand,
     letterSpacing: 0.2,
   },
   brandTitleMobile: {
-    fontSize: 18,
+    fontSize: 23,
   },
   badge: {
     flexDirection: "row",
@@ -150,22 +148,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.surface,
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: "transparent",
     minHeight: 28,
   },
   badgeDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.positive,
+    backgroundColor: colors.textSecondary,
     marginRight: 6,
   },
   badgeText: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   signOutButton: {
@@ -175,14 +173,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surfaceActive,
-    minHeight: 32,
+    minHeight: 44,
     justifyContent: "center",
     alignItems: "center",
   },
   signOutText: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.brand,
   },
 });

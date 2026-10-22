@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   hint: {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textPrimary,
     minHeight: 44,
   },

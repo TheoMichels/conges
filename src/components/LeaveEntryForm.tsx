@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { HalfDay, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
 import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
@@ -29,6 +29,7 @@ export function LeaveEntryForm({
   onSubmit,
   onCancel,
 }: Props) {
+  const isMobile = useWindowDimensions().width < 768;
   const [label, setLabel] = useState(initial?.label ?? "");
   const [kind, setKind] = useState<"dates" | "month">(initial?.kind ?? "dates");
   const [startDate, setStartDate] = useState(() =>
@@ -84,7 +85,7 @@ export function LeaveEntryForm({
   };
 
   return (
-    <View style={styles.form}>
+    <View style={[styles.form, isMobile && styles.formMobile]}>
       <Text style={styles.fieldLabel}>Justificatif</Text>
       <TextInput
         style={styles.input}
@@ -322,21 +323,24 @@ const styles = StyleSheet.create({
     ...glassStyle,
     ...shadows.sm,
   },
+  formMobile: { padding: 4 },
   fieldLabel: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
     marginBottom: 6,
   },
   subFieldLabel: {
     fontFamily: fonts.base,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textMuted,
     marginBottom: 6,
   },
   input: {
+    minHeight: 44,
+    justifyContent: "center",
     fontFamily: fonts.base,
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -350,7 +354,7 @@ const styles = StyleSheet.create({
   },
   daysInput: {
     width: 120,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   modeRow: {
     flexDirection: "row",
@@ -358,6 +362,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modeButton: {
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -366,17 +372,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
   },
   modeButtonActive: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brand,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.selection,
   },
   modeText: {
     fontFamily: fonts.base,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   modeTextActive: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   calendarContainer: {
     alignSelf: "flex-start",
@@ -394,6 +400,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   halfDayButton: {
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -402,17 +410,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
   },
   halfDayButtonActive: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brand,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.selection,
   },
   halfDayText: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   halfDayTextActive: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   multiDayHalfRow: {
     flexDirection: "row",
@@ -428,6 +436,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   halfDayOption: {
+    minHeight: 44,
+    justifyContent: "center",
     flex: 1,
     paddingHorizontal: 10,
     paddingVertical: 7,
@@ -438,18 +448,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   halfDayOptionActive: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brand,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.selection,
   },
   halfDayOptionText: {
     fontFamily: fonts.base,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
     textAlign: "center",
   },
   halfDayOptionTextActive: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   chips: {
     flexDirection: "row",
@@ -458,6 +468,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   chip: {
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -466,17 +478,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
   },
   chipActive: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brand,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.selection,
   },
   chipText: {
     fontFamily: fonts.base,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   chipTextActive: {
-    color: colors.textOnBrand,
+    color: colors.textPrimary,
   },
   footer: {
     flexDirection: "row",
@@ -489,7 +501,7 @@ const styles = StyleSheet.create({
   total: {
     fontFamily: fonts.base,
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.brand,
   },
   actions: {
@@ -497,6 +509,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cancelButton: {
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -507,10 +521,12 @@ const styles = StyleSheet.create({
   cancelText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     color: colors.textSecondary,
   },
   submitButton: {
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -522,7 +538,7 @@ const styles = StyleSheet.create({
   submitText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: colors.textOnBrand,
   },
 });

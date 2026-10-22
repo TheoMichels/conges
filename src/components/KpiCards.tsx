@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { colors, fonts, glassStyle, radius, shadows, spacing } from "../theme/colors";
 import { formatDayNumber } from "../utils/format";
 
@@ -9,22 +9,25 @@ type Props = {
 };
 
 export function KpiCards({ remaining, taken, total }: Props) {
+  const isMobile = useWindowDimensions().width < 768;
   const isNegative = remaining < 0;
 
   return (
-    <View testID="kpi-cards" style={styles.container}>
+    <View testID="kpi-cards" style={[styles.container, isMobile && styles.containerMobile]}>
       <View
         testID="kpi-remaining"
         style={[
           styles.card,
+          isMobile && styles.cardMobile,
           isNegative ? styles.cardDanger : styles.cardPositive,
         ]}
       >
-        <Text style={styles.label}>Solde restant</Text>
+        <Text style={[styles.label, isMobile && styles.labelMobile]}>Solde restant</Text>
         <View style={styles.valueRow}>
           <Text
             style={[
               styles.value,
+              isMobile && styles.valueMobile,
               isNegative ? styles.valueDanger : styles.valuePositive,
             ]}
           >
@@ -39,31 +42,31 @@ export function KpiCards({ remaining, taken, total }: Props) {
             j
           </Text>
         </View>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, isMobile && styles.subtitleMobile]}>
           {isNegative ? "Dépassement de solde" : "Disponible à poser"}
         </Text>
       </View>
 
-      <View testID="kpi-taken" style={styles.card}>
-        <Text style={styles.label}>Congés pris</Text>
+      <View testID="kpi-taken" style={[styles.card, isMobile && styles.cardMobile]}>
+        <Text style={[styles.label, isMobile && styles.labelMobile]}>Congés pris</Text>
         <View style={styles.valueRow}>
-          <Text style={[styles.value, styles.valuePrimary]}>
+          <Text style={[styles.value, isMobile && styles.valueMobile, styles.valuePrimary]}>
             {formatDayNumber(taken)}
           </Text>
           <Text style={[styles.unit, styles.valuePrimary]}>j</Text>
         </View>
-        <Text style={styles.subtitle}>{"Posés sur l'année"}</Text>
+        <Text style={[styles.subtitle, isMobile && styles.subtitleMobile]}>{"Posés sur l'année"}</Text>
       </View>
 
-      <View testID="kpi-total" style={styles.card}>
-        <Text style={styles.label}>Droits totaux</Text>
+      <View testID="kpi-total" style={[styles.card, isMobile && styles.cardMobile]}>
+        <Text style={[styles.label, isMobile && styles.labelMobile]}>Droits totaux</Text>
         <View style={styles.valueRow}>
-          <Text style={[styles.value, styles.valueBrand]}>
+          <Text style={[styles.value, isMobile && styles.valueMobile, styles.valueBrand]}>
             {formatDayNumber(total)}
           </Text>
           <Text style={[styles.unit, styles.valueBrand]}>j</Text>
         </View>
-        <Text style={styles.subtitle}>Cumul annuel alloué</Text>
+        <Text style={[styles.subtitle, isMobile && styles.subtitleMobile]}>Cumul annuel alloué</Text>
       </View>
     </View>
   );
@@ -76,6 +79,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.lg,
   },
+  containerMobile: { flexWrap: "nowrap", gap: spacing.sm },
+  cardMobile: { minWidth: 0, padding: spacing.md },
+  labelMobile: { fontSize: 10 },
+  valueMobile: { fontSize: 34 },
+  subtitleMobile: { fontSize: 10 },
   card: {
     flex: 1,
     minWidth: 140,
@@ -83,13 +91,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.lg,
+    padding: spacing.xl,
     ...glassStyle,
     ...shadows.sm,
   },
   cardPositive: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.positive,
+    backgroundColor: colors.accentSurface,
   },
   cardDanger: {
     borderLeftWidth: 4,
@@ -98,11 +105,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.base,
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "500",
     color: colors.textMuted,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+    letterSpacing: 0,
     marginBottom: spacing.xs,
   },
   valueRow: {
@@ -113,23 +119,23 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: fonts.base,
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 43,
+    fontWeight: "400",
     letterSpacing: -0.5,
   },
   unit: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
   },
   valuePositive: {
-    color: colors.positive,
+    color: colors.textPrimary,
   },
   valueDanger: {
     color: colors.danger,
   },
   valuePrimary: {
-    color: colors.primary,
+    color: colors.textPrimary,
   },
   valueBrand: {
     color: colors.brand,
