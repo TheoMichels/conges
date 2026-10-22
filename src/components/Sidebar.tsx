@@ -47,7 +47,6 @@ export function Sidebar({
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const currentCalendarYear = new Date().getFullYear();
@@ -136,22 +135,14 @@ export function Sidebar({
             );
           }
 
-          const hoverProps = {
-            onMouseEnter: () => setHoveredId(plan.id),
-            onMouseLeave: () =>
-              setHoveredId((current) => (current === plan.id ? null : current)),
-          };
-
           return (
             <View
               key={plan.id}
               style={[styles.item, selected && styles.itemSelected]}
-              {...hoverProps}
             >
               <Pressable
                 style={[styles.itemPressable, cursorPointer]}
                 onPress={() => onSelect(plan.id)}
-                onFocus={() => setHoveredId(plan.id)}
               >
                 <View style={styles.itemContent}>
                   <View style={styles.yearRow}>
@@ -182,7 +173,7 @@ export function Sidebar({
                 </View>
               </Pressable>
 
-              {selected || hoveredId === plan.id ? (
+              {selected ? (
                 <View style={styles.actionButtons}>
                   <Pressable
                     testID={`edit-section-${plan.id}`}
