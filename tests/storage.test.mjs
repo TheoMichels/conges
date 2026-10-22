@@ -335,17 +335,34 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     assert.equal(LEGACY_STORAGE_KEY, "@holidays_year_plans_v1");
   });
 
-  it("initializes with seed plans when storage is empty", async () => {
+  it("AC-01: initializes empty storage with an authoritative empty plan list", async () => {
     const plans = await yearPlanRepository.list();
-    assert.ok(plans.length >= 2, "Should initialize with seed plans");
-    assert.ok(plans.some((p) => p.year === "2024"));
-    assert.ok(plans.some((p) => p.year === "2025"));
+    assert.deepEqual(plans, []);
+    assert.deepEqual(await yearPlanRepository.list(), []);
 
     // Stored in canonical key
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     assert.ok(raw !== null, "Canonical key should have been populated");
     const stored = JSON.parse(raw);
-    assert.equal(stored.length, plans.length);
+    assert.deepEqual(stored, []);
+  });
+
+  it("AC-01: canonical empty plans override legacy data", async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, "[]");
+    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify([{ id: "legacy", year: "2023" }]));
+
+    assert.deepEqual(await loadFromLocalStorage(), []);
+    assert.equal(await AsyncStorage.getItem(LEGACY_STORAGE_KEY) !== null, true);
+  });
+
+  it("AC-03: preserves a legitimate zero-balance empty plan", async () => {
+    const emptyPlan = {
+      id: "empty-plan", year: "2026", createdAt: 1,
+      initialLeave: 0, carriedOver: 0, csupp: 0, publicHolidays: 0, entries: [],
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([emptyPlan]));
+
+    assert.deepEqual(await loadFromLocalStorage(), [emptyPlan]);
   });
 
   it("migrates automatically from @holidays_year_plans_v1 to @holy_year_plans_v1 and removes the old key", async () => {
@@ -503,7 +520,7 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
 
     try {
       const plans = await yearPlanRepository.list();
-      assert.ok(plans.length > 0);
+      assert.deepEqual(plans, []);
       await yearPlanRepository.saveAll(plans);
       assert.equal(fetchCalled, false, "fetch should never be called when isLocalMode is true");
     } finally {
@@ -957,6 +974,35 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
       const cachedRaw = await AsyncStorage.getItem(STORAGE_KEY);
       assert.ok(cachedRaw !== null);
       assert.equal(JSON.parse(cachedRaw)[0].id, "db-plan-2025");
+    } finally {
+      setTestSupabase(null);
+    }
+  });
+
+  it("AC-02: empty cloud account clears local plans without uploading them", async () => {
+    const cachedPlan = {
+      id: "unrelated-local-plan", year: "2024", createdAt: 1,
+      initialLeave: 25, carriedOver: 0, csupp: 0, publicHolidays: 0, entries: [],
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([cachedPlan]));
+    let uploadAttempted = false;
+    setTestSupabase({
+      auth: { async getSession() { return { data: { session: { user: { id: "new-user" } } } }; } },
+      from(table) {
+        if (table === "year_plans") return {
+          select() { return { eq() { return { async order() { return { data: [], error: null }; } }; } }; },
+          upsert() { uploadAttempted = true; throw new Error("unexpected upload"); },
+        };
+        uploadAttempted = true;
+        throw new Error(`Unexpected upload table: ${table}`);
+      },
+    });
+    try {
+      assert.deepEqual(await syncService.pullFromCloud(), []);
+      assert.deepEqual(JSON.parse(await AsyncStorage.getItem(STORAGE_KEY)), []);
+      assert.deepEqual(await syncService.pullFromCloud(), []);
+      assert.deepEqual(JSON.parse(await AsyncStorage.getItem(STORAGE_KEY)), []);
+      assert.equal(uploadAttempted, false);
     } finally {
       setTestSupabase(null);
     }

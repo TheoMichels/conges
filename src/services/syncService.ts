@@ -136,10 +136,9 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
       return plans;
     }
 
-    // Premier accès utilisateur sans données cloud : initialisation
-    const localPlans = await loadFromLocalStorage();
-    await pushToCloud(localPlans, uid);
-    return localPlans;
+    // Un compte cloud vide est la source de vérité, même si un cache local existe.
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    return [];
   } catch (err) {
     console.warn("Échec du pull cloud:", err);
     return loadFromLocalStorage();

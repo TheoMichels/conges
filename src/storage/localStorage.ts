@@ -4,7 +4,6 @@ import {
   YearPlan,
   yearPlansSchema,
 } from "../types/yearPlan";
-import { SEED_PLANS } from "./seedPlans";
 
 export const STORAGE_KEY = "@holy_year_plans_v1";
 export const LEGACY_STORAGE_KEY = "@holidays_year_plans_v1";
@@ -66,25 +65,14 @@ export async function readRawKey(key: string): Promise<string | null> {
 export async function loadFromLocalStorage(): Promise<YearPlan[]> {
   // 1. Lecture de la clé canonique @holy_year_plans_v1
   const rawCanonical = await readRawKey(STORAGE_KEY);
-  if (rawCanonical) {
+  if (rawCanonical !== null) {
     try {
       const parsed = JSON.parse(rawCanonical);
       if (Array.isArray(parsed)) {
         const normalized = parsed.map((item) => normalize(item as StoredPlan));
         const validation = yearPlansSchema.safeParse(normalized);
-        if (validation.success && validation.data.length > 0) {
-          let plans = validation.data;
-          const isOnlyPlaceholder =
-            plans.length === 1 &&
-            plans[0].initialLeave === 0 &&
-            plans[0].entries.length === 0;
-
-          if (isOnlyPlaceholder) {
-            plans = SEED_PLANS;
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(plans));
-            return plans;
-          }
-          return plans;
+        if (validation.success) {
+          return validation.data;
         }
       }
     } catch (e) {
@@ -139,7 +127,7 @@ export async function loadFromLocalStorage(): Promise<YearPlan[]> {
     }
   }
 
-  // 4. Fallback initial : aucune donnée trouvée, injection des graines
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PLANS));
-  return SEED_PLANS;
+  // 4. Aucune donnée trouvée : conserver un état vide explicite.
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+  return [];
 }
