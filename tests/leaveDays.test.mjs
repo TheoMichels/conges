@@ -70,6 +70,39 @@ const {
   countLuxembourgCompensatoryHolidays,
 } = await import("../src/utils/luxembourgHolidays.ts");
 
+describe("Annual work percentage — AC-01/02", () => {
+  it("validates strict decimal percentages and defaults old plans to 100", async () => {
+    const { workPercentageSchema, parseWorkPercentage } = await import("../src/types/yearPlan.ts");
+    assert.equal(workPercentageSchema.parse(undefined), 100);
+    for (const raw of ["", "0", "-1", "100.01", "80.001", "80abc", "NaN", "1e2"]) {
+      assert.equal(parseWorkPercentage(raw), null, raw);
+    }
+    for (const [raw, expected] of [["80", 80], ["33,33", 33.33], ["0.01", 0.01], ["100", 100]]) {
+      assert.equal(parseWorkPercentage(raw), expected);
+    }
+    assert.equal(workPercentageSchema.safeParse(80.001).success, false);
+  });
+  it("prorates weekends and coincidences, budgets, remaining and cascading carry-over only", async () => {
+    const { calculatePlanHolidays, propagateCarryOverFrom } = await import("../src/utils/yearPlanUtils.ts");
+    const plan = { id: "p", year: "2022", createdAt: 1, initialLeave: 26, carriedOver: 2, csupp: 1, publicHolidays: 999,
+      workPercentage: 80, entries: [{ id: "e", kind: "month", label: "Été", month: 6, days: 5, createdAt: 1 }] };
+    assert.equal(countLuxembourgCompensatoryHolidays(2022), 3);
+    assert.equal(calculatePlanHolidays(plan), 2.4);
+    assert.equal(calculatePlanBudget(plan), 31.4);
+    assert.equal(calculatePlanRemaining(plan), 26.4);
+    assert.equal(calculatePlanTaken(plan), 5);
+    assert.equal(calculatePlanHolidays({ ...plan, workPercentage: 33.33 }), 1);
+    for (const year of [2024, 2026, 2032]) {
+      const count = countLuxembourgCompensatoryHolidays(year);
+      assert.equal(calculatePlanHolidays({ ...plan, year: String(year), workPercentage: 80 }), Math.round(count * 80) / 100);
+      assert.equal(calculatePlanHolidays({ ...plan, year: String(year), workPercentage: 100 }), count);
+    }
+    const result = propagateCarryOverFrom([plan, { ...plan, id: "next", year: "2023", workPercentage: 100 }], 2022);
+    assert.equal(result[1].carriedOver, 26.4);
+    assert.equal(result[1].workPercentage, 100);
+  });
+});
+
 describe("leaveDays utils & leave calculations", () => {
   describe("toISODate & parseISODate & formatDateFr", () => {
     it("formats dates to YYYY-MM-DD", () => {

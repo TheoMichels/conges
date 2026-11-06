@@ -1,8 +1,13 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, fonts, glassStyle, radius, shadows } from '../theme/colors';
 import { NumberField } from './NumberField';
+import { WorkPercentageField } from './WorkPercentageField';
+import { formatDayNumber } from '../utils/format';
 
 type Props = {
+  year: string;
+  workPercentage: number;
+  onChangeWorkPercentage: (value: number) => void;
   initialLeave: number;
   carriedOver: number;
   csupp: number;
@@ -13,6 +18,9 @@ type Props = {
 };
 
 export function MobileDashboard({
+  year,
+  workPercentage,
+  onChangeWorkPercentage,
   initialLeave,
   carriedOver,
   csupp,
@@ -23,6 +31,7 @@ export function MobileDashboard({
 }: Props) {
   return (
     <View testID="mobile-dashboard" style={styles.card}>
+      <WorkPercentageField key={year} year={year} value={workPercentage} onChange={onChangeWorkPercentage} mobile />
       <View style={styles.grid}>
         <View style={styles.gridItem}>
           <NumberField label="Congés" value={initialLeave} onChange={onChangeInitialLeave} />
@@ -37,7 +46,7 @@ export function MobileDashboard({
           <View style={styles.readOnlyContainer}>
             <Text style={styles.readOnlyLabel}>Fériés (auto)</Text>
             <View style={styles.readOnlyBox}>
-              <Text style={styles.readOnlyValue}>{publicHolidays}</Text>
+              <Text style={styles.readOnlyValue}>{formatDayNumber(publicHolidays)}</Text>
             </View>
           </View>
         </View>

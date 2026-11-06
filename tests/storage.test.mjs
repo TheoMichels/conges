@@ -185,6 +185,61 @@ const {
 const { setTestSupabase } = await import("virtual:supabase-client");
 const { syncService } = await import("../src/services/syncService.ts");
 
+describe("Annual work percentage persistence — AC-03", () => {
+  beforeEach(async () => { await AsyncStorage.clear(); setTestSupabase(null); });
+  it("defaults legacy records without losing rights/entries and roundtrips updates", async () => {
+    const old = { id: "old", year: "2022", createdAt: 1, initialLeave: 26, carriedOver: 2.45, csupp: 3, publicHolidays: 3,
+      entries: [{ id: "e", kind: "month", month: 0, days: 2, label: "Été", createdAt: 1 }] };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([old]));
+    assert.deepEqual(await yearPlanRepository.list(), [{ ...old, workPercentage: 100 }]);
+    await yearPlanRepository.update("old", { workPercentage: 80.25 });
+    assert.deepEqual(await yearPlanRepository.list(), [{ ...old, workPercentage: 80.25 }]);
+    await assert.rejects(yearPlanRepository.update("old", { workPercentage: 100.01 }));
+    assert.equal((await yearPlanRepository.list())[0].workPercentage, 80.25);
+  });
+  it("maps cloud decimals, legacy defaults, insert and conflict-update without changing rights", async () => {
+    const remote = { id: "cloud", user_id: "u", year: "2022", created_at: new Date(1).toISOString(),
+      initial_leave: 26, carried_over: 2.45, csupp: 3, public_holidays: 3, work_percentage: "80.25",
+      leave_entries: [{ id: "e", kind: "month", month: 6, days: "2.5", label: "Été", created_at: new Date(1).toISOString() }] };
+    let conflict = false;
+    let uploaded;
+    let updated;
+    setTestSupabase({ from(table) {
+      assert.ok(["year_plans", "leave_entries"].includes(table));
+      const query = {
+        select() { return query; }, eq() { return query; },
+        order: async () => ({ data: [remote], error: null }),
+        upsert(row) { if (table === "year_plans") uploaded = row; return query; },
+        maybeSingle: async () => ({ data: conflict ? null : { id: "cloud" }, error: null }),
+        single: async () => ({ data: { id: "cloud" }, error: null }),
+        update(row) { updated = row; Object.assign(remote, row); return query; },
+        delete() { return query; },
+        then(resolve) { resolve({ data: [], error: null }); },
+      };
+      return query;
+    } });
+    try {
+      const [plan] = await syncService.pullFromCloud("u");
+      assert.equal(plan.workPercentage, 80.25);
+      assert.equal(plan.carriedOver, 2.45);
+      assert.equal(plan.initialLeave, 26);
+      assert.equal(plan.csupp, 3);
+      assert.equal(plan.entries[0].days, 2.5);
+      await syncService.upsertCloudPlan(plan, "u");
+      assert.equal(uploaded.work_percentage, 80.25);
+      conflict = true;
+      await syncService.upsertCloudPlan({ ...plan, workPercentage: 33.33 }, "u");
+      assert.equal(updated.work_percentage, 33.33);
+      assert.equal((await syncService.pullFromCloud("u"))[0].workPercentage, 33.33);
+      assert.deepEqual((await syncService.pullFromCloud("u"))[0].entries, plan.entries);
+      delete remote.work_percentage;
+      assert.equal((await syncService.pullFromCloud("u"))[0].workPercentage, 100);
+      remote.work_percentage = "invalid";
+      assert.equal((await syncService.pullFromCloud("u"))[0].workPercentage, 100);
+    } finally { setTestSupabase(null); }
+  });
+});
+
 describe("Lot 3 — Zod Schemas (AC-01)", () => {
   it("validates HalfDay enum values", () => {
     assert.equal(halfDaySchema.parse("morning"), "morning");
@@ -358,7 +413,7 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
   it("AC-03: preserves a legitimate zero-balance empty plan", async () => {
     const emptyPlan = {
       id: "empty-plan", year: "2026", createdAt: 1,
-      initialLeave: 0, carriedOver: 0, csupp: 0, publicHolidays: 0, entries: [],
+      initialLeave: 0, carriedOver: 0, csupp: 0, publicHolidays: 0, workPercentage: 100, entries: [],
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([emptyPlan]));
 
@@ -1167,4 +1222,3 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     }
   });
 });
-

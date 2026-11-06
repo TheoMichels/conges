@@ -31,6 +31,8 @@ import { cursorPointer } from "./src/theme/webCursor";
 import {
   calculatePlanRemaining,
   calculatePlanTaken,
+  calculatePlanHolidays,
+  calculatePlanBudget,
   findPreviousYearPlan,
 } from "./src/utils/yearPlanUtils";
 
@@ -125,12 +127,7 @@ function MainApp({ user, onSignOut }: MainAppProps) {
   const previousPlan = selectedPlan ? findPreviousYearPlan(plans, selectedPlan) : undefined;
   const totalPlanned = selectedPlan ? calculatePlanTaken(selectedPlan) : 0;
   const remaining = selectedPlan ? calculatePlanRemaining(selectedPlan) : 0;
-  const totalEntitlement = selectedPlan
-    ? selectedPlan.initialLeave +
-      selectedPlan.carriedOver +
-      selectedPlan.csupp +
-      selectedPlan.publicHolidays
-    : 0;
+  const totalEntitlement = selectedPlan ? calculatePlanBudget(selectedPlan) : 0;
 
   return (
     <LinearGradient
@@ -231,10 +228,13 @@ function MainApp({ user, onSignOut }: MainAppProps) {
 
                     {isMobile ? (
                       <MobileDashboard
+                        year={selectedPlan.year}
+                        workPercentage={selectedPlan.workPercentage}
+                        onChangeWorkPercentage={(value) => handleUpdate({ workPercentage: value })}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}
                         csupp={selectedPlan.csupp}
-                        publicHolidays={selectedPlan.publicHolidays}
+                        publicHolidays={calculatePlanHolidays(selectedPlan)}
                         onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
                         onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
                         onChangeCsupp={(value) => handleUpdate({ csupp: value })}
@@ -242,10 +242,12 @@ function MainApp({ user, onSignOut }: MainAppProps) {
                     ) : (
                       <SummaryFields
                         year={selectedPlan.year}
+                        workPercentage={selectedPlan.workPercentage}
+                        onChangeWorkPercentage={(value) => handleUpdate({ workPercentage: value })}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}
                         csupp={selectedPlan.csupp}
-                        publicHolidays={selectedPlan.publicHolidays}
+                        publicHolidays={calculatePlanHolidays(selectedPlan)}
                         taken={totalPlanned}
                         remaining={remaining}
                         previousYear={previousPlan?.year}

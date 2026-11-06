@@ -3,6 +3,7 @@ import { YearPlan } from "../types/yearPlan";
 export const SEED_PLANS: YearPlan[] = [
   {
     id: "plan-2024",
+    workPercentage: 100,
     year: "2024",
     createdAt: 1704067200000,
     initialLeave: 26,
@@ -62,6 +63,7 @@ export const SEED_PLANS: YearPlan[] = [
   },
   {
     id: "plan-2025",
+    workPercentage: 100,
     year: "2025",
     createdAt: 1735689600000,
     initialLeave: 26,

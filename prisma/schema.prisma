@@ -18,7 +18,8 @@ model YearPlan {
   userId         String       @map("user_id") @db.Uuid
   year           String
   initialLeave   Decimal      @default(26) @map("initial_leave") @db.Decimal(5, 1)
-  carriedOver    Decimal      @default(0) @map("carried_over") @db.Decimal(5, 1)
+  carriedOver    Decimal      @default(0) @map("carried_over") @db.Decimal(6, 2)
+  workPercentage Decimal      @default(100) @map("work_percentage") @db.Decimal(5, 2)
   csupp          Decimal      @default(0) @map("csupp") @db.Decimal(5, 1)
   publicHolidays Decimal      @default(11) @map("public_holidays") @db.Decimal(5, 1)
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
