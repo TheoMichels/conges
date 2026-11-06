@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabaseClient";
-import { HalfDay, LeaveEntry, YearPlan } from "../types/yearPlan";
+import { HalfDay, LeaveEntry, YearPlan, workPercentageSchema } from "../types/yearPlan";
 import { STORAGE_KEY, loadFromLocalStorage } from "../storage/localStorage";
 
 interface DbLeaveEntry {
@@ -26,6 +26,7 @@ interface DbYearPlan {
   initial_leave: number;
   carried_over: number;
   csupp: number;
+  work_percentage?: number | string | null;
   public_holidays: number;
   created_at: string;
   updated_at: string;
@@ -63,6 +64,7 @@ function mapDbPlanToYearPlan(row: DbYearPlan): YearPlan {
     initialLeave: Number(row.initial_leave ?? 0),
     carriedOver: Number(row.carried_over ?? 0),
     csupp: Number(row.csupp ?? 0),
+    workPercentage: workPercentageSchema.catch(100).parse(row.work_percentage == null ? undefined : Number(row.work_percentage)),
     publicHolidays: Number(row.public_holidays ?? 0),
     entries,
   };
@@ -160,6 +162,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
     initial_leave: plan.initialLeave,
     carried_over: plan.carriedOver,
     csupp: plan.csupp,
+    work_percentage: workPercentageSchema.parse(plan.workPercentage),
     public_holidays: plan.publicHolidays,
     created_at: planIso,
     updated_at: nowIso,
@@ -196,6 +199,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
           initial_leave: plan.initialLeave,
           carried_over: plan.carriedOver,
           csupp: plan.csupp,
+          work_percentage: workPercentageSchema.parse(plan.workPercentage),
           public_holidays: plan.publicHolidays,
           updated_at: nowIso,
         })

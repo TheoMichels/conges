@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LeaveEntryDraft, YearPlan } from "../types/yearPlan";
+import { LeaveEntryDraft, YearPlan, workPercentageSchema } from "../types/yearPlan";
 import { yearPlanRepository } from "../storage/yearPlanRepository";
 import {
   calculatePlanRemaining,
@@ -26,6 +26,7 @@ function makePlan(year: string, carriedOver = 0): YearPlan {
     initialLeave: 0,
     carriedOver,
     csupp: 0,
+    workPercentage: 100,
     publicHolidays: countLuxembourgCompensatoryHolidays(year),
     entries: [],
   };
@@ -166,12 +167,15 @@ export function useYearPlans() {
     (
       id: string,
       patch: Partial<
-        Pick<YearPlan, "initialLeave" | "carriedOver" | "csupp">
+        Pick<YearPlan, "initialLeave" | "carriedOver" | "csupp" | "workPercentage">
       >
     ) => {
       const target = plansRef.current.find((p) => p.id === id);
       if (!target) return;
 
+      if (patch.workPercentage !== undefined && !workPercentageSchema.safeParse(patch.workPercentage).success) {
+        throw new Error("Le taux doit être supérieur à 0 et inférieur ou égal à 100 %, avec deux décimales maximum.");
+      }
       commit((prev) => {
         const updated = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
         const yearNum = parseYearNumber(target.year);

@@ -28,6 +28,25 @@ async function database() {
   return db;
 }
 
+test('Annual rate AC-03: additive migration defaults old records, enforces bounds, preserves decimal carry-over', async () => {
+  const db = await database();
+  try {
+    await db.exec(readFileSync(path.join(rootDir, migrationFile), 'utf8'));
+    await db.exec(`INSERT INTO holy.year_plans (id, user_id, year, carried_over) VALUES ('old', '${userA}', '2022', 2.5)`);
+    await db.exec(readFileSync(path.join(rootDir, 'prisma/migrations/20261106000000_annual_work_percentage/migration.sql'), 'utf8'));
+    const old = (await db.query("SELECT work_percentage, carried_over FROM holy.year_plans WHERE id='old'")).rows[0];
+    assert.equal(Number(old.work_percentage), 100);
+    assert.equal(Number(old.carried_over), 2.5);
+    for (const invalid of [0, -1, 100.01]) {
+      await assert.rejects(db.exec(`UPDATE holy.year_plans SET work_percentage=${invalid} WHERE id='old'`), /check constraint/i);
+    }
+    await db.exec("UPDATE holy.year_plans SET work_percentage=33.33, carried_over=26.45 WHERE id='old'");
+    const changed = (await db.query("SELECT work_percentage, carried_over FROM holy.year_plans WHERE id='old'")).rows[0];
+    assert.equal(Number(changed.work_percentage), 33.33);
+    assert.equal(Number(changed.carried_over), 26.45);
+  } finally { await db.close(); }
+});
+
 test('AC-01 / AC-02: prisma/schema.prisma est configuré en multiSchema (holy, auth) avec les modèles canoniques', () => {
   const schemaPath = path.join(rootDir, 'prisma', 'schema.prisma');
   assert.ok(existsSync(schemaPath), 'prisma/schema.prisma doit exister');

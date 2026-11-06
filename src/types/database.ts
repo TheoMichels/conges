@@ -17,6 +17,7 @@ export interface Database {
           initial_leave: number;
           carried_over: number;
           csupp: number;
+          work_percentage: number;
           public_holidays: number;
           created_at: string;
           updated_at: string;
@@ -28,6 +29,7 @@ export interface Database {
           initial_leave?: number;
           carried_over?: number;
           csupp?: number;
+          work_percentage?: number;
           public_holidays?: number;
           created_at?: string;
           updated_at?: string;
@@ -39,6 +41,7 @@ export interface Database {
           initial_leave?: number;
           carried_over?: number;
           csupp?: number;
+          work_percentage?: number;
           public_holidays?: number;
           created_at?: string;
           updated_at?: string;

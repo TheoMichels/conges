@@ -3,6 +3,7 @@ import {
   LeaveEntry,
   YearPlan,
   yearPlansSchema,
+  workPercentageSchema,
 } from "../types/yearPlan";
 
 export const STORAGE_KEY = "@holy_year_plans_v1";
@@ -42,6 +43,7 @@ export function normalize(raw: StoredPlan): YearPlan {
     initialLeave: typeof raw.initialLeave === "number" ? raw.initialLeave : 0,
     carriedOver: typeof raw.carriedOver === "number" ? raw.carriedOver : 0,
     csupp: typeof raw.csupp === "number" ? raw.csupp : 0,
+    workPercentage: workPercentageSchema.catch(100).parse(raw.workPercentage),
     publicHolidays: typeof raw.publicHolidays === "number" ? raw.publicHolidays : 0,
     entries: rawEntries as LeaveEntry[],
   };

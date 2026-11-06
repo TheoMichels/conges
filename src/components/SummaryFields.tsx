@@ -5,9 +5,12 @@ import { cursorPointer } from "../theme/webCursor";
 import { formatDayNumber } from "../utils/format";
 import { getLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
 import { NumberField } from "./NumberField";
+import { WorkPercentageField } from "./WorkPercentageField";
 
 type Props = {
   year: string;
+  workPercentage: number;
+  onChangeWorkPercentage: (value: number) => void;
   initialLeave: number;
   carriedOver: number;
   csupp: number;
@@ -50,7 +53,7 @@ function ReadOnlyField({
 
   if (onPress) {
     return (
-      <Pressable style={cursorPointer} onPress={onPress}>
+      <Pressable testID="holiday-details-toggle" accessibilityRole="button" accessibilityLabel="Détail des fériés récupérables" style={cursorPointer} onPress={onPress}>
         {content}
       </Pressable>
     );
@@ -61,6 +64,8 @@ function ReadOnlyField({
 
 export function SummaryFields({
   year,
+  workPercentage,
+  onChangeWorkPercentage,
   initialLeave,
   carriedOver,
   csupp,
@@ -78,6 +83,7 @@ export function SummaryFields({
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Détail des droits et soldes</Text>
+      <WorkPercentageField key={year} year={year} value={workPercentage} onChange={onChangeWorkPercentage} />
       <View style={styles.row}>
         <View style={styles.fieldCell}><NumberField
           label="Congés (initialement)"
@@ -106,12 +112,14 @@ export function SummaryFields({
       </View>
 
       {showHolidaysDetail && (
-        <View style={styles.holidaysCard}>
+        <View testID="holiday-details" style={styles.holidaysCard}>
           <View style={styles.holidaysCardHeader}>
             <Text style={styles.holidaysCardTitle}>
               Jours fériés récupérables au Luxembourg ({year})
             </Text>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Fermer le détail des fériés"
               style={cursorPointer}
               onPress={() => setShowHolidaysDetail(false)}
               hitSlop={12}

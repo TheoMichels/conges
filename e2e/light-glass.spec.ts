@@ -22,13 +22,13 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(page.getByTestId("kpi-cards")).toBeVisible();
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("light only");
       await expect(page.getByTestId("kpi-taken").getByText("2", { exact: true })).toHaveCSS("color", "rgb(20, 51, 62)");
-      await page.screenshot({ path: `.agents/handoff/holy-light-glass/screens/${width}-${colorScheme}-overview.png`, fullPage: true });
+      await page.screenshot({ path: test.info().outputPath(`${width}-${colorScheme}-overview.png`), fullPage: true });
       await page.getByTestId("add-leave-button").click();
       await expect(page.getByPlaceholder("Motif des congés")).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       const mode = page.getByText("Nombre de jours", { exact: true });
       expect((await mode.locator("..").boundingBox())?.height).toBeGreaterThanOrEqual(44);
-      await page.screenshot({ path: `.agents/handoff/holy-light-glass/screens/${width}-${colorScheme}.png`, fullPage: true });
+      await page.screenshot({ path: test.info().outputPath(`${width}-${colorScheme}.png`), fullPage: true });
     });
   }
 }
