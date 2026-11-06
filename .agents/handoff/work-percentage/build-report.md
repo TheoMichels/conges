@@ -18,6 +18,7 @@
 - `prisma validate` avec URL locale fictive (sans connexion) : PASS.
 - `npx playwright test e2e/work-percentage.spec.ts` : 3 PASS.
 - Harness final après commit : suite COMPLÈTE (stockage transverse), preuve `.agents/state/verify-result.json`.
+- Suite complète : 23 E2E PASS ; captures light-glass déplacées vers les artefacts Playwright ignorés pour garder HEAD propre.
 - Contrat détaillé : `test-contract.md` ; rouge initial sur schéma/calcul absent, puis vert.
 ## Choix UI / limites
 - Tokens existants, champ accessible >=44px, erreur française immédiate ; seule valeur valide est enregistrée.
