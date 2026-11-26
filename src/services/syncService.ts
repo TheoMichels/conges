@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabaseClient";
-import { HalfDay, LeaveEntry, YearPlan } from "../types/yearPlan";
+import { HalfDay, LeaveEntry, YearPlan, validDatesLeaveEntryDraftSchema } from "../types/yearPlan";
 import { loadFromLocalStorage } from "../storage/localStorage";
+import { recoverMonthlyEntries } from "../utils/recoverMonthlyEntries";
 import { registerMember } from "../storage/memberRepository";
 
 export const CLOUD_CACHE_PREFIX = "@holy_cloud_year_plans_";
@@ -12,6 +13,7 @@ interface DbLeaveEntry {
   plan_id: string;
   kind: string;
   label: string;
+  estimated?: boolean;
   start_date: string | null;
   end_date: string | null;
   start_half: string | null;
@@ -51,6 +53,7 @@ function mapDbPlanToYearPlan(row: DbYearPlan): YearPlan {
     return {
       id: e.id,
       kind: "dates",
+      estimated: e.estimated ?? false,
       label: e.label,
       startDate: e.start_date ?? "",
       endDate: e.end_date ?? "",
@@ -138,7 +141,30 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
     if (!account.active) throw new Error("Votre compte Holy est désactivé.");
     const cacheKey = CLOUD_CACHE_PREFIX + uid;
     if (Array.isArray(data) && data.length > 0) {
-      const plans = (data as unknown as DbYearPlan[]).map(mapDbPlanToYearPlan);
+      const rows = data as unknown as DbYearPlan[];
+      let changed = false;
+      for (const row of rows) {
+        const plan = mapDbPlanToYearPlan(row);
+        const recovered = recoverMonthlyEntries(plan.year, plan.entries);
+        const replacements = plan.entries.filter(e => e.kind === "month").flatMap(entry => {
+          const first = recovered.find(e => e.id === entry.id);
+          if (!first || first.kind !== "dates") return [];
+          const originalIds = new Set(plan.entries.map(e => e.id));
+          const prefix = `${entry.id}~recovered~`;
+          const parts = recovered.filter(e => e.id === entry.id || (!originalIds.has(e.id) && e.id.startsWith(prefix) && /^\d+$/.test(e.id.slice(prefix.length))));
+          return [{ id: entry.id, parts }];
+        });
+        if (replacements.length === 0) continue;
+        const snapshot = (row.leave_entries ?? []).map(e => ({ id: e.id, updated_at: e.updated_at }));
+        const { data: applied, error: recoveryError } = await supabase.rpc("recover_monthly_leave", {
+          p_plan_id: row.id, p_snapshot: snapshot, p_replacements: replacements,
+        });
+        if (recoveryError) throw new Error("Impossible de reprendre vos anciennes saisies.");
+        if (applied !== true) throw new Error("Vos congés ont changé pendant la reprise. Réessayez.");
+        changed = true;
+      }
+      if (changed) return pullFromCloud(uid);
+      const plans = rows.map(mapDbPlanToYearPlan);
       await AsyncStorage.setItem(cacheKey, JSON.stringify(plans));
       return plans;
     }
@@ -232,6 +258,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
       user_id: uid,
       plan_id: canonicalPlanId,
       kind: entry.kind,
+      estimated: entry.kind === "dates" ? (entry.estimated ?? false) : false,
       label: entry.label,
       start_date: entry.kind === "dates" ? entry.startDate : null,
       end_date: entry.kind === "dates" ? entry.endDate : null,
@@ -352,11 +379,13 @@ export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<Y
 
 // Une mutation cible uniquement la saisie concernée, jamais l'instantané du plan.
 export async function saveCloudEntry(planId: string, entry: LeaveEntry, operation: "create" | "update"): Promise<void> {
+  validDatesLeaveEntryDraftSchema.parse(entry);
   if (!supabase) throw new Error("Connexion au serveur indisponible.");
   const uid = await resolveUserId();
   if (!uid) throw new Error("Session Holy indisponible.");
   const row = {
     id: entry.id, user_id: uid, plan_id: planId, kind: entry.kind, label: entry.label,
+    estimated: entry.kind === "dates" ? (entry.estimated ?? false) : false,
     start_date: entry.kind === "dates" ? entry.startDate : null,
     end_date: entry.kind === "dates" ? entry.endDate : null,
     start_half: entry.kind === "dates" ? (entry.startHalf ?? null) : null,

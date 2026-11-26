@@ -10,7 +10,20 @@ export const datesLeaveEntryDraftSchema = z.object({
   endDate: z.string(),
   startHalf: halfDaySchema.optional(),
   endHalf: halfDaySchema.optional(),
+  estimated: z.boolean().optional(),
 });
+
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+export const validDatesLeaveEntryDraftSchema = datesLeaveEntryDraftSchema.refine(
+  entry => isCalendarDate(entry.startDate) && isCalendarDate(entry.endDate) &&
+    entry.endDate >= entry.startDate && !(entry.startDate === entry.endDate && entry.startHalf === "afternoon" && entry.endHalf === "morning"),
+  "Les dates du congé sont invalides."
+);
 
 export const monthLeaveEntryDraftSchema = z.object({
   kind: z.literal("month"),

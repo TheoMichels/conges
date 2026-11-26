@@ -99,6 +99,13 @@ describe("leaveDays utils & leave calculations", () => {
       assert.equal(parseISODate(""), null);
     });
 
+    it("rejects calendar dates that overflow their month", () => {
+      assert.equal(parseISODate("2026-02-30"), null);
+      assert.equal(parseISODate("2026-13-01"), null);
+      assert.equal(parseISODate("2025-02-29"), null);
+      assert.ok(parseISODate("2024-02-29"));
+    });
+
     it("formats ISO date to French display string", () => {
       assert.equal(formatDateFr("2026-06-23"), "23 juin 2026");
       assert.equal(formatDateFr("invalid"), "invalid");
@@ -321,4 +328,43 @@ describe("leaveDays utils & leave calculations", () => {
       assert.ok(names.includes("Premier jour de Noël"));
     });
   });
+});
+
+
+describe("F04 monthly entry recovery", () => {
+  it("splits around occupied slots and preserves a month without enough capacity", async () => {
+    const { recoverMonthlyEntries } = await import("../src/utils/recoverMonthlyEntries.ts");
+    const existing = { id: "blocked", kind: "dates", label: "Pris", startDate: "2026-02-04", endDate: "2026-02-04", startHalf: "morning", endHalf: "morning", createdAt: 1 };
+    const monthly = { id: "split", kind: "month", label: "Congés", month: 1, days: 3, createdAt: 2 };
+    const tooLarge = { id: "full", kind: "month", label: "Complet", month: 1, days: 30, createdAt: 3 };
+    const result = recoverMonthlyEntries("2026", [existing, monthly, tooLarge]);
+    assert.equal(result.filter(e => e.id.startsWith("split")).length, 2);
+    assert.equal(result.filter(e => e.id.startsWith("split")).reduce((n,e) => n + entryTotalDays(e),0), 3);
+    assert.deepEqual(result.find(e => e.id === "full"),tooLarge);
+    assert.deepEqual(recoverMonthlyEntries("2026", result),result);
+  });
+
+  it("places half-day slots around existing leave, stably and idempotently", async () => {
+    const { recoverMonthlyEntries } = await import("../src/utils/recoverMonthlyEntries.ts");
+    const entries = [
+      { id: "existing", kind: "dates", label: "Existing", startDate: "2026-02-02", endDate: "2026-02-02", startHalf: "morning", endHalf: "morning", createdAt: 0 },
+      { id: "old", kind: "month", label: "Été", month: 1, days: 1.5, createdAt: 1 },
+      { id: "fraction", kind: "month", label: "Exception", month: 1, days: 1.2, createdAt: 2 },
+    ];
+    const recovered = recoverMonthlyEntries("2026", entries);
+    assert.deepEqual(recovered.filter(e => e.id.startsWith("old")).map(e => [e.startDate, e.endDate, e.startHalf, e.endHalf, e.estimated]), [["2026-02-02", "2026-02-03", "afternoon", "afternoon", true]]);
+    assert.deepEqual(recovered.find(e => e.id === "fraction"), entries[2]);
+    assert.deepEqual(recoverMonthlyEntries("2026", recovered), recovered);
+    assert.equal(recovered.reduce((n, e) => n + entryTotalDays(e), 0), 3.2);
+  });
+});
+
+
+it("F04 rejects invalid dated writes and monthly drafts", async () => {
+  const { validDatesLeaveEntryDraftSchema: schema } = await import("../src/types/yearPlan.ts");
+  const base = {kind:"dates", label:"Congés", startDate:"2026-02-02", endDate:"2026-02-02"};
+  assert.equal(schema.safeParse(base).success,true);
+  assert.equal(schema.safeParse({...base,startDate:"2026-02-30"}).success,false);
+  assert.equal(schema.safeParse({...base,endDate:"2026-02-01"}).success,false);
+  assert.equal(schema.safeParse({kind:"month",label:"Congés",month:1,days:1}).success,false);
 });

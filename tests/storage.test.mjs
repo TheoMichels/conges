@@ -1294,3 +1294,50 @@ describe("F03 targeted concurrent entry writes", () => {
     } finally { setTestSupabase(null); }
   });
 });
+
+describe("F04 local monthly recovery", () => {
+  beforeEach(async () => { await AsyncStorage.clear(); });
+  it("persists recovered slots exactly once and retains an unplaceable fraction", async () => {
+    const plan = { id: 'f04', year: '2026', createdAt: 1, initialLeave: 26, carriedOver: 0, csupp: 0,
+      holidayOverride: null, publicHolidays: 0, entries: [
+        { id:'occupied', kind:'dates', label:'Matin', startDate:'2026-02-02', endDate:'2026-02-02', startHalf:'morning', endHalf:'morning', createdAt:1 },
+        { id:'legacy', kind:'month', label:'Vacances', month:1, days:1.5, createdAt:2 },
+        { id:'fraction', kind:'month', label:'Exception', month:1, days:1.2, createdAt:3 },
+      ] };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([plan]));
+    const first = await loadFromLocalStorage();
+    assert.equal(first[0].entries.find(e => e.id === 'legacy').startDate, '2026-02-02');
+    assert.equal(first[0].entries.find(e => e.id === 'legacy').startHalf, 'afternoon');
+    assert.equal(first[0].entries.find(e => e.id === 'legacy').estimated, true);
+    assert.equal(first[0].entries.find(e => e.id === 'fraction').days, 1.2);
+    const persisted = await AsyncStorage.getItem(STORAGE_KEY);
+    assert.deepEqual(await loadFromLocalStorage(), first);
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), persisted);
+  });
+});
+
+describe("F04 cloud recovery", () => {
+  beforeEach(async () => { await AsyncStorage.clear(); setTestSupabase(null); });
+  it("submits recovery once and reloads the committed data", async () => {
+    const timestamp = '2026-01-01T00:00:00Z';
+    const row = { id:'p', user_id:'u', year:'2026', created_at:timestamp, initial_leave:26, carried_over:0, csupp:0, public_holidays:0,
+      leave_entries:[{ id:'old', user_id:'u', plan_id:'p', kind:'month', label:'Vacances', month:1, days:1.5, created_at:timestamp, updated_at:timestamp }] };
+    let calls = 0;
+    setTestSupabase({ from() { return { select() { return { eq() { return { async order() { return {data:[row],error:null};} }; } }; } }; },
+      async rpc(name, args) {
+        if (name === 'register_member') return {data:[{active:true,is_admin:false,display_name:'Membre'}],error:null};
+        assert.equal(name,'recover_monthly_leave'); calls++;
+        assert.equal(args.p_snapshot[0].id,'old');
+        row.leave_entries = args.p_replacements[0].parts.map(part => ({id:part.id,user_id:'u',plan_id:'p',kind:'dates',label:'Vacances',
+          start_date:part.startDate,end_date:part.endDate,start_half:part.startHalf,end_half:part.endHalf,estimated:true,created_at:timestamp,updated_at:timestamp}));
+        return {data:true,error:null};
+      } });
+    try {
+      const first = await syncService.pullFromCloud('u');
+      assert.equal(first[0].entries[0].startDate,'2026-02-02');
+      assert.equal(first[0].entries[0].estimated,true);
+      assert.deepEqual(await syncService.pullFromCloud('u'),first);
+      assert.equal(calls,1);
+    } finally { setTestSupabase(null); }
+  });
+});

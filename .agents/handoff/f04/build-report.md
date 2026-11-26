@@ -1,0 +1,13 @@
+# Build Report — F04
+- **Statut** : BLOCKED — attentes de tests antérieurs contraires aux AC F04, transmises à l’orchestrateur.
+- **Cycle / branche** : 1 / `feature/f04-dated-leave`.
+- **Périmètre** : saisie, calcul, stockage local, synchronisation, migration Prisma, tests et fiche projet.
+- **Données** : migration `20261130000000_dated_leave` ; aucune écriture distante. Reprise cloud transactionnelle avec verrou et contrôle d’instantané ; exceptions inchangées.
+- **UI** : calendrier daté, durée affichée avant validation, badges « Dates estimées » et « À dater », testIDs pour calendrier et formulaire ; états de chargement, vide et erreur existants conservés.
+- **AC-10** : validation de dates dans les brouillons et en base ; journée et matinée testées avec rechargement, confirmation d’une période estimée.
+- **AC-11** : créneaux occupés, répartition, ordre et idempotence testés en unitaire ; stockage local et orchestration cloud en intégration ; RPC et RLS sur PGlite.
+- **AC-12** : fraction non plaçable conservée et remplacement daté vérifiés en unitaire et E2E mobile/desktop.
+- **Tests** : `node --test tests/leaveDays.test.mjs` 28 PASS ; `node --test tests/f04Migration.test.mjs` 2 PASS ; tests F04 local/cloud 2 PASS ; E2E ciblé 2 PASS ; typecheck et lint PASS.
+- **Tests antérieurs contestés, non modifiés** : `tests/storage.test.mjs` lignes 241, 523, 1160 et 1269 supposent la conservation ou création de saisies mensuelles ; `e2e/light-glass.spec.ts` lignes 31 et 48 et `e2e/annual-entitlements.spec.ts` ligne 96 utilisent le mode mensuel supprimé.
+- **Harness final** : à exécuter sur le commit ; suite E2E complète requise car le stockage est modifié. Échec attendu avant adaptation des tests obsolètes.
+- **Limites** : orchestration cloud testée avec client simulé, transaction/RLS sur PGlite ; concurrence réelle réseau non testée ; revue sécurité et QA indépendante requises.
