@@ -11,3 +11,6 @@
 - **Tests antérieurs contestés, non modifiés** : `tests/storage.test.mjs` lignes 241, 523, 1160 et 1269 supposent la conservation ou création de saisies mensuelles ; `e2e/light-glass.spec.ts` lignes 31 et 48 et `e2e/annual-entitlements.spec.ts` ligne 96 utilisent le mode mensuel supprimé.
 - **Harness final** : à exécuter sur le commit ; suite E2E complète requise car le stockage est modifié. Échec attendu avant adaptation des tests obsolètes.
 - **Limites** : orchestration cloud testée avec client simulé, transaction/RLS sur PGlite ; concurrence réelle réseau non testée ; revue sécurité et QA indépendante requises.
+- **Correction revue** : les exceptions cloud ne sont plus réécrites ni supprimées par un instantané ; une exception inconnue est refusée avant mutation. La suppression d’un plan ne supprime plus ses entrées avant le contrôle des droits.
+- **Vérification correction** : `node --test tests/f04CloudSave.test.mjs` 6 PASS ; lint et typecheck PASS. Suite unitaire 92/95 : trois anciens mocks bulk nécessitent une adaptation de l’orchestrateur.
+- **Limite import** : l’import local→cloud d’une exception mensuelle est refusé sans effet ; aucune fonctionnalité d’import entre espaces n’est actuellement autorisée. Les autres mutations bulk ne sont pas atomiques en cas d’erreur réseau.
