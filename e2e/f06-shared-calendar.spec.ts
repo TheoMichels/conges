@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
 const team = '00000000-0000-4000-8000-000000000011';
-async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loading" = "normal") {
+async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loading" | "monthly" = "normal") {
  let failed = false;
  const user = { id: '00000000-0000-4000-8000-000000000001', aud: 'authenticated', role: 'authenticated', email: 'user@example.com' };
  await page.route('https://holidays.example/**', async route => { const url = new URL(route.request().url()); await route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:4174${url.pathname}${url.search}` }) }); });
@@ -15,6 +15,13 @@ async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loadi
   if (url.includes('/rpc/my_calendar_teams')) body = state === 'no-teams' ? [] : [{ id:team, name:'Alpha' }];
   if (url.includes('/rpc/shared_calendar') && state === 'error' && !failed) { failed = true; await route.fulfill({ status:200, contentType:'application/json', body:'{}' }); return; }
   if (url.includes('/rpc/shared_calendar')) { const p = route.request().postDataJSON() as { month_start:string }; body = p.month_start === '2026-03-01' || p.month_start === '2026-02-01' ? [{ id:'entry', display_name:'Camille', start_date:'2026-02-27', end_date:'2026-03-03', start_half:'afternoon', end_half:'morning' }] : p.month_start === '2026-04-01' ? [{ id:'future-entry', display_name:'Camille', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' }] : []; }
+  if (url.includes('/rpc/shared_calendar') && Array.isArray(body)) {
+   const rows = body.map(entry => ({ ...entry, member_key:'camille', kind:'dates', month:null, days:null, created_at:'2026-01-01T00:00:00Z' }));
+   if (state === 'monthly' && (route.request().postDataJSON() as { month_start:string }).month_start === '2026-03-01') rows.push(
+    { id:'monthly', display_name:'Camille', member_key:'camille', kind:'month', month:2, days:1.5, created_at:'2026-01-02T00:00:00Z', start_date:null, end_date:null, start_half:null, end_half:null },
+    { id:'impossible', display_name:'Alex', member_key:'alex', kind:'month', month:2, days:40, created_at:'2026-01-02T00:00:00Z', start_date:null, end_date:null, start_half:null, end_half:null });
+   body = rows;
+  }
   await route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(body)});
  });
 }
@@ -64,4 +71,16 @@ test('grille mensuelle visible pendant le chargement', async ({page}) => {
  await expect(page.getByTestId('calendar-loading')).toBeVisible(); await expect(page.getByTestId('calendar-grid')).toBeVisible();
  await expect(page.getByTestId('calendar-day-2026-03-31')).toBeVisible();
  await expect(page.getByTestId('calendar-team-all')).toBeVisible();
+});
+
+test('congés mensuels répartis sans écraser les demi-journées et valeurs impossibles signalées', async ({page}) => {
+ await page.setViewportSize({width:375,height:850}); await setup(page, 'monthly'); await page.clock.setFixedTime(new Date('2026-03-15T12:00:00Z')); await page.goto('https://holidays.example/'); await page.getByTestId('shared-calendar-button').click();
+ await expect(page.getByTestId('calendar-day-2026-03-03')).toContainText('Matin');
+ await expect(page.getByTestId('calendar-day-2026-03-03')).toContainText('Après-midi');
+ await expect(page.getByTestId('calendar-day-2026-03-04')).toContainText('Camille');
+ await expect(page.getByTestId('calendar-unplaced')).toContainText('Alex');
+ await page.getByTestId(`calendar-team-${team}`).click();
+ await expect(page.getByTestId('calendar-unplaced')).toContainText('Alex');
+ await page.getByTestId('calendar-next').click(); await expect(page.getByTestId('calendar-unplaced')).toHaveCount(0);
+ expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
