@@ -22,7 +22,7 @@ test("F03: reprise, activation et autorisations en base isolée", async () => {
     await db.exec(readFileSync(`prisma/migrations/${migrations[4]}/migration.sql`, "utf8"));
     assert.equal(Number((await db.query("SELECT holy.entry_days('dates','2024-05-08','2024-05-10','afternoon','afternoon',NULL) AS days")).rows[0].days), 1.5);
     await db.exec(`SET ROLE authenticated; SET request.jwt.claim.sub='${member}'`);
-    assert.equal((await db.query("SELECT id FROM holy.year_plans")).rows[0].id, "old");
+    assert.deepEqual((await db.query("SELECT id, active FROM holy.year_plans WHERE id='old'")).rows, [{ id: "old", active: true }]);
     await assert.rejects(db.query(`SELECT holy.admin_save_year('${member}','2024',26,2,1,NULL,false)`), /forbidden/i);
     await assert.rejects(db.query(`INSERT INTO holy.year_plans(id,user_id,year) VALUES ('illicit','${member}','2028')`), /permission denied|row-level security/i);
     await db.exec(`SET request.jwt.claim.sub='${admin}'`);

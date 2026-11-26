@@ -7,6 +7,11 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   let activated = false;
   let saved = false;
   let override: number | null = null;
+  let initial = 26;
+  let releaseEntry!: () => void;
+  let markEntryStarted!: () => void;
+  const entryStarted = new Promise<void>(resolve => { markEntryStarted = resolve; });
+  const entryGate = new Promise<void>(resolve => { releaseEntry = resolve; });
   let entries: { id: string; days: number; kind: string; label: string; month: number; user_id: string; plan_id: string; created_at: string; updated_at: string }[] = [];
   let planWrites = 0;
   const setup = async (tab: Page, admin: boolean) => {
@@ -23,15 +28,15 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
       if (url.includes("/auth/v1/user")) body = user;
       if (url.includes("/rpc/register_member")) body = [{ active: true, is_admin: admin, display_name: admin ? "admin" : "member" }];
       if (url.includes("/rpc/admin_members")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true }];
-      if (url.includes("/rpc/admin_years")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? 26 : null, carried_over: saved ? 2 : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? 26 + 2 + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 }];
-      if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null }; saved = true; activated = data.activate; override = data.holiday; }
+      if (url.includes("/rpc/admin_years")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? 2 : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + 2 + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 }];
+      if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null; initial: number }; saved = true; activated = data.activate; override = data.holiday; initial = data.initial; }
       if (url.includes("/leave_entries")) {
-        if (route.request().method() === "POST") entries = route.request().postDataJSON() as typeof entries;
+        if (route.request().method() === "POST") { markEntryStarted(); await entryGate; entries = route.request().postDataJSON() as typeof entries; }
         if (route.request().method() === "GET") body = entries.map(entry => ({ id: entry.id }));
         else body = [];
       }
       if (url.includes("/year_plans") && route.request().method() !== "GET") planWrites++;
-      if (url.includes("/year_plans")) body = !admin && activated ? [{ id: "annual-plan", user_id: memberId, year: "2024", initial_leave: 26, carried_over: 2, csupp: 1, holiday_override: override, public_holidays: 2, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", leave_entries: entries }] : [];
+      if (url.includes("/year_plans")) body = !admin && activated ? [{ id: "annual-plan", user_id: memberId, year: "2024", initial_leave: initial, carried_over: 2, csupp: 1, holiday_override: override, public_holidays: 2, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", leave_entries: entries }] : [];
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
     });
   };
@@ -66,7 +71,19 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await page.getByText("Ajouter", { exact: true }).last().click();
   await expect(page.getByTestId("kpi-taken")).toContainText("1,5");
   await expect(page.getByTestId("kpi-remaining")).toContainText("29,5");
+  await entryStarted;
+  await admin.getByTestId(`annual-member-${memberId}`).click();
+  await admin.getByTestId("annual-initial").fill("30");
+  await admin.getByTestId("annual-save").click();
+  await expect.poll(() => initial).toBe(30);
+  releaseEntry();
   await expect.poll(() => entries.length).toBe(1);
+  await page.reload();
+  await expect(page.getByTestId("kpi-remaining")).toContainText("33,5");
+  await admin.getByTestId(`annual-member-${memberId}`).click();
+  await admin.getByTestId("annual-initial").fill("26");
+  await admin.getByTestId("annual-save").click();
+  await expect.poll(() => initial).toBe(26);
   expect(planWrites).toBe(0);
   await admin.getByTestId("annual-load").click();
   const row = admin.getByTestId(`annual-member-${memberId}`);

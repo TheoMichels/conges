@@ -42,13 +42,17 @@ export function useYearPlans() {
   // several edits fire back-to-back before a re-render happens.
   const plansRef = useRef<YearPlan[]>([]);
 
-  const commit = useCallback((updater: (prev: YearPlan[]) => YearPlan[]) => {
+  const pending = useRef<Promise<void>>(Promise.resolve());
+  const commit = useCallback((updater: (prev: YearPlan[]) => YearPlan[], mutation?: () => Promise<void>) => {
     const next = updater(plansRef.current);
     plansRef.current = next;
     setPlans(next);
-    yearPlanRepository.saveEntries(next).catch((e) => {
-      setError(e instanceof Error ? e.message : "Erreur d'enregistrement");
-    });
+    const write = isLocalMode ? () => yearPlanRepository.saveAll(next) : mutation;
+    if (write) {
+      pending.current = pending.current.then(write).catch((e) => {
+        setError(e instanceof Error ? e.message : "Erreur d'enregistrement");
+      });
+    }
     return next;
   }, []);
 
@@ -197,7 +201,7 @@ export function useYearPlans() {
           return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
-      });
+      }, () => yearPlanRepository.saveEntry(planId, entry, "create"));
     },
     [commit]
   );
@@ -206,6 +210,9 @@ export function useYearPlans() {
     (planId: string, entryId: string, draft: LeaveEntryDraft) => {
       const target = plansRef.current.find((p) => p.id === planId);
       if (!target) return;
+      const existing = target.entries.find(e => e.id === entryId);
+      if (!existing) return;
+      const entry = { ...draft, id: existing.id, createdAt: existing.createdAt };
 
       commit((prev) => {
         const updated = prev.map((p) =>
@@ -223,7 +230,7 @@ export function useYearPlans() {
           return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
-      });
+      }, () => yearPlanRepository.saveEntry(planId, entry, "update"));
     },
     [commit]
   );
@@ -244,7 +251,7 @@ export function useYearPlans() {
           return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
-      });
+      }, () => yearPlanRepository.deleteEntry(planId, entryId));
     },
     [commit]
   );

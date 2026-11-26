@@ -99,10 +99,12 @@ export const yearPlanRepository = {
     await this.saveAll(next);
   },
 
-  async saveEntries(plans: YearPlan[]): Promise<void> {
-    const validated = yearPlansSchema.parse(plans);
-    if (isLocalMode) return this.saveAll(validated);
-    await syncService.saveCloudEntries(validated);
+  async saveEntry(planId: string, entry: LeaveEntry, operation: "create" | "update"): Promise<void> {
+    await syncService.saveCloudEntry(planId, entry, operation);
+  },
+
+  async deleteEntry(planId: string, entryId: string): Promise<void> {
+    await syncService.deleteCloudEntry(planId, entryId);
   },
 
   async saveAll(plans: YearPlan[]): Promise<void> {

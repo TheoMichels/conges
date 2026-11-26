@@ -1263,3 +1263,34 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     }
   });
 });
+
+
+describe("F03 targeted concurrent entry writes", () => {
+  it("preserves interleaved additions and an entry unseen by a stale screen", async () => {
+    const { saveCloudEntry, deleteCloudEntry } = await import("../src/services/syncService.ts");
+    const rows = new Map([["unseen", { id: "unseen", label: "Autre appareil" }]]);
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    let started;
+    const entered = new Promise(resolve => { started = resolve; });
+    const client = { auth: { getSession: async () => ({ data: { session: { user: { id: "owner" } } } }) }, from(table) {
+      assert.equal(table, "leave_entries");
+      return {
+        insert: async ([row]) => { if (row.id === "first") { started(); await gate; } rows.set(row.id, row); return { error: null }; },
+        delete: () => { const filters = {}; const query = { eq(key, value) { filters[key] = value; if (key === "id") { rows.delete(value); return Promise.resolve({ error: null }); } return query; } }; return query; },
+      };
+    } };
+    setTestSupabase(client);
+    const entry = id => ({ id, kind: "month", label: id, month: 0, days: 1, createdAt: 1 });
+    try {
+      const first = saveCloudEntry("plan", entry("first"), "create");
+      await entered;
+      await saveCloudEntry("plan", entry("second"), "create");
+      release();
+      await first;
+      assert.deepEqual([...rows.keys()].sort(), ["first", "second", "unseen"]);
+      await deleteCloudEntry("plan", "first");
+      assert.deepEqual([...rows.keys()].sort(), ["second", "unseen"]);
+    } finally { setTestSupabase(null); }
+  });
+});
