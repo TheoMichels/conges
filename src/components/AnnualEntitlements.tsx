@@ -25,8 +25,8 @@ function EntitlementRow({ row, year, wide, onSaved }: { row: AnnualEntitlement; 
     finally { setBusy(false); }
   };
   return <View testID={`annual-member-${row.user_id}`} style={[styles.member, wide && styles.memberWide]}>
-    <View testID={`annual-identity-${row.user_id}`} style={styles.identity}><Text style={styles.memberName}>{row.display_name} · {row.email}</Text>
-    <Text style={styles.memberMeta}>{row.plan_id ? row.year_active ? "Active" : "Brouillon" : "À créer"}{row.plan_id ? ` · Pris : ${row.taken} · Restant : ${row.remaining}` : ""}</Text></View>
+    <View testID={`annual-identity-${row.user_id}`} style={styles.identity}><Text style={styles.memberName}>{row.display_name}</Text>
+    <Text style={styles.memberMeta}>{row.plan_id ? row.year_active ? "Active" : "Brouillon" : "À créer"}{row.plan_id ? ` · Pris : ${row.taken}` : ""}</Text>{row.plan_id && row.remaining !== null && <Text testID={`annual-remaining-${row.user_id}`} style={[styles.memberMeta, Number(row.remaining) < 0 ? styles.negative : styles.positive]}>Restant : {row.remaining}</Text>}</View>
     {error ? <Text testID={`annual-row-error-${row.user_id}`} style={styles.error}>{error}</Text> : null}
     <View testID={`annual-fields-${row.user_id}`} style={[styles.fields, wide && styles.fieldsWide]}>
       <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Solde initial</Text><TextInput testID={`annual-initial-${row.user_id}`} accessibilityLabel={`Solde initial de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={initial} onChangeText={setInitial} keyboardType="decimal-pad" /></View>
@@ -101,6 +101,8 @@ const styles = StyleSheet.create({
   identity: { flexShrink: 1, flexBasis: 280, minWidth: 180, maxWidth: 300, gap: 4 },
   memberName: { fontFamily: fonts.base, fontSize: 16, fontWeight: "700", color: colors.textPrimary },
   memberMeta: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
+  negative: { color: colors.danger },
+  positive: { color: colors.primary },
   input: { fontFamily: fonts.base, fontSize: 16, minHeight: 46, minWidth: 100, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: colors.panel, color: colors.textPrimary },
   inputWide: { minWidth: 0, paddingHorizontal: 8 },
   button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, alignSelf: "flex-start", justifyContent: "center" },

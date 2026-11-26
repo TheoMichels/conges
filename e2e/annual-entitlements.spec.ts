@@ -38,7 +38,7 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
       }
       if (url.includes("/rpc/admin_years")) body = [
         { user_id: memberId, email: "member@example.com", display_name: "Alex Member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? carried : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + carried + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 },
-        { user_id: otherMemberId, email: "robin@example.com", display_name: "Robin Example", active: true, plan_id: null, year_active: null, initial_leave: null, carried_over: null, csupp: null, holiday_override: null, automatic_holidays: 2, taken: 0, remaining: null, suggested_carry: 1 },
+        { user_id: otherMemberId, email: "robin@example.com", display_name: "Robin Example", active: true, plan_id: "robin-plan", year_active: true, initial_leave: 0, carried_over: 0, csupp: 0, holiday_override: null, automatic_holidays: 2, taken: 0, remaining: -1, suggested_carry: 1 },
       ];
       if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null; initial: number; carried: number }; saved = true; activated = data.activate; override = data.holiday; initial = data.initial; carried = data.carried; }
       if (url.includes("/leave_entries")) {
@@ -68,6 +68,8 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId("annual-year").fill("2024");
   await admin.getByTestId("annual-load").click();
   await expect(admin.getByTestId(`annual-member-${otherMemberId}`)).toBeVisible();
+  await expect(admin.getByTestId(`annual-member-${otherMemberId}`)).not.toContainText("robin@example.com");
+  await expect(admin.getByTestId(`annual-remaining-${otherMemberId}`)).toHaveCSS("color", "rgb(220, 38, 38)");
   await admin.getByTestId("member-search").fill("robin");
   await expect(admin.getByTestId(`annual-member-${otherMemberId}`)).toBeVisible();
   await expect(admin.getByTestId(`annual-member-${memberId}`)).toHaveCount(0);
@@ -145,6 +147,8 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await expect(admin.getByTestId("annual-error")).toContainText("existe déjà");
   const row = admin.getByTestId(`annual-member-${memberId}`);
   await expect(row).toContainText("29.5");
+  await expect(row).not.toContainText("member@example.com");
+  await expect(admin.getByTestId(`annual-remaining-${memberId}`)).toHaveCSS("color", "rgb(31, 78, 121)");
   await expect(row).not.toContainText("Privé");
   await admin.getByTestId(`annual-holiday-${memberId}`).fill("0");
   await admin.getByTestId(`annual-save-${memberId}`).click();
