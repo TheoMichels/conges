@@ -47,16 +47,17 @@ export function AnnualEntitlements({ demo }: Props) {
   const [creating, setCreating] = useState(false);
   const [rows, setRows] = useState<AnnualEntitlement[] | null>(null);
   const [error, setError] = useState("");
+  const [retryTarget, setRetryTarget] = useState<"catalog" | "rows" | null>(null);
   const [notice, setNotice] = useState("");
   const loadCatalog = useCallback(async () => {
     try { setError(""); const result = await listAdminYears(); setCatalog(result); if (!selectedYear.current) { const next = result.find(item => item.has_active)?.year || ""; selectedYear.current = next; setYear(next); } }
-    catch (e) { setError(e instanceof Error ? e.message : "Impossible de charger les années."); }
+    catch (e) { setRetryTarget("catalog"); setError(e instanceof Error ? e.message : "Impossible de charger les années."); }
   }, []);
   const loadRows = useCallback(async (preserveRows = false) => {
     if (!year || selectedYear.current !== year) return;
     const request = ++requestId.current;
     try { setError(""); if (!preserveRows) setRows(null); const result = await listAnnualEntitlements(year); if (request === requestId.current && selectedYear.current === year) setRows(result); }
-    catch (e) { if (request === requestId.current && selectedYear.current === year) setError(e instanceof Error ? e.message : "Impossible de charger les droits."); }
+    catch (e) { if (request === requestId.current && selectedYear.current === year) { setRetryTarget("rows"); setError(e instanceof Error ? e.message : "Impossible de charger les droits."); } }
   }, [year]);
   useEffect(() => { if (!demo) void loadCatalog(); }, [demo, loadCatalog]);
   useEffect(() => { const tracker = requestId; if (!demo && year) void loadRows(); return () => { tracker.current++; }; }, [demo, year, loadRows]);
@@ -64,15 +65,15 @@ export function AnnualEntitlements({ demo }: Props) {
     if (selectedYear.current !== next) { requestId.current++; selectedYear.current = next; setRows(null); setYear(next); }
   };
   const create = () => {
-    if (!/^\d{4}$/.test(newYear) || Number(newYear) < 1900 || Number(newYear) > 2100) { setError("Saisissez une année valide entre 1900 et 2100."); return; }
-    if (catalog?.some(item => item.year === newYear && item.has_active)) { setError("Cette année existe déjà."); return; }
+    if (!/^\d{4}$/.test(newYear) || Number(newYear) < 1900 || Number(newYear) > 2100) { setRetryTarget(null); setError("Saisissez une année valide entre 1900 et 2100."); return; }
+    if (catalog?.some(item => item.year === newYear && item.has_active)) { setRetryTarget(null); setError("Cette année existe déjà."); return; }
     setError(""); setNotice(catalog?.some(item => item.year === newYear) ? "Brouillon existant repris." : "Nouvelle année : enregistrez les droits d’un membre pour créer un brouillon."); selectYear(newYear); setCreating(false); setNewYear("");
   };
   if (demo) return <Text>La gestion des droits est disponible en mode connecté.</Text>;
   return <View testID="annual-entitlements" style={styles.box}>
     <View style={styles.heading}><Text style={styles.title}>Droits annuels</Text><Pressable testID="annual-create-button" accessibilityRole="button" style={styles.button} onPress={() => setCreating(current => !current)}><Text>+ Créer une année</Text></Pressable></View>
     {creating && <View style={styles.row}><TextInput testID="annual-year" accessibilityLabel="Nouvelle année" value={newYear} onChangeText={setNewYear} keyboardType="number-pad" maxLength={4} placeholder="Année" style={styles.input} /><Pressable testID="annual-load" style={styles.button} onPress={create}><Text>Créer</Text></Pressable></View>}
-    {error ? <View testID="annual-error"><Text style={styles.error}>{error}</Text><Pressable testID="annual-retry" onPress={() => { if (catalog === null) void loadCatalog(); else if (year) void loadRows(); }} style={styles.button}><Text>Réessayer</Text></Pressable></View> : null}
+    {error ? <View testID="annual-error"><Text style={styles.error}>{error}</Text>{retryTarget && <Pressable testID="annual-retry" onPress={() => { if (retryTarget === "catalog") void loadCatalog(); else void loadRows(); }} style={styles.button}><Text>Réessayer</Text></Pressable>}</View> : null}
     {notice ? <Text testID="annual-notice">{notice}</Text> : null}
     {catalog === null && !error ? <LoadingSkeleton /> : catalog && <View testID="annual-year-menu" style={styles.row}>{catalog.filter(item => item.has_active).map(item => <Pressable key={item.year} testID={`annual-year-${item.year}`} accessibilityRole="button" accessibilityState={{ selected: item.year === year }} onPress={() => { selectYear(item.year); setNotice(""); }} style={styles.button}><Text>{item.year}{item.year === year ? " ✓" : ""}</Text></Pressable>)}</View>}
     {catalog && !year && <Text testID="annual-empty">Aucune année active. Créez une année pour commencer.</Text>}

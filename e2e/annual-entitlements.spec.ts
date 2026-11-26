@@ -5,6 +5,7 @@ const adminId = "00000000-0000-4000-8000-000000000001";
 const memberId = "00000000-0000-4000-8000-000000000002";
 test("activation par l’admin et consultation après rechargement", async ({ page, context }) => {
   let activated = false;
+  let failActivatedCatalog = true;
   let saved = false;
   let override: number | null = null;
   let initial = 26;
@@ -30,7 +31,10 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
       if (url.includes("/auth/v1/user")) body = user;
       if (url.includes("/rpc/register_member")) body = [{ active: true, is_admin: admin, display_name: admin ? "admin" : "member" }];
       if (url.includes("/rpc/admin_members")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true }];
-      if (url.includes("/rpc/admin_year_catalog")) body = saved ? [{ year: "2024", has_active: activated }] : [];
+      if (url.includes("/rpc/admin_year_catalog")) {
+        if (activated && failActivatedCatalog) { failActivatedCatalog = false; body = {}; }
+        else body = saved ? [{ year: "2024", has_active: activated }] : [];
+      }
       if (url.includes("/rpc/admin_years")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? carried : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + carried + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 }];
       if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null; initial: number; carried: number }; saved = true; activated = data.activate; override = data.holiday; initial = data.initial; carried = data.carried; }
       if (url.includes("/leave_entries")) {
@@ -80,6 +84,10 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId(`annual-carried-${memberId}`).fill("2");
   await admin.getByTestId(`annual-activate-${memberId}`).click();
   await expect(admin.getByTestId("annual-notice")).toContainText("activée");
+  await expect(admin.getByTestId("annual-error")).toBeVisible();
+  await expect(admin.getByTestId("annual-year-2024")).toHaveCount(0);
+  await admin.getByTestId("annual-retry").click();
+  await expect(admin.getByTestId("annual-year-2024")).toBeVisible();
   await page.reload();
   await expect(page.getByTestId("empty-state")).toHaveCount(0);
   await expect(page.getByText("2024").first()).toBeVisible();
