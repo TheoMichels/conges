@@ -155,7 +155,7 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       my_calendar_teams: { Args: Record<string, never>; Returns: { id: string; name: string }[] };
-      shared_calendar: { Args: { month_start: string; selected_team: string | null }; Returns: { id: string; display_name: string; start_date: string; end_date: string; start_half: string | null; end_half: string | null }[] };
+      shared_calendar: { Args: { month_start: string; selected_team: string | null }; Returns: { id: string; display_name: string; member_key: string; kind: string; start_date: string | null; end_date: string | null; start_half: string | null; end_half: string | null; month: number | null; days: number | null; created_at: string; reserved_ids: string[] }[] };
       admin_teams: { Args: Record<string, never>; Returns: { id: string; name: string; archived: boolean }[] };
       admin_team_members: { Args: Record<string, never>; Returns: { team_id: string; user_id: string }[] };
       admin_save_team: { Args: { target: string | null; value: string }; Returns: string };

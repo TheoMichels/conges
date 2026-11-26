@@ -21,7 +21,6 @@ function colorForName(name: string) {
  return leaveColors[hash % leaveColors.length];
 }
 function calendarDays(entries: CalendarEntry[], month: Date): CalendarDay[] {
- const first = new Date(month.getFullYear(), month.getMonth(), 1);
  const days: CalendarDay[] = [];
  for (let number = 1; number <= new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate(); number += 1) {
   const date = new Date(month.getFullYear(), month.getMonth(), number);
@@ -42,12 +41,13 @@ export function SharedCalendar({ onClose }: { onClose: () => void }) {
  const [team, setTeam] = useState<string | null>(null);
  const [teams, setTeams] = useState<CalendarTeam[]>([]);
  const [entries, setEntries] = useState<CalendarEntry[]>([]);
+ const [unplaced, setUnplaced] = useState<string[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState("");
  const [attempt, setAttempt] = useState(0);
  useEffect(() => {
-  let cancelled = false; setLoading(true); setError(""); setEntries([]);
-  void loadSharedCalendar(toISODate(month), team).then(data => { if (!cancelled) { setTeams(data.teams); setEntries(data.entries); } }).catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : "Une erreur est survenue."); }).finally(() => { if (!cancelled) setLoading(false); });
+  let cancelled = false; setLoading(true); setError(""); setEntries([]); setUnplaced([]);
+  void loadSharedCalendar(toISODate(month), team).then(data => { if (!cancelled) { setTeams(data.teams); setEntries(data.entries); setUnplaced(data.unplaced); } }).catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : "Une erreur est survenue."); }).finally(() => { if (!cancelled) setLoading(false); });
   return () => { cancelled = true; };
  }, [month, team, attempt]);
  const days = calendarDays(entries, month);
@@ -60,6 +60,7 @@ export function SharedCalendar({ onClose }: { onClose: () => void }) {
    <View style={styles.controls}><Pressable testID="calendar-previous" accessibilityLabel="Mois précédent" onPress={() => shift(-1)} style={[styles.button,cursorPointer]}><Text style={styles.text}>←</Text></Pressable><Text testID="calendar-month" style={styles.heading}>{month.toLocaleDateString("fr-FR", { month:"long", year:"numeric" })}</Text><Pressable testID="calendar-next" accessibilityLabel="Mois suivant" onPress={() => shift(1)} style={[styles.button,cursorPointer]}><Text style={styles.text}>→</Text></Pressable></View>
    {teams.length > 0 && <View style={styles.filters}><Pressable testID="calendar-team-all" accessibilityRole="button" accessibilityState={{ selected: team === null }} onPress={() => setTeam(null)} style={[styles.button, team === null && styles.selected,cursorPointer]}><Text style={styles.text}>Toutes mes équipes</Text></Pressable>{teams.map(t => <Pressable key={t.id} testID={`calendar-team-${t.id}`} accessibilityRole="button" accessibilityState={{selected:team===t.id}} onPress={() => setTeam(t.id)} style={[styles.button,team===t.id && styles.selected,cursorPointer]}><Text style={styles.text}>{t.name}</Text></Pressable>)}</View>}
    {loading ? <View testID="calendar-loading"><LoadingSkeleton /></View> : error ? <View testID="calendar-error"><Text style={styles.error}>{error}</Text><Pressable testID="calendar-retry" onPress={() => setAttempt(n => n+1)} style={[styles.button,cursorPointer]}><Text style={styles.text}>Réessayer</Text></Pressable></View> : teams.length === 0 ? <Text testID="calendar-no-teams" style={styles.empty}>Aucune équipe assignée.</Text> : null}
+   {unplaced.length > 0 && <Text testID="calendar-unplaced" style={styles.error}>Congés mensuels impossibles à répartir : {unplaced.join(", ")}.</Text>}
    <View style={styles.legend}><View style={styles.legendSwatch} /><Text style={styles.text}>Congé</Text></View>
    <View testID="calendar-grid" style={styles.grid}>
     {[["Lun.","Mar.","Mer.","Jeu.","Ven.","Sam.","Dim."]].flat().map(label => <View key={label} style={styles.weekday}><Text style={styles.weekdayText}>{label}</Text></View>)}
