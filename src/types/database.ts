@@ -63,7 +63,6 @@ export interface Database {
           plan_id: string;
           kind: string;
           label: string;
-          estimated: boolean;
           start_date: string | null;
           end_date: string | null;
           start_half: string | null;
@@ -79,7 +78,6 @@ export interface Database {
           plan_id: string;
           kind: string;
           label: string;
-          estimated?: boolean;
           start_date?: string | null;
           end_date?: string | null;
           start_half?: string | null;
@@ -95,7 +93,6 @@ export interface Database {
           plan_id?: string;
           kind?: string;
           label?: string;
-          estimated?: boolean;
           start_date?: string | null;
           end_date?: string | null;
           start_half?: string | null;

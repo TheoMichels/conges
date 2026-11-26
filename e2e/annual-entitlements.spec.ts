@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 
 const adminId = "00000000-0000-4000-8000-000000000001";
 const memberId = "00000000-0000-4000-8000-000000000002";
+const otherMemberId = "00000000-0000-4000-8000-000000000003";
 test("activation par l’admin et consultation après rechargement", async ({ page, context }) => {
   let activated = false;
   let failActivatedCatalog = true;
@@ -35,7 +36,10 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
         if (activated && failActivatedCatalog) { failActivatedCatalog = false; body = {}; }
         else body = saved ? [{ year: "2024", has_active: activated }] : [];
       }
-      if (url.includes("/rpc/admin_years")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? carried : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + carried + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 }];
+      if (url.includes("/rpc/admin_years")) body = [
+        { user_id: memberId, email: "member@example.com", display_name: "Alex Member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? carried : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + carried + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 },
+        { user_id: otherMemberId, email: "robin@example.com", display_name: "Robin Example", active: true, plan_id: null, year_active: null, initial_leave: null, carried_over: null, csupp: null, holiday_override: null, automatic_holidays: 2, taken: 0, remaining: null, suggested_carry: 1 },
+      ];
       if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null; initial: number; carried: number }; saved = true; activated = data.activate; override = data.holiday; initial = data.initial; carried = data.carried; }
       if (url.includes("/leave_entries")) {
         if (route.request().method() === "POST") { markEntryStarted(); await entryGate; entries = route.request().postDataJSON() as typeof entries; }
@@ -63,6 +67,26 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await expect(admin.getByTestId("annual-error")).toContainText("année valide");
   await admin.getByTestId("annual-year").fill("2024");
   await admin.getByTestId("annual-load").click();
+  await expect(admin.getByTestId(`annual-member-${otherMemberId}`)).toBeVisible();
+  await admin.getByTestId("member-search").fill("robin");
+  await expect(admin.getByTestId(`annual-member-${otherMemberId}`)).toBeVisible();
+  await expect(admin.getByTestId(`annual-member-${memberId}`)).toHaveCount(0);
+  await admin.getByTestId("member-search").fill("personne-inconnue");
+  await expect(admin.getByTestId("annual-members-empty")).toContainText("Aucun membre trouvé");
+  await expect(admin.getByTestId("members-empty")).toBeVisible();
+  await admin.getByTestId("member-search").fill("");
+  await admin.setViewportSize({ width: 1600, height: 1000 });
+  const wideRow = admin.getByTestId(`annual-member-${memberId}`);
+  const rowPositions = await Promise.all(["identity", "fields", "actions"].map(group => admin.getByTestId(`annual-${group}-${memberId}`).evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    return { center: bounds.y + bounds.height / 2, left: bounds.left, right: bounds.right };
+  })));
+  const centers = rowPositions.map(position => position.center);
+  expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
+  expect(rowPositions[0].right).toBeLessThanOrEqual(rowPositions[1].left);
+  expect(rowPositions[1].right).toBeLessThanOrEqual(rowPositions[2].left);
+  const rowBounds = await wideRow.boundingBox();
+  expect(rowPositions[2].right).toBeLessThanOrEqual((rowBounds?.x ?? 0) + (rowBounds?.width ?? 0));
   await admin.getByTestId(`annual-initial-${memberId}`).fill("26");
   await admin.getByTestId(`annual-csupp-${memberId}`).fill("1");
   await admin.getByTestId(`annual-carried-${memberId}`).fill("3");

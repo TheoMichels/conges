@@ -249,7 +249,7 @@ describe("F02 local migration", () => {
     assert.equal(first[0].carriedOver, 2.45);
     assert.equal(first[0].entries[0].kind, "dates");
     assert.equal(first[0].entries[0].label, "Été");
-    assert.equal(first[0].entries[0].estimated, true);
+    assert.equal("estimated" in first[0].entries[0], false);
     const { calculatePlanTaken, calculatePlanRemaining } = await import("../src/utils/yearPlanUtils.ts");
     assert.equal(calculatePlanTaken(first[0]), 2);
     assert.equal(calculatePlanRemaining(first[0]), 31.85);
@@ -541,7 +541,7 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     assert.equal(plans[0].year, "2022");
     const { calculatePlanTaken } = await import("../src/utils/yearPlanUtils.ts");
     assert.equal(calculatePlanTaken(plans[0]), 17);
-    assert.ok(plans[0].entries.every(entry => entry.kind === "dates" && entry.estimated));
+    assert.ok(plans[0].entries.every(entry => entry.kind === "dates" && !("estimated" in entry)));
     assert.deepEqual(await yearPlanRepository.list(), plans);
   });
 
@@ -1285,6 +1285,7 @@ describe("F03 targeted concurrent entry writes", () => {
       release();
       await first;
       assert.deepEqual([...rows.keys()].sort(), ["first", "second", "unseen"]);
+      assert.equal("estimated" in rows.get("first"), false);
       await deleteCloudEntry("plan", "first");
       assert.deepEqual([...rows.keys()].sort(), ["second", "unseen"]);
     } finally { setTestSupabase(null); }
@@ -1304,7 +1305,7 @@ describe("F04 local monthly recovery", () => {
     const first = await loadFromLocalStorage();
     assert.equal(first[0].entries.find(e => e.id === 'legacy').startDate, '2026-02-02');
     assert.equal(first[0].entries.find(e => e.id === 'legacy').startHalf, 'afternoon');
-    assert.equal(first[0].entries.find(e => e.id === 'legacy').estimated, true);
+    assert.equal('estimated' in first[0].entries.find(e => e.id === 'legacy'), false);
     assert.equal(first[0].entries.find(e => e.id === 'fraction').days, 1.2);
     const persisted = await AsyncStorage.getItem(STORAGE_KEY);
     assert.deepEqual(await loadFromLocalStorage(), first);
@@ -1325,13 +1326,13 @@ describe("F04 cloud recovery", () => {
         assert.equal(name,'recover_monthly_leave'); calls++;
         assert.equal(args.p_snapshot[0].id,'old');
         row.leave_entries = args.p_replacements[0].parts.map(part => ({id:part.id,user_id:'u',plan_id:'p',kind:'dates',label:'Vacances',
-          start_date:part.startDate,end_date:part.endDate,start_half:part.startHalf,end_half:part.endHalf,estimated:true,created_at:timestamp,updated_at:timestamp}));
+          start_date:part.startDate,end_date:part.endDate,start_half:part.startHalf,end_half:part.endHalf,created_at:timestamp,updated_at:timestamp}));
         return {data:true,error:null};
       } });
     try {
       const first = await syncService.pullFromCloud('u');
       assert.equal(first[0].entries[0].startDate,'2026-02-02');
-      assert.equal(first[0].entries[0].estimated,true);
+      assert.equal("estimated" in first[0].entries[0],false);
       assert.deepEqual(await syncService.pullFromCloud('u'),first);
       assert.equal(calls,1);
     } finally { setTestSupabase(null); }

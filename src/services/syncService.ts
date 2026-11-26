@@ -13,7 +13,6 @@ interface DbLeaveEntry {
   plan_id: string;
   kind: string;
   label: string;
-  estimated?: boolean;
   start_date: string | null;
   end_date: string | null;
   start_half: string | null;
@@ -53,7 +52,6 @@ function mapDbPlanToYearPlan(row: DbYearPlan): YearPlan {
     return {
       id: e.id,
       kind: "dates",
-      estimated: e.estimated ?? false,
       label: e.label,
       startDate: e.start_date ?? "",
       endDate: e.end_date ?? "",
@@ -275,7 +273,7 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
   if (datedEntries.length > 0) {
     const entriesRows = datedEntries.map((entry) => ({
       id: entry.id, user_id: uid, plan_id: canonicalPlanId, kind: "dates" as const,
-      estimated: entry.estimated ?? false, label: entry.label,
+      label: entry.label,
       start_date: entry.startDate, end_date: entry.endDate,
       start_half: entry.startHalf ?? null, end_half: entry.endHalf ?? null,
       month: null, days: null, created_at: new Date(entry.createdAt).toISOString(), updated_at: nowIso,
@@ -357,7 +355,6 @@ export async function saveCloudEntry(planId: string, entry: LeaveEntry, operatio
   if (!uid) throw new Error("Session Holy indisponible.");
   const row = {
     id: entry.id, user_id: uid, plan_id: planId, kind: entry.kind, label: entry.label,
-    estimated: entry.kind === "dates" ? (entry.estimated ?? false) : false,
     start_date: entry.kind === "dates" ? entry.startDate : null,
     end_date: entry.kind === "dates" ? entry.endDate : null,
     start_half: entry.kind === "dates" ? (entry.startHalf ?? null) : null,

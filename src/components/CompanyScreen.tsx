@@ -38,7 +38,8 @@ export function CompanyScreen({ account, userId, admin, demo = false, onClose, o
     finally { setBusy(false); }
   };
   if (admin && !account.is_admin) return <View testID="access-denied" style={[styles.page, styles.pageCenter]}><View style={styles.card}><Text style={styles.error}>Accès refusé.</Text><Pressable testID="company-close" onPress={onClose} style={[styles.button, cursorPointer]}><Text style={styles.buttonText}>Retour</Text></Pressable></View></View>;
-  const filtered = members?.filter(m => m.email.toLowerCase().includes(query.toLowerCase()));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = members?.filter(m => `${m.display_name} ${m.email}`.toLowerCase().includes(normalizedQuery));
   return <ScrollView testID={admin ? "administration-screen" : "profile-screen"} style={styles.scroll} contentContainerStyle={styles.page}>
     <Pressable testID="company-close" onPress={onClose} style={[styles.button, cursorPointer]}><Text style={styles.buttonText}>← Retour</Text></Pressable>
     <Text style={styles.title}>{admin ? "Administration" : "Mon profil"}</Text>
@@ -46,15 +47,15 @@ export function CompanyScreen({ account, userId, admin, demo = false, onClose, o
     {error ? <View testID="company-error" style={styles.errorBox}><Text style={styles.error}>{error}</Text>{admin && <Pressable onPress={() => void load()} style={[styles.button, cursorPointer]}><Text style={styles.buttonText}>Réessayer</Text></Pressable>}</View> : null}
     {notice ? <Text testID="company-notice" style={styles.notice}>{notice}</Text> : null}
     {!admin ? <View style={styles.card}><Text style={styles.label}>Nom d’affichage</Text><TextInput testID="display-name-input" value={name} onChangeText={setName} style={styles.input} maxLength={100} /><Pressable testID="save-display-name" disabled={busy} onPress={() => void submit()} style={[styles.button, styles.primaryButton, busy && styles.disabled, cursorPointer]}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable></View> : <View style={styles.card}>
-      <AnnualEntitlements demo={demo} />
-      <Text style={styles.label}>Membres</Text><TextInput testID="member-search" placeholder="Rechercher par e-mail" placeholderTextColor={colors.textSecondary} value={query} onChangeText={setQuery} style={styles.input} autoCapitalize="none" />
+      <Text style={styles.label}>Personnes</Text><TextInput testID="member-search" placeholder="Rechercher par nom ou e-mail" placeholderTextColor={colors.textSecondary} value={query} onChangeText={setQuery} style={styles.input} autoCapitalize="none" />
+      <AnnualEntitlements demo={demo} query={query} />
       {members === null && !error ? <LoadingSkeleton /> : filtered?.length ? filtered.map(member => <View key={member.user_id} testID={`member-${member.user_id}`} style={styles.row}><View style={styles.rowMain}><Text style={styles.memberName}>{member.display_name}</Text><Text style={styles.memberMeta}>{member.email} · {member.active ? "Actif" : "Désactivé"}</Text></View>{member.user_id !== userId && <Pressable testID={`toggle-member-${member.user_id}`} disabled={busy} onPress={() => void toggle(member)} style={[styles.button, busy && styles.disabled, cursorPointer]}><Text style={styles.buttonText}>{member.active ? "Désactiver" : "Réactiver"}</Text></Pressable>}</View>) : <Text testID="members-empty" style={styles.empty}>Aucun membre trouvé.</Text>}
     </View>}
   </ScrollView>;
 }
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
-  page: { flexGrow: 1, width: "100%", maxWidth: 1040, alignSelf: "center", paddingVertical: 36, paddingHorizontal: spacing.xl, gap: spacing.lg, backgroundColor: colors.background },
+  page: { flexGrow: 1, width: "100%", maxWidth: 1600, alignSelf: "center", paddingVertical: 36, paddingHorizontal: spacing.xl, gap: spacing.lg, backgroundColor: colors.background },
   pageCenter: { flex: 1, justifyContent: "center" },
   title: { fontFamily: fonts.base, fontSize: 30, fontWeight: "700", letterSpacing: -0.4, color: colors.textPrimary },
   card: { padding: 24, borderRadius: shape.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, gap: spacing.md },

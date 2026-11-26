@@ -46,7 +46,6 @@ model LeaveEntry {
   endDate   String?   @map("end_date")
   startHalf String?   @map("start_half")
   endHalf   String?   @map("end_half")
-  estimated Boolean   @default(false)
   month     Int?
   days      Decimal?  @db.Decimal(5, 1)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)

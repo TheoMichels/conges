@@ -352,7 +352,7 @@ describe("F04 monthly entry recovery", () => {
       { id: "fraction", kind: "month", label: "Exception", month: 1, days: 1.2, createdAt: 2 },
     ];
     const recovered = recoverMonthlyEntries("2026", entries);
-    assert.deepEqual(recovered.filter(e => e.id.startsWith("old")).map(e => [e.startDate, e.endDate, e.startHalf, e.endHalf, e.estimated]), [["2026-02-02", "2026-02-03", "afternoon", "afternoon", true]]);
+    assert.deepEqual(recovered.filter(e => e.id.startsWith("old")).map(e => [e.startDate, e.endDate, e.startHalf, e.endHalf]), [["2026-02-02", "2026-02-03", "afternoon", "afternoon"]]);
     assert.deepEqual(recovered.find(e => e.id === "fraction"), entries[2]);
     assert.deepEqual(recoverMonthlyEntries("2026", recovered), recovered);
     assert.equal(recovered.reduce((n, e) => n + entryTotalDays(e), 0), 3.2);

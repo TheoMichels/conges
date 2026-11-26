@@ -1,4 +1,4 @@
-import { Image, StyleSheet } from "react-native";
+import { Image } from "react-native";
 
 type Props = {
   size?: number;
@@ -10,21 +10,10 @@ export function Logo({ size = 36 }: Props) {
     <Image
       testID="app-logo"
       source={require("../../assets/home-boat-logo.png")}
+      resizeMode="contain"
       accessibilityRole="image"
       accessibilityLabel="Logo Holy"
-      style={[
-        styles.icon,
-        {
-          width: size,
-          height: size,
-        },
-      ]}
+      style={{ width: size, height: size }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  icon: {
-    resizeMode: "contain",
-  },
-});
