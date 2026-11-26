@@ -332,7 +332,7 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
     const authScreen = page.locator('[data-testid="auth-screen"]');
     await expect(authScreen).toBeVisible({ timeout: 15_000 });
 
-    // Vérifie que toutes les clés @holidays_* ont été purgées du stockage local
+    // Le stockage personnel local doit survivre à la déconnexion cloud.
     const storageKeys = await page.evaluate(() => {
       const keys: string[] = [];
       for (let i = 0; i < window.localStorage.length; i++) {
@@ -343,7 +343,8 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
     });
 
     const remainingHolidaysKeys = storageKeys.filter((k) => k.startsWith("@holidays_"));
-    expect(remainingHolidaysKeys).toEqual([]);
+    expect(remainingHolidaysKeys).toContain("@holidays_year_plans_v1");
+    expect(remainingHolidaysKeys).toContain("@holidays_temp_draft");
 
     // La clé tierce doit être conservée
     expect(storageKeys.includes("unrelated_third_party_key")).toBe(true);

@@ -25,8 +25,11 @@ test('F01: migration, inscription, identité vérifiée et désactivation contr�
     await db.query('SELECT * FROM holy.register_member()');
     await assert.rejects(db.query('SELECT * FROM holy.admin_members()'), /forbidden/i);
     await db.exec(`RESET ROLE; UPDATE auth.users SET email_confirmed_at=now() WHERE id='${admin}'; SET ROLE authenticated; SET request.jwt.claim.sub='${newer}'`);
+    const registered = (await db.query('SELECT * FROM holy.register_member()')).rows[0];
+    assert.equal(registered.display_name, 'new');
     await db.query('SELECT * FROM holy.register_member()');
-    await db.query('SELECT * FROM holy.register_member()');
+    await assert.rejects(db.query('SELECT * FROM holy.members'), /permission denied/i);
+    await assert.rejects(db.query('SELECT email FROM auth.users'), /permission denied/i);
     await assert.rejects(db.query('SELECT * FROM holy.admin_members()'), /forbidden/i);
     await db.exec(`SET request.jwt.claim.sub='${member}'`);
     await db.query("SELECT holy.set_display_name('michelstheo1@gmail.com')");
@@ -40,6 +43,7 @@ test('F01: migration, inscription, identité vérifiée et désactivation contr�
     await assert.rejects(db.query(`SELECT holy.admin_set_active('${admin}', false)`), /forbidden/i);
     await db.exec(`SET request.jwt.claim.sub='${member}'`);
     assert.equal((await db.query('SELECT * FROM holy.year_plans')).rows.length, 0);
+    assert.equal((await db.query('SELECT * FROM holy.register_member()')).rows[0].active, false);
     await assert.rejects(db.query(`INSERT INTO holy.year_plans(id,user_id,year) VALUES ('blocked','${member}','2027')`), /row-level security/i);
     await db.exec(`SET request.jwt.claim.sub='${admin}'`);
     list = (await db.query('SELECT * FROM holy.admin_members()')).rows;

@@ -89,3 +89,29 @@ test("visiteur : inscription puis connexion et reconnexion", async ({ page }) =>
   await expect(page.getByTestId("app-header")).toBeVisible();
   expect(registrations).toBeGreaterThanOrEqual(1);
 });
+
+test("désactivation pendant le chargement : accès refusé et données locales conservées", async ({ page }) => {
+  const user = { id: memberId, aud: "authenticated", role: "authenticated", email: "member@example.com" };
+  let checks = 0;
+  await page.route("https://holidays.example/**", async route => {
+    const url = new URL(route.request().url());
+    const response = await route.fetch({ url: `http://127.0.0.1:4174${url.pathname}${url.search}` });
+    await route.fulfill({ response });
+  });
+  await page.addInitScript(user => {
+    localStorage.setItem("sb-synthetic-auth-token", JSON.stringify({ access_token: "mock-token", refresh_token: "mock-refresh", token_type: "bearer", expires_at: Math.floor(Date.now()/1000)+3600, user }));
+    localStorage.setItem("@holy_year_plans_v1", '[{"id":"local-plan"}]');
+  }, user);
+  await page.route("https://synthetic.supabase.invalid/**", async route => {
+    const url = route.request().url();
+    let body: unknown = {};
+    if (url.includes("/auth/v1/user")) body = user;
+    if (url.includes("/rpc/register_member")) body = [{ active: ++checks === 1, is_admin: false, display_name: "member" }];
+    if (url.includes("/year_plans")) body = [];
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+  await page.goto("https://holidays.example/");
+  await expect(page.getByTestId("account-error")).toContainText("désactivé");
+  await expect(page.getByTestId("app-header")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("@holy_year_plans_v1"))).toBe('[{"id":"local-plan"}]');
+});

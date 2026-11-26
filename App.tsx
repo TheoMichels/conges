@@ -22,7 +22,6 @@ import { LoadingScreen, LoadingSkeleton } from "./src/components/LoadingScreen";
 import { Header } from "./src/components/Header";
 import { CompanyScreen } from "./src/components/CompanyScreen";
 import { Account, registerMember } from "./src/storage/memberRepository";
-import { clearLocalCache } from "./src/services/syncService";
 import { KpiCards } from "./src/components/KpiCards";
 import { Sidebar } from "./src/components/Sidebar";
 import { SummaryFields } from "./src/components/SummaryFields";
@@ -307,7 +306,7 @@ export default function App() {
     void (async () => {
       try {
         const current = await registerMember();
-        if (!current.active) { await clearLocalCache(); throw new Error("Votre compte Holy est désactivé."); }
+        if (!current.active) throw new Error("Votre compte Holy est désactivé.");
         await pullFromCloud(user.id);
         if (!cancelled) setAccount(current);
       } catch (e) {

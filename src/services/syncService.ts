@@ -1,7 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabaseClient";
 import { HalfDay, LeaveEntry, YearPlan, workPercentageSchema } from "../types/yearPlan";
-import { STORAGE_KEY, loadFromLocalStorage } from "../storage/localStorage";
+import { loadFromLocalStorage } from "../storage/localStorage";
+import { registerMember } from "../storage/memberRepository";
+
+export const CLOUD_CACHE_PREFIX = "@holy_cloud_year_plans_";
 
 interface DbLeaveEntry {
   id: string;
@@ -84,7 +87,7 @@ async function resolveUserId(userId?: string): Promise<string | null> {
 export async function clearLocalCache(): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const appKeys = keys.filter((k) => k.startsWith("@holy_") || k.startsWith("@holidays_"));
+    const appKeys = keys.filter((k) => k.startsWith(CLOUD_CACHE_PREFIX));
     if (appKeys.length > 0) {
       await AsyncStorage.multiRemove(appKeys);
     }
@@ -97,7 +100,7 @@ export async function clearLocalCache(): Promise<void> {
       const keysToRemove: string[] = [];
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i);
-        if (key && (key.startsWith("@holy_") || key.startsWith("@holidays_"))) {
+        if (key && key.startsWith(CLOUD_CACHE_PREFIX)) {
           keysToRemove.push(key);
         }
       }
@@ -116,9 +119,7 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
   }
 
   const uid = await resolveUserId(userId);
-  if (!uid) {
-    return loadFromLocalStorage();
-  }
+  if (!uid) throw new Error("Session Holy indisponible.");
 
   try {
     const { data, error } = await supabase
@@ -131,16 +132,22 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
       throw new Error("Impossible de charger vos données Holy. Réessayez.");
     }
 
+    // A disabled account can produce an empty RLS result without an SQL error.
+    // Revalidate after the read before accepting or caching that result.
+    const account = await registerMember();
+    if (!account.active) throw new Error("Votre compte Holy est désactivé.");
+    const cacheKey = CLOUD_CACHE_PREFIX + uid;
     if (Array.isArray(data) && data.length > 0) {
       const plans = (data as unknown as DbYearPlan[]).map(mapDbPlanToYearPlan);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(plans));
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(plans));
       return plans;
     }
 
     // Un compte cloud vide est la source de vérité, même si un cache local existe.
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    await AsyncStorage.setItem(cacheKey, JSON.stringify([]));
     return [];
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "Votre compte Holy est désactivé.") throw error;
     throw new Error("Impossible de charger vos données Holy. Réessayez.");
   }
 }
