@@ -29,10 +29,10 @@ function EntitlementRow({ row, year, wide, onSaved }: { row: AnnualEntitlement; 
     <Text style={styles.memberMeta}>{row.plan_id ? row.year_active ? "Active" : "Brouillon" : "À créer"}{row.plan_id ? ` · Pris : ${row.taken} · Restant : ${row.remaining}` : ""}</Text></View>
     {error ? <Text testID={`annual-row-error-${row.user_id}`} style={styles.error}>{error}</Text> : null}
     <View style={[styles.fields, wide && styles.fieldsWide]}>
-      <View style={styles.field}><Text style={styles.fieldLabel}>Solde initial</Text><TextInput testID={`annual-initial-${row.user_id}`} accessibilityLabel={`Solde initial de ${row.display_name}`} style={styles.input} value={initial} onChangeText={setInitial} keyboardType="decimal-pad" /></View>
-      <View style={styles.field}><Text style={styles.fieldLabel}>Reportés{row.plan_id ? "" : " (proposition)"}</Text><TextInput testID={`annual-carried-${row.user_id}`} accessibilityLabel={`Reportés de ${row.display_name}`} style={styles.input} value={carried} onChangeText={setCarried} keyboardType="decimal-pad" /></View>
-      <View style={styles.field}><Text style={styles.fieldLabel}>CSupp</Text><TextInput testID={`annual-csupp-${row.user_id}`} accessibilityLabel={`CSupp de ${row.display_name}`} style={styles.input} value={csupp} onChangeText={setCsupp} keyboardType="decimal-pad" /></View>
-      <View style={styles.field}><Text style={styles.fieldLabel}>Fériés {holiday === "" ? `auto (${row.automatic_holidays})` : "manuel"}</Text><TextInput testID={`annual-holiday-${row.user_id}`} accessibilityLabel={`Fériés de ${row.display_name}`} style={styles.input} value={holiday} onChangeText={setHoliday} placeholder={String(row.automatic_holidays)} keyboardType="decimal-pad" /></View>
+      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Solde initial</Text><TextInput testID={`annual-initial-${row.user_id}`} accessibilityLabel={`Solde initial de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={initial} onChangeText={setInitial} keyboardType="decimal-pad" /></View>
+      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Reportés{row.plan_id ? "" : " (proposition)"}</Text><TextInput testID={`annual-carried-${row.user_id}`} accessibilityLabel={`Reportés de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={carried} onChangeText={setCarried} keyboardType="decimal-pad" /></View>
+      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>CSupp</Text><TextInput testID={`annual-csupp-${row.user_id}`} accessibilityLabel={`CSupp de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={csupp} onChangeText={setCsupp} keyboardType="decimal-pad" /></View>
+      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Fériés {holiday === "" ? `auto (${row.automatic_holidays})` : "manuel"}</Text><TextInput testID={`annual-holiday-${row.user_id}`} accessibilityLabel={`Fériés de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={holiday} onChangeText={setHoliday} placeholder={String(row.automatic_holidays)} keyboardType="decimal-pad" /></View>
     </View>
     <View style={[styles.row, wide && styles.rowWide]}><Pressable testID={`annual-auto-${row.user_id}`} style={styles.button} onPress={() => setHoliday("")}><Text style={styles.buttonText}>Mode automatique</Text></Pressable><Pressable testID={`annual-save-${row.user_id}`} disabled={busy} style={[styles.button, styles.primaryButton, busy && styles.disabled]} onPress={() => void save(!!row.year_active)}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable>{!row.year_active && <Pressable testID={`annual-activate-${row.user_id}`} disabled={busy} style={styles.button} onPress={() => void save(true)}><Text style={styles.buttonText}>Activer l’année</Text></Pressable>}</View>
   </View>;
@@ -89,17 +89,19 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.base, fontSize: 18, fontWeight: "700", color: colors.textPrimary },
   heading: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
-  rowWide: { flexWrap: "nowrap" },
+  rowWide: { flexWrap: "nowrap", flexShrink: 0, gap: spacing.xs },
   fields: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.lg, columnGap: 20 },
-  fieldsWide: { flex: 1, flexWrap: "nowrap", columnGap: spacing.sm },
+  fieldsWide: { flex: 1, minWidth: 0, flexWrap: "nowrap", columnGap: spacing.sm },
   field: { flexGrow: 1, minWidth: 120, gap: 8 },
+  fieldWide: { flex: 1, minWidth: 0 },
   fieldLabel: { fontFamily: fonts.base, fontSize: 13, fontWeight: "600", color: colors.textSecondary },
   member: { gap: spacing.md, padding: 16, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, backgroundColor: colors.panel },
   memberWide: { flexDirection: "row", alignItems: "center", flexWrap: "nowrap", gap: spacing.md },
-  identity: { flexShrink: 1, gap: 4 },
+  identity: { flexShrink: 1, flexBasis: 280, minWidth: 180, maxWidth: 300, gap: 4 },
   memberName: { fontFamily: fonts.base, fontSize: 16, fontWeight: "700", color: colors.textPrimary },
   memberMeta: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
   input: { fontFamily: fonts.base, fontSize: 16, minHeight: 46, minWidth: 100, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: colors.panel, color: colors.textPrimary },
+  inputWide: { minWidth: 0, paddingHorizontal: 8 },
   button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, alignSelf: "flex-start", justifyContent: "center" },
   buttonText: { fontFamily: fonts.base, fontSize: 14, color: colors.textPrimary },
   primaryButton: { backgroundColor: colors.cta, borderColor: colors.cta },
