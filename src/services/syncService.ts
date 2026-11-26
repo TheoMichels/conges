@@ -350,8 +350,86 @@ export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<Y
   return plans.map((plan, index) => ({ ...plan, id: canonicalIds[index] }));
 }
 
+// Les saisies connectées n’écrivent jamais les droits administrés.
+export async function saveCloudEntries(plans: YearPlan[]): Promise<YearPlan[]> {
+  if (!supabase) throw new Error("Connexion au serveur indisponible.");
+  const uid = await resolveUserId();
+  if (!uid) throw new Error("Session Holy indisponible.");
+  const nowIso = new Date().toISOString();
+  for (const plan of plans) {
+    const canonicalPlanId = plan.id;
+  if (plan.entries && plan.entries.length > 0) {
+    const entriesRows = plan.entries.map((entry) => ({
+      id: entry.id,
+      user_id: uid,
+      plan_id: canonicalPlanId,
+      kind: entry.kind,
+      label: entry.label,
+      start_date: entry.kind === "dates" ? entry.startDate : null,
+      end_date: entry.kind === "dates" ? entry.endDate : null,
+      start_half: entry.kind === "dates" ? (entry.startHalf ?? null) : null,
+      end_half: entry.kind === "dates" ? (entry.endHalf ?? null) : null,
+      month: entry.kind === "month" ? entry.month : null,
+      days: entry.kind === "month" ? entry.days : null,
+      created_at: new Date(entry.createdAt).toISOString(),
+      updated_at: nowIso,
+    }));
+
+    const { error: entriesError } = await supabase.from("leave_entries").upsert(entriesRows);
+    if (entriesError) {
+      throw new Error(`Erreur d'enregistrement des entrées: ${entriesError.message}`);
+    }
+
+    // Suppression des entrées orphelines (retirées du plan)
+    const currentEntryIds = new Set(plan.entries.map((e) => e.id));
+    const { data: existingEntries, error: fetchEntriesError } = await supabase
+      .from("leave_entries")
+      .select("id")
+      .eq("user_id", uid)
+      .eq("plan_id", canonicalPlanId);
+
+    if (fetchEntriesError) {
+      throw new Error(`Erreur lors de la vérification des entrées: ${fetchEntriesError.message}`);
+    }
+
+    if (existingEntries) {
+      const orphanIds = existingEntries
+        .map((e) => e.id)
+        .filter((id) => !currentEntryIds.has(id));
+
+      if (orphanIds.length > 0) {
+        const { error: delError } = await supabase
+          .from("leave_entries")
+          .delete()
+          .eq("user_id", uid)
+          .eq("plan_id", canonicalPlanId)
+          .in("id", orphanIds);
+
+        if (delError) {
+          throw new Error(`Erreur lors du nettoyage des entrées orphelines: ${delError.message}`);
+        }
+      }
+    }
+  } else {
+    // Aucune entrée dans le plan : suppression de toutes les entrées orphelines en base
+    const { error: delError } = await supabase
+      .from("leave_entries")
+      .delete()
+      .eq("user_id", uid)
+      .eq("plan_id", canonicalPlanId);
+
+    if (delError) {
+      throw new Error(`Erreur lors de la suppression des entrées orphelines: ${delError.message}`);
+    }
+  }
+
+  }
+  return plans;
+}
+
 export const syncService = {
   pullFromCloud,
+  saveCloudEntries,
   pushToCloud,
   upsertCloudPlan,
   deleteCloudPlan,

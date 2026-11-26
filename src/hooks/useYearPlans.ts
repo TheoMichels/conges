@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isLocalMode } from "../config/storageMode";
 import { LeaveEntryDraft, YearPlan } from "../types/yearPlan";
 import { yearPlanRepository } from "../storage/yearPlanRepository";
 import {
@@ -45,7 +46,7 @@ export function useYearPlans() {
     const next = updater(plansRef.current);
     plansRef.current = next;
     setPlans(next);
-    yearPlanRepository.saveAll(next).catch((e) => {
+    yearPlanRepository.saveEntries(next).catch((e) => {
       setError(e instanceof Error ? e.message : "Erreur d'enregistrement");
     });
     return next;
@@ -56,7 +57,7 @@ export function useYearPlans() {
     setError(null);
     try {
       const loaded = await yearPlanRepository.list();
-      if (loaded.length === 0) {
+      if (loaded.length === 0 && isLocalMode) {
         commit(() => [makePlan(currentYearLabel())]);
       } else {
         const sorted = sortPlansChronologically(loaded);
@@ -96,7 +97,7 @@ export function useYearPlans() {
 
       commit((prev) => {
         const updated = sortPlansChronologically([...prev, newPlan]);
-        return propagateCarryOverFrom(updated, yearNum);
+        return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
       });
 
       return newPlan;
@@ -173,7 +174,7 @@ export function useYearPlans() {
         const updated = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
       });
@@ -193,7 +194,7 @@ export function useYearPlans() {
         );
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
       });
@@ -219,7 +220,7 @@ export function useYearPlans() {
         );
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
       });
@@ -240,7 +241,7 @@ export function useYearPlans() {
         );
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
       });

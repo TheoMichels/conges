@@ -159,6 +159,7 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
 
             {isMobile && (
               <YearSelectorMobile
+                readOnly={!isLocalMode}
                 plans={plans}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
@@ -170,6 +171,7 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
               {!isMobile && (
                 <View style={styles.sidebarWrapper}>
                   <Sidebar
+                    readOnly={!isLocalMode}
                     plans={plans}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
@@ -212,14 +214,14 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
                   </View>
                 ) : !selectedPlan || plans.length === 0 ? (
                   <View testID="empty-state" style={styles.stateContainer}>
-                    <Text style={styles.empty}>Aucune année de congés enregistrée.</Text>
-                    <Pressable
+                    <Text style={styles.empty}>{isLocalMode ? "Aucune année de congés enregistrée." : "Aucune année de congés activée"}</Text>
+                    {isLocalMode && <Pressable
                       accessibilityRole="button"
                       style={[styles.retryButton, cursorPointer]}
                       onPress={() => handleAddYear(new Date().getFullYear().toString())}
                     >
                       <Text style={styles.retryText}>+ Créer une année</Text>
-                    </Pressable>
+                    </Pressable>}
                   </View>
                 ) : (
                   <ScrollView
@@ -236,6 +238,7 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
 
                     {isMobile ? (
                       <MobileDashboard
+                        readOnly={!isLocalMode}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}
                         csupp={selectedPlan.csupp}
@@ -247,6 +250,7 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
                       />
                     ) : (
                       <SummaryFields
+                        readOnly={!isLocalMode}
                         year={selectedPlan.year}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}

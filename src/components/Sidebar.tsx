@@ -19,6 +19,7 @@ import {
 import { formatDayNumber } from "../utils/format";
 
 type Props = {
+  readOnly?: boolean;
   plans: YearPlan[];
   selectedId: string | undefined;
   onSelect: (id: string) => void;
@@ -36,6 +37,7 @@ function suggestNextYear(plans: YearPlan[]): string {
 }
 
 export function Sidebar({
+  readOnly = false,
   plans,
   selectedId,
   onSelect,
@@ -173,7 +175,7 @@ export function Sidebar({
                 </View>
               </Pressable>
 
-              {selected ? (
+              {selected && !readOnly ? (
                 <View style={styles.actionButtons}>
                   <Pressable
                     testID={`edit-section-${plan.id}`}
@@ -232,7 +234,7 @@ export function Sidebar({
         })}
       </ScrollView>
 
-      {isAdding ? (
+      {!readOnly && (isAdding ? (
         <TextInput
           style={styles.addInput}
           value={draft}
@@ -252,7 +254,7 @@ export function Sidebar({
         >
           <Text style={styles.addButtonText}>+ Ajouter une année</Text>
         </Pressable>
-      )}
+      ))}
 
     </View>
   );

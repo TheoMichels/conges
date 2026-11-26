@@ -7,6 +7,7 @@ import { getLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
 import { NumberField } from "./NumberField";
 
 type Props = {
+  readOnly?: boolean;
   year: string;
   holidayIsManual: boolean;
   initialLeave: number;
@@ -61,6 +62,7 @@ function ReadOnlyField({
 }
 
 export function SummaryFields({
+  readOnly = false,
   year,
   holidayIsManual,
   initialLeave,
@@ -82,17 +84,20 @@ export function SummaryFields({
       <Text style={styles.title}>Détail des droits et soldes</Text>
       <View style={styles.row}>
         <View style={styles.fieldCell}><NumberField
+          readOnly={readOnly}
           label="Congés (initialement)"
           value={initialLeave}
           onChange={onChangeInitialLeave}
         /></View>
         <View style={styles.fieldCell}><NumberField
+          readOnly={readOnly}
           label="Reportés"
           hint={previousYear ? `de ${previousYear}` : undefined}
           value={carriedOver}
           onChange={onChangeCarriedOver}
         /></View>
         <View style={styles.fieldCell}><NumberField
+          readOnly={readOnly}
           label="Csupp"
           value={csupp}
           onChange={onChangeCsupp}

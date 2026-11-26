@@ -17,13 +17,14 @@ model YearPlan {
   id             String       @id @default(cuid())
   userId         String       @map("user_id") @db.Uuid
   year           String
-  initialLeave   Decimal      @default(26) @map("initial_leave") @db.Decimal(5, 1)
+  initialLeave   Decimal      @default(26) @map("initial_leave") @db.Decimal(6, 2)
   carriedOver    Decimal      @default(0) @map("carried_over") @db.Decimal(6, 2)
-  holidayOverride Decimal?    @map("holiday_override") @db.Decimal(5, 2)
-  csupp          Decimal      @default(0) @map("csupp") @db.Decimal(5, 1)
+  holidayOverride Decimal?    @map("holiday_override") @db.Decimal(6, 2)
+  csupp          Decimal      @default(0) @map("csupp") @db.Decimal(6, 2)
   publicHolidays Decimal      @default(11) @map("public_holidays") @db.Decimal(5, 1)
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  active         Boolean      @default(true)
   entries        LeaveEntry[]
 
   @@unique([userId, year], map: "idx_year_plans_user_year")
