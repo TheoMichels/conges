@@ -236,57 +236,43 @@ describe("Company accounts cache isolation", () => {
   });
 });
 
-describe("Annual work percentage persistence — AC-03", () => {
+describe("F02 local migration", () => {
   beforeEach(async () => { await AsyncStorage.clear(); setTestSupabase(null); });
-  it("defaults legacy records without losing rights/entries and roundtrips updates", async () => {
-    const old = { id: "old", year: "2022", createdAt: 1, initialLeave: 26, carriedOver: 2.45, csupp: 3, publicHolidays: 3,
+  it("preserves prorated balances and entries and is idempotent", async () => {
+    const old = { id: "old", year: "2022", createdAt: 1, initialLeave: 26, carriedOver: 2.45, csupp: 3, publicHolidays: 999, workPercentage: 80,
       entries: [{ id: "e", kind: "month", month: 0, days: 2, label: "Été", createdAt: 1 }] };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([old]));
-    assert.deepEqual(await yearPlanRepository.list(), [{ ...old, workPercentage: 100 }]);
-    await yearPlanRepository.update("old", { workPercentage: 80.25 });
-    assert.deepEqual(await yearPlanRepository.list(), [{ ...old, workPercentage: 80.25 }]);
-    await assert.rejects(yearPlanRepository.update("old", { workPercentage: 100.01 }));
-    assert.equal((await yearPlanRepository.list())[0].workPercentage, 80.25);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([old, { ...old, id: "full", workPercentage: 100 }, { ...old, id: "rounding", year: "2023", workPercentage: 14.5 }]));
+    const first = await yearPlanRepository.list();
+    assert.equal(first[0].holidayOverride, 2.4);
+    assert.equal(first[1].holidayOverride, null);
+    assert.equal(first[2].holidayOverride, 0.14);
+    assert.equal(first[0].carriedOver, 2.45);
+    assert.deepEqual(first[0].entries, old.entries);
+    const { calculatePlanTaken, calculatePlanRemaining } = await import("../src/utils/yearPlanUtils.ts");
+    assert.equal(calculatePlanTaken(first[0]), 2);
+    assert.equal(calculatePlanRemaining(first[0]), 31.85);
+    assert.deepEqual(await yearPlanRepository.list(), first);
   });
-  it("maps cloud decimals, legacy defaults, insert and conflict-update without changing rights", async () => {
-    const remote = { id: "cloud", user_id: "u", year: "2022", created_at: new Date(1).toISOString(),
-      initial_leave: 26, carried_over: 2.45, csupp: 3, public_holidays: 3, work_percentage: "80.25",
-      leave_entries: [{ id: "e", kind: "month", month: 6, days: "2.5", label: "Été", created_at: new Date(1).toISOString() }] };
-    let conflict = false;
-    let uploaded;
-    let updated;
+});
+
+describe("F02 cloud representation", () => {
+  it("reads and writes the preserved manual credit across reload", async () => {
+    const remote = { id: "cloud", user_id: "u", year: "2022", created_at: new Date(1).toISOString(), initial_leave: 26,
+      carried_over: 2, csupp: 1, public_holidays: 3, holiday_override: "2.40", leave_entries: [] };
+    let saved;
     setTestSupabase({ async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; }, from(table) {
-      assert.ok(["year_plans", "leave_entries"].includes(table));
-      const query = {
-        select() { return query; }, eq() { return query; },
-        order: async () => ({ data: [remote], error: null }),
-        upsert(row) { if (table === "year_plans") uploaded = row; return query; },
-        maybeSingle: async () => ({ data: conflict ? null : { id: "cloud" }, error: null }),
-        single: async () => ({ data: { id: "cloud" }, error: null }),
-        update(row) { updated = row; Object.assign(remote, row); return query; },
-        delete() { return query; },
-        then(resolve) { resolve({ data: [], error: null }); },
-      };
+      const query = { select() { return query; }, eq() { return query; }, order: async () => ({ data: [remote], error: null }),
+        upsert(row) { if (table === "year_plans") saved = row; return query; },
+        maybeSingle: async () => ({ data: { id: "cloud" }, error: null }), delete() { return query; },
+        then(resolve) { resolve({ data: [], error: null }); } };
       return query;
     } });
     try {
-      const [plan] = await syncService.pullFromCloud("u");
-      assert.equal(plan.workPercentage, 80.25);
-      assert.equal(plan.carriedOver, 2.45);
-      assert.equal(plan.initialLeave, 26);
-      assert.equal(plan.csupp, 3);
-      assert.equal(plan.entries[0].days, 2.5);
-      await syncService.upsertCloudPlan(plan, "u");
-      assert.equal(uploaded.work_percentage, 80.25);
-      conflict = true;
-      await syncService.upsertCloudPlan({ ...plan, workPercentage: 33.33 }, "u");
-      assert.equal(updated.work_percentage, 33.33);
-      assert.equal((await syncService.pullFromCloud("u"))[0].workPercentage, 33.33);
-      assert.deepEqual((await syncService.pullFromCloud("u"))[0].entries, plan.entries);
-      delete remote.work_percentage;
-      assert.equal((await syncService.pullFromCloud("u"))[0].workPercentage, 100);
-      remote.work_percentage = "invalid";
-      assert.equal((await syncService.pullFromCloud("u"))[0].workPercentage, 100);
+      const first = (await syncService.pullFromCloud("u"))[0];
+      assert.equal(first.holidayOverride, 2.4);
+      await syncService.upsertCloudPlan(first, "u");
+      assert.equal(saved.holiday_override, 2.4);
+      assert.equal((await syncService.pullFromCloud("u"))[0].holidayOverride, 2.4);
     } finally { setTestSupabase(null); }
   });
 });
@@ -468,7 +454,7 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([emptyPlan]));
 
-    assert.deepEqual(await loadFromLocalStorage(), [emptyPlan]);
+    assert.deepEqual(await loadFromLocalStorage(), [{ ...emptyPlan, workPercentage: undefined, holidayOverride: null }].map(({ workPercentage, ...plan }) => plan));
   });
 
   it("migrates automatically from @holidays_year_plans_v1 to @holy_year_plans_v1 and removes the old key", async () => {

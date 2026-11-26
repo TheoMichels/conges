@@ -20,8 +20,8 @@ export function parseYearNumber(year: string): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
-export function calculatePlanHolidays(plan: Pick<YearPlan, "year" | "workPercentage">): number {
-  return roundTwoDecimals(countLuxembourgCompensatoryHolidays(plan.year) * (plan.workPercentage ?? 100) / 100);
+export function calculatePlanHolidays(plan: Pick<YearPlan, "year" | "holidayOverride">): number {
+  return plan.holidayOverride ?? countLuxembourgCompensatoryHolidays(plan.year);
 }
 
 export function calculatePlanBudget(plan: YearPlan): number {

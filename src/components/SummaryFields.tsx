@@ -5,12 +5,10 @@ import { cursorPointer } from "../theme/webCursor";
 import { formatDayNumber } from "../utils/format";
 import { getLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
 import { NumberField } from "./NumberField";
-import { WorkPercentageField } from "./WorkPercentageField";
 
 type Props = {
   year: string;
-  workPercentage: number;
-  onChangeWorkPercentage: (value: number) => void;
+  holidayIsManual: boolean;
   initialLeave: number;
   carriedOver: number;
   csupp: number;
@@ -64,8 +62,7 @@ function ReadOnlyField({
 
 export function SummaryFields({
   year,
-  workPercentage,
-  onChangeWorkPercentage,
+  holidayIsManual,
   initialLeave,
   carriedOver,
   csupp,
@@ -83,7 +80,6 @@ export function SummaryFields({
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Détail des droits et soldes</Text>
-      <WorkPercentageField key={year} year={year} value={workPercentage} onChange={onChangeWorkPercentage} />
       <View style={styles.row}>
         <View style={styles.fieldCell}><NumberField
           label="Congés (initialement)"
@@ -103,7 +99,7 @@ export function SummaryFields({
         /></View>
         <View style={styles.fieldCell}><ReadOnlyField
           label="Fériés (Lux.)"
-          hint="auto"
+          hint={holidayIsManual ? "manuel" : "auto"}
           value={publicHolidays}
           onPress={() => setShowHolidaysDetail((v) => !v)}
         /></View>

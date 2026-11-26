@@ -5,13 +5,14 @@ import {
   yearPlansSchema,
   workPercentageSchema,
 } from "../types/yearPlan";
+import { countLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
 
 export const STORAGE_KEY = "@holy_year_plans_v1";
 export const LEGACY_STORAGE_KEY = "@holidays_year_plans_v1";
 export const LEGACY_CONGES_KEY = "conges:yearPlans";
 
 // Format historique d'un plan avant l'introduction des entrées de congés
-export type StoredPlan = Partial<YearPlan> & { months?: number[] };
+export type StoredPlan = Partial<YearPlan> & { months?: number[]; workPercentage?: number };
 
 export function legacyMonthEntries(months: number[] | undefined): LeaveEntry[] {
   if (!months) return [];
@@ -36,14 +37,20 @@ export function normalize(raw: StoredPlan): YearPlan {
     ? raw.entries
     : legacyMonthEntries(raw.months);
 
+  const year = String(raw.year ?? new Date().getFullYear());
+  const auto = countLuxembourgCompensatoryHolidays(year);
+  const rate = workPercentageSchema.catch(100).parse(raw.workPercentage);
+  const previous = Math.round((auto * rate / 100) * 100) / 100;
+  const holidayOverride = raw.holidayOverride !== undefined ? raw.holidayOverride : previous !== auto ? previous : null;
+
   return {
     id: String(raw.id ?? `plan-${raw.year ?? Date.now()}`),
-    year: String(raw.year ?? new Date().getFullYear()),
+    year,
     createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
     initialLeave: typeof raw.initialLeave === "number" ? raw.initialLeave : 0,
     carriedOver: typeof raw.carriedOver === "number" ? raw.carriedOver : 0,
     csupp: typeof raw.csupp === "number" ? raw.csupp : 0,
-    workPercentage: workPercentageSchema.catch(100).parse(raw.workPercentage),
+    holidayOverride,
     publicHolidays: typeof raw.publicHolidays === "number" ? raw.publicHolidays : 0,
     entries: rawEntries as LeaveEntry[],
   };
@@ -74,6 +81,9 @@ export async function loadFromLocalStorage(): Promise<YearPlan[]> {
         const normalized = parsed.map((item) => normalize(item as StoredPlan));
         const validation = yearPlansSchema.safeParse(normalized);
         if (validation.success) {
+          if (JSON.stringify(parsed) !== JSON.stringify(validation.data)) {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validation.data));
+          }
           return validation.data;
         }
       }

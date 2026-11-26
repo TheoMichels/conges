@@ -236,12 +236,10 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
 
                     {isMobile ? (
                       <MobileDashboard
-                        year={selectedPlan.year}
-                        workPercentage={selectedPlan.workPercentage}
-                        onChangeWorkPercentage={(value) => handleUpdate({ workPercentage: value })}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}
                         csupp={selectedPlan.csupp}
+                        holidayIsManual={selectedPlan.holidayOverride !== null}
                         publicHolidays={calculatePlanHolidays(selectedPlan)}
                         onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
                         onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
@@ -250,11 +248,10 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
                     ) : (
                       <SummaryFields
                         year={selectedPlan.year}
-                        workPercentage={selectedPlan.workPercentage}
-                        onChangeWorkPercentage={(value) => handleUpdate({ workPercentage: value })}
                         initialLeave={selectedPlan.initialLeave}
                         carriedOver={selectedPlan.carriedOver}
                         csupp={selectedPlan.csupp}
+                        holidayIsManual={selectedPlan.holidayOverride !== null}
                         publicHolidays={calculatePlanHolidays(selectedPlan)}
                         taken={totalPlanned}
                         remaining={remaining}

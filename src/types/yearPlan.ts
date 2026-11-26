@@ -59,7 +59,7 @@ export const yearPlanSchema = z.object({
   initialLeave: z.number(),
   carriedOver: z.number(),
   csupp: z.number(),
-  workPercentage: workPercentageSchema,
+  holidayOverride: z.number().nullable().default(null),
   publicHolidays: z.number(),
   entries: z.array(leaveEntrySchema),
 });
