@@ -15,8 +15,9 @@ export function Teams({ members }: { members: Member[] }) {
  const [error, setError] = useState("");
  const [notice, setNotice] = useState("");
  const [busy, setBusy] = useState(false);
- const load = useCallback(async () => { try { setError(""); const data = await listTeams(); setTeams(data.teams); setAssignments(data.assignments); } catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); } }, []);
- useEffect(() => { void load(); }, [load]);
+ const load = useCallback(async () => { const data = await listTeams(); setTeams(data.teams); setAssignments(data.assignments); }, []);
+ const retry = useCallback(async () => { try { setError(""); await load(); } catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); } }, [load]);
+ useEffect(() => { void retry(); }, [retry]);
  const run = async (action: () => Promise<void>, message: string) => {
   try { setBusy(true); setError(""); setNotice(""); await action(); await load(); setNotice(message); }
   catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); }
@@ -26,7 +27,7 @@ export function Teams({ members }: { members: Member[] }) {
  const archived = teams?.filter(t => t.archived) ?? [];
  return <View style={styles.container} testID="teams-section">
   <Text style={styles.title}>Équipes</Text>
-  {error ? <View testID="teams-error" style={styles.error}><Text style={styles.errorText}>{error}</Text><Pressable onPress={() => void load()} style={styles.button}><Text>Réessayer</Text></Pressable></View> : null}
+  {error ? <View testID="teams-error" style={styles.error}><Text style={styles.errorText}>{error}</Text><Pressable onPress={() => void retry()} style={styles.button}><Text>Réessayer</Text></Pressable></View> : null}
   {notice ? <Text testID="teams-notice" style={styles.notice}>{notice}</Text> : null}
   <TextInput testID="team-name" value={name} onChangeText={setName} placeholder="Nom de l’équipe" style={styles.input} maxLength={100} />
   <View style={styles.actions}><Pressable testID="team-save" disabled={busy} style={[styles.button, styles.primary, busy && styles.disabled, cursorPointer]} onPress={() => void run(async () => { await saveTeam(editing, name); setName(""); setEditing(null); }, "Équipe enregistrée.")}><Text style={styles.primaryText}>{editing ? "Enregistrer" : "Créer l’équipe"}</Text></Pressable>{editing && <Pressable testID="team-cancel" style={styles.button} onPress={() => { setEditing(null); setName(""); }}><Text>Annuler</Text></Pressable>}</View>

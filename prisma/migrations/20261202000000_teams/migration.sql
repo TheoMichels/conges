@@ -23,7 +23,8 @@ BEGIN IF NOT holy.is_admin() THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='425
  UPDATE holy.teams SET archived=true WHERE id=target AND NOT archived; IF NOT FOUND THEN RAISE EXCEPTION 'invalid team'; END IF; END $$;
 CREATE FUNCTION holy.admin_set_team_member(target uuid, member uuid, assigned boolean) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN IF NOT holy.is_admin() THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
- IF assigned IS NULL OR NOT EXISTS (SELECT 1 FROM holy.teams WHERE id=target AND NOT archived) OR NOT EXISTS (SELECT 1 FROM holy.members WHERE user_id=member) THEN RAISE EXCEPTION 'invalid assignment'; END IF;
+ PERFORM 1 FROM holy.teams WHERE id=target AND NOT archived FOR UPDATE;
+ IF NOT FOUND OR assigned IS NULL OR NOT EXISTS (SELECT 1 FROM holy.members WHERE user_id=member) THEN RAISE EXCEPTION 'invalid assignment'; END IF;
  IF assigned THEN INSERT INTO holy.team_members(team_id,user_id) VALUES(target,member) ON CONFLICT DO NOTHING;
  ELSE DELETE FROM holy.team_members WHERE team_id=target AND user_id=member; END IF; END $$;
 REVOKE ALL ON FUNCTION holy.admin_teams(), holy.admin_team_members(), holy.admin_save_team(uuid,text), holy.admin_archive_team(uuid), holy.admin_set_team_member(uuid,uuid,boolean) FROM PUBLIC, anon;
