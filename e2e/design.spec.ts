@@ -5,7 +5,11 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
     page,
   }) => {
     const errors: string[] = [];
+    const resizeModeWarnings: string[] = [];
     page.on("console", (msg) => {
+      if (msg.type() === "warning" && /style\.resizeMode is deprecated/.test(msg.text())) {
+        resizeModeWarnings.push(msg.text());
+      }
       if (
         msg.type() === "error" &&
         !/Download the React DevTools/i.test(msg.text())
@@ -51,6 +55,7 @@ test.describe("Design System & Glassmorphism — Lot 2", () => {
 
     // Ensure no uncaught browser console errors occurred
     expect(errors, "Expected no browser console errors on desktop").toEqual([]);
+    expect(resizeModeWarnings, "Expected no deprecated Image resizeMode style warning").toEqual([]);
   });
 
   test("keeps desktop sidebar visible across viewport changes", async ({ page }) => {
