@@ -28,7 +28,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.getByTestId("add-leave-button").click();
       await expect(page.getByPlaceholder("Motif des congés")).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      const mode = page.getByText("Nombre de jours", { exact: true });
+      const mode = page.getByText("Matin (0,5 j)", { exact: true });
       expect((await mode.locator("..").boundingBox())?.height).toBeGreaterThanOrEqual(44);
       await page.screenshot({ path: test.info().outputPath(`${width}-${colorScheme}.png`), fullPage: true });
     });
@@ -44,14 +44,13 @@ test("leave entry modes, editing and persistence survive the visual refresh", as
   await page.getByText("Ajouter", { exact: true }).click();
   await expect(page.getByText("Matin personnel", { exact: true })).toBeVisible();
   await page.getByTestId("add-leave-button").click();
-  await page.getByPlaceholder("Motif des congés").fill("Congé mensuel");
-  await page.getByText("Nombre de jours", { exact: true }).click();
+  await page.getByPlaceholder("Motif des congés").fill("Congé daté");
   await page.getByText("Ajouter", { exact: true }).click();
   await page.reload();
   await expect(page.getByText("Matin personnel", { exact: true })).toBeVisible();
-  await expect(page.getByText("Congé mensuel", { exact: true })).toBeVisible();
+  await expect(page.getByText("Congé daté", { exact: true })).toBeVisible();
   await expect(page.getByTestId("kpi-taken")).toContainText("3,5");
-  await page.getByText("Congé mensuel", { exact: true }).locator("../..").getByRole("button", { name: "Modifier le congé", exact: true }).click();
+  await page.getByText("Congé daté", { exact: true }).locator("../..").getByRole("button", { name: "Modifier le congé", exact: true }).click();
   await page.getByPlaceholder("Motif des congés").fill("Congé modifié");
   await page.getByText("Enregistrer", { exact: true }).click();
   await expect(page.getByText("Congé modifié", { exact: true })).toBeVisible();

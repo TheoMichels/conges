@@ -247,7 +247,9 @@ describe("F02 local migration", () => {
     assert.equal(first[1].holidayOverride, null);
     assert.equal(first[2].holidayOverride, 0.14);
     assert.equal(first[0].carriedOver, 2.45);
-    assert.deepEqual(first[0].entries, old.entries);
+    assert.equal(first[0].entries[0].kind, "dates");
+    assert.equal(first[0].entries[0].label, "Été");
+    assert.equal(first[0].entries[0].estimated, true);
     const { calculatePlanTaken, calculatePlanRemaining } = await import("../src/utils/yearPlanUtils.ts");
     assert.equal(calculatePlanTaken(first[0]), 2);
     assert.equal(calculatePlanRemaining(first[0]), 31.85);
@@ -537,14 +539,10 @@ describe("Lot 3 — Repository & Migration (AC-03)", () => {
 
     assert.equal(plans.length, 1);
     assert.equal(plans[0].year, "2022");
-    // Should have generated 3 month entries
-    assert.equal(plans[0].entries.length, 3);
-    assert.equal(plans[0].entries[0].month, 2);
-    assert.equal(plans[0].entries[0].days, 5);
-    assert.equal(plans[0].entries[1].month, 7);
-    assert.equal(plans[0].entries[1].days, 10);
-    assert.equal(plans[0].entries[2].month, 11);
-    assert.equal(plans[0].entries[2].days, 2);
+    const { calculatePlanTaken } = await import("../src/utils/yearPlanUtils.ts");
+    assert.equal(calculatePlanTaken(plans[0]), 17);
+    assert.ok(plans[0].entries.every(entry => entry.kind === "dates" && entry.estimated));
+    assert.deepEqual(await yearPlanRepository.list(), plans);
   });
 
   it("provides full CRUD operations: get, create, update, remove, saveAll", async () => {
@@ -771,7 +769,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
                     async eq() {
                       // Simule 3 entrées existantes en base: e1, e2, et l'orpheline e3-deleted
                       return {
-                        data: [{ id: "e1" }, { id: "e2" }, { id: "e3-deleted" }],
+                        data: [{ id: "e1", kind: "dates" }, { id: "e2", kind: "dates" }, { id: "e3-deleted", kind: "dates" }],
                         error: null,
                       };
                     },
@@ -812,7 +810,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
         csupp: 0,
         publicHolidays: 11,
         entries: [
-          { id: "e1", kind: "month", label: "M1", month: 1, days: 2, createdAt: 1000 },
+          { id: "e1", kind: "dates", label: "M1", startDate: "2025-02-03", endDate: "2025-02-04", createdAt: 1000 },
           { id: "e2", kind: "dates", label: "V1", startDate: "2025-07-01", endDate: "2025-07-05", createdAt: 2000 },
         ],
       };
@@ -915,7 +913,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
                 eq() {
                   return {
                     async eq() {
-                      return { data: leaveEntries.map(({ id }) => ({ id })), error: null };
+                      return { data: leaveEntries.map(({ id, kind }) => ({ id, kind })), error: null };
                     },
                   };
                 },
@@ -940,7 +938,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
         carriedOver: 0,
         csupp: 0,
         publicHolidays: 11,
-        entries: [{ id: "entry-canonical", kind: "month", label: "Mai", month: 5, days: 2, createdAt: 1000 }],
+        entries: [{ id: "entry-canonical", kind: "dates", label: "Mai", startDate: "2026-05-04", endDate: "2026-05-05", createdAt: 1000 }],
       };
       const concurrent = { ...first, id: "plan-temporary", entries: [] };
       const canonicalIds = await Promise.all([
@@ -1008,14 +1006,12 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
         }
         if (table === "leave_entries") {
           return {
+            select() { return { eq() { return { async eq() { return { data: [{ id: "old", kind: "dates" }], error: null }; } }; } }; },
             delete() {
               return {
                 eq() {
                   return {
-                    async eq() {
-                      deletedAllEntries = true;
-                      return { error: null };
-                    },
+                    eq() { return { async in(_key, ids) { deletedAllEntries = ids.includes("old"); return { error: null }; } }; },
                   };
                 },
               };
@@ -1190,14 +1186,14 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
                                 id: "e-remote-1",
                                 user_id: "user-auto-123",
                                 plan_id: "db-plan-2025",
-                                kind: "month",
+                                kind: "dates",
                                 label: "Congés",
-                                start_date: null,
-                                end_date: null,
-                                start_half: null,
-                                end_half: null,
-                                month: 6,
-                                days: 5,
+                                start_date: "2025-07-01",
+                                end_date: "2025-07-07",
+                                start_half: "morning",
+                                end_half: "afternoon",
+                                month: null,
+                                days: null,
                                 created_at: "2025-01-01T00:00:00Z",
                                 updated_at: "2025-01-01T00:00:00Z",
                               },
@@ -1281,7 +1277,7 @@ describe("F03 targeted concurrent entry writes", () => {
       };
     } };
     setTestSupabase(client);
-    const entry = id => ({ id, kind: "month", label: id, month: 0, days: 1, createdAt: 1 });
+    const entry = id => ({ id, kind: "dates", label: id, startDate: "2025-01-02", endDate: "2025-01-02", startHalf: "morning", endHalf: "afternoon", createdAt: 1 });
     try {
       const first = saveCloudEntry("plan", entry("first"), "create");
       await entered;

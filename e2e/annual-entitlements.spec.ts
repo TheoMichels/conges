@@ -93,9 +93,11 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await expect(page.getByText("2024").first()).toBeVisible();
   await expect(page.getByTestId("admin-button")).toHaveCount(0);
   await page.getByTestId("add-leave-button").click();
-  await page.getByText("Nombre de jours", { exact: true }).first().click();
   await page.getByPlaceholder("Motif des congés").fill("Privé");
-  await page.locator('input[inputmode="decimal"]').last().fill("1,5");
+  await page.getByTestId("calendar-day-2024-01-02").click();
+  await page.getByTestId("calendar-day-2024-01-02").click();
+  await page.getByTestId("calendar-day-2024-01-03").click();
+  await page.getByText("Jusqu'au midi (-0,5 j)").click();
   await page.getByText("Ajouter", { exact: true }).last().click();
   await expect(page.getByTestId("kpi-taken")).toContainText("1,5");
   await expect(page.getByTestId("kpi-remaining")).toContainText("29,5");
