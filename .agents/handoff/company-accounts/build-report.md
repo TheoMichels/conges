@@ -14,5 +14,6 @@
 - Correction revue : cache cloud par compte, espace local préservé ; compte revalidé après chaque lecture cloud.
 - Régression : PostgreSQL isolé, stockage et E2E course de désactivation ; confidentialité et nom par défaut vérifiés.
 - Upgrade : clés historiques sans provenance en quarantaine ; reprise volontaire locale, sans écraser les données récentes.
+- Capture E2E existante dirigée vers les artefacts Playwright pour éviter une modification du dépôt.
 - Limite : appareil partagé sans authentification locale ; l’identité de la personne qui restaure ne peut être vérifiée.
 - Revue sécurité et QA indépendantes à relancer.
