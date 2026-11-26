@@ -28,6 +28,7 @@
 | LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS ; exceptions mensuelles historiques) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
 | UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
 | Member | `members` (FK `auth.users`, RLS, accès par fonctions contrôlées) | `src/storage/memberRepository.ts` |
+| Team | `teams`, `team_members` (RLS, fonctions admin, archives) | `src/storage/teamRepository.ts` |
 
 ## Design
 - Tokens §2 `src/theme/colors.ts` · refonte ITS4U : fond blanc, bordure `#E6E8EE`, texte `#1B2B3A`, bleu `#1F4E79` (sélection, dégradé avatar `brandGradient`), orange `#EE6A24` (CTA, lien actif `cta`) · cartes rayon 18, lignes 14 (`shape`) · clair forcé sur web (`color-scheme: only light`).

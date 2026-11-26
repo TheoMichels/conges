@@ -4,6 +4,7 @@ import { Account, listMembers, Member, saveDisplayName, setMemberActive } from "
 import { colors, fonts, shape, spacing } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { AnnualEntitlements } from "./AnnualEntitlements";
+import { Teams } from "./Teams";
 import { LoadingSkeleton } from "./LoadingScreen";
 
 type Props = { account: Account; userId: string; admin: boolean; demo?: boolean; onClose: () => void; onName?: (name: string) => void };
@@ -49,6 +50,7 @@ export function CompanyScreen({ account, userId, admin, demo = false, onClose, o
     {!admin ? <View style={styles.card}><Text style={styles.label}>Nom d’affichage</Text><TextInput testID="display-name-input" value={name} onChangeText={setName} style={styles.input} maxLength={100} /><Pressable testID="save-display-name" disabled={busy} onPress={() => void submit()} style={[styles.button, styles.primaryButton, busy && styles.disabled, cursorPointer]}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable></View> : <View style={styles.card}>
       <Text style={styles.label}>Personnes</Text><TextInput testID="member-search" placeholder="Rechercher par nom ou e-mail" placeholderTextColor={colors.textSecondary} value={query} onChangeText={setQuery} style={styles.input} autoCapitalize="none" />
       <AnnualEntitlements demo={demo} query={query} />
+      {!demo && <Teams members={members ?? []} />}
       {members === null && !error ? <LoadingSkeleton /> : filtered?.length ? filtered.map(member => <View key={member.user_id} testID={`member-${member.user_id}`} style={styles.row}><View style={styles.rowMain}><Text style={styles.memberName}>{member.display_name}</Text><Text style={styles.memberMeta}>{member.email} · {member.active ? "Actif" : "Désactivé"}</Text></View>{member.user_id !== userId && <Pressable testID={`toggle-member-${member.user_id}`} disabled={busy} onPress={() => void toggle(member)} style={[styles.button, busy && styles.disabled, cursorPointer]}><Text style={styles.buttonText}>{member.active ? "Désactiver" : "Réactiver"}</Text></Pressable>}</View>) : <Text testID="members-empty" style={styles.empty}>Aucun membre trouvé.</Text>}
     </View>}
   </ScrollView>;

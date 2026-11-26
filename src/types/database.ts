@@ -154,6 +154,11 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      admin_teams: { Args: Record<string, never>; Returns: { id: string; name: string; archived: boolean }[] };
+      admin_team_members: { Args: Record<string, never>; Returns: { team_id: string; user_id: string }[] };
+      admin_save_team: { Args: { target: string | null; value: string }; Returns: string };
+      admin_archive_team: { Args: { target: string }; Returns: undefined };
+      admin_set_team_member: { Args: { target: string; member: string; assigned: boolean }; Returns: undefined };
       recover_monthly_leave: { Args: { p_plan_id: string; p_snapshot: Json; p_replacements: Json }; Returns: boolean };
       admin_year_catalog: { Args: Record<string, never>; Returns: { year: string; has_active: boolean }[] };
       admin_years: { Args: { target_year: string }; Returns: { user_id: string; email: string; display_name: string; active: boolean; plan_id: string | null; year_active: boolean | null; initial_leave: number | null; carried_over: number | null; csupp: number | null; holiday_override: number | null; automatic_holidays: number; taken: number; remaining: number | null; suggested_carry: number }[] };

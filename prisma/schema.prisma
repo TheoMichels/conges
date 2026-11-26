@@ -79,6 +79,27 @@ model Member {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  teams TeamMember[]
+
   @@map("members")
+  @@schema("holy")
+}
+
+model Team {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+  archived Boolean @default(false)
+  members TeamMember[]
+  @@map("teams")
+  @@schema("holy")
+}
+
+model TeamMember {
+  teamId String @map("team_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  team Team @relation(fields: [teamId], references: [id])
+  member Member @relation(fields: [userId], references: [userId])
+  @@id([teamId, userId])
+  @@map("team_members")
   @@schema("holy")
 }
