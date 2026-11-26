@@ -63,6 +63,7 @@ export interface Database {
           plan_id: string;
           kind: string;
           label: string;
+          estimated: boolean;
           start_date: string | null;
           end_date: string | null;
           start_half: string | null;
@@ -78,6 +79,7 @@ export interface Database {
           plan_id: string;
           kind: string;
           label: string;
+          estimated?: boolean;
           start_date?: string | null;
           end_date?: string | null;
           start_half?: string | null;
@@ -93,6 +95,7 @@ export interface Database {
           plan_id?: string;
           kind?: string;
           label?: string;
+          estimated?: boolean;
           start_date?: string | null;
           end_date?: string | null;
           start_half?: string | null;
@@ -154,6 +157,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      recover_monthly_leave: { Args: { p_plan_id: string; p_snapshot: Json; p_replacements: Json }; Returns: boolean };
       admin_year_catalog: { Args: Record<string, never>; Returns: { year: string; has_active: boolean }[] };
       admin_years: { Args: { target_year: string }; Returns: { user_id: string; email: string; display_name: string; active: boolean; plan_id: string | null; year_active: boolean | null; initial_leave: number | null; carried_over: number | null; csupp: number | null; holiday_override: number | null; automatic_holidays: number; taken: number; remaining: number | null; suggested_carry: number }[] };
       admin_save_year: { Args: { target: string; target_year: string; initial: number; carried: number; supplementary: number; holiday: number | null; activate: boolean }; Returns: undefined };

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isLocalMode } from "../config/storageMode";
-import { LeaveEntryDraft, YearPlan } from "../types/yearPlan";
+import { LeaveEntryDraft, YearPlan, validDatesLeaveEntryDraftSchema } from "../types/yearPlan";
 import { yearPlanRepository } from "../storage/yearPlanRepository";
 import {
   calculatePlanRemaining,
@@ -191,7 +191,8 @@ export function useYearPlans() {
       const target = plansRef.current.find((p) => p.id === planId);
       if (!target) return;
 
-      const entry = { ...draft, id: makeId(), createdAt: Date.now() };
+      const validated = validDatesLeaveEntryDraftSchema.parse(draft);
+      const entry = { ...validated, id: makeId(), createdAt: Date.now() };
       commit((prev) => {
         const updated = prev.map((p) =>
           p.id === planId ? { ...p, entries: [...p.entries, entry] } : p
@@ -212,7 +213,8 @@ export function useYearPlans() {
       if (!target) return;
       const existing = target.entries.find(e => e.id === entryId);
       if (!existing) return;
-      const entry = { ...draft, id: existing.id, createdAt: existing.createdAt };
+      const validated = validDatesLeaveEntryDraftSchema.parse(draft);
+      const entry = { ...validated, id: existing.id, createdAt: existing.createdAt };
 
       commit((prev) => {
         const updated = prev.map((p) =>
@@ -220,7 +222,7 @@ export function useYearPlans() {
             ? {
                 ...p,
                 entries: p.entries.map((e) =>
-                  e.id === entryId ? { ...draft, id: e.id, createdAt: e.createdAt } : e
+                  e.id === entryId ? { ...validated, id: e.id, createdAt: e.createdAt } : e
                 ),
               }
             : p

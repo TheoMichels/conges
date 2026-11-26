@@ -17,7 +17,7 @@ type Props = {
 };
 
 function describe(entry: LeaveEntry): string {
-  if (entry.kind === "month") return MONTH_LABELS[entry.month];
+  if (entry.kind === "month") return `${MONTH_LABELS[entry.month]} · À dater`;
   if (entry.startDate === entry.endDate) {
     const formatted = formatDateFr(entry.startDate);
     if (entry.startHalf === "morning" && entry.endHalf === "morning") {
@@ -90,7 +90,7 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
                 <Text style={styles.entryLabel} numberOfLines={1}>
                   {entry.label}
                 </Text>
-                <Text style={styles.entryDetail}>{describe(entry)}</Text>
+                <Text style={styles.entryDetail}>{describe(entry)}{entry.kind === "dates" && entry.estimated ? " · Dates estimées" : ""}</Text>
               </View>
               <Text
                 style={[

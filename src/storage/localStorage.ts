@@ -5,6 +5,7 @@ import {
   yearPlansSchema,
   workPercentageSchema,
 } from "../types/yearPlan";
+import { recoverMonthlyEntries } from "../utils/recoverMonthlyEntries";
 import { countLuxembourgCompensatoryHolidays } from "../utils/luxembourgHolidays";
 
 export const STORAGE_KEY = "@holy_year_plans_v1";
@@ -52,7 +53,7 @@ export function normalize(raw: StoredPlan): YearPlan {
     csupp: typeof raw.csupp === "number" ? raw.csupp : 0,
     holidayOverride,
     publicHolidays: typeof raw.publicHolidays === "number" ? raw.publicHolidays : 0,
-    entries: rawEntries as LeaveEntry[],
+    entries: recoverMonthlyEntries(year, rawEntries as LeaveEntry[]),
   };
 }
 

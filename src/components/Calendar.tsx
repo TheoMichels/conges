@@ -167,6 +167,9 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
           return (
             <Pressable
               key={i}
+              testID={`calendar-day-${cellIso}`}
+              accessibilityRole="button"
+              accessibilityLabel={formatDateFr(cellIso)}
               style={[styles.cell, cursorPointer]}
               onPress={() => handleDateClick(cellIso)}
             >

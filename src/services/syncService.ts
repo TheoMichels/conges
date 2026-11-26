@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabaseClient";
-import { HalfDay, LeaveEntry, YearPlan } from "../types/yearPlan";
+import { HalfDay, LeaveEntry, YearPlan, validDatesLeaveEntryDraftSchema } from "../types/yearPlan";
 import { loadFromLocalStorage } from "../storage/localStorage";
+import { recoverMonthlyEntries } from "../utils/recoverMonthlyEntries";
 import { registerMember } from "../storage/memberRepository";
 
 export const CLOUD_CACHE_PREFIX = "@holy_cloud_year_plans_";
@@ -12,6 +13,7 @@ interface DbLeaveEntry {
   plan_id: string;
   kind: string;
   label: string;
+  estimated?: boolean;
   start_date: string | null;
   end_date: string | null;
   start_half: string | null;
@@ -51,6 +53,7 @@ function mapDbPlanToYearPlan(row: DbYearPlan): YearPlan {
     return {
       id: e.id,
       kind: "dates",
+      estimated: e.estimated ?? false,
       label: e.label,
       startDate: e.start_date ?? "",
       endDate: e.end_date ?? "",
@@ -138,7 +141,30 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
     if (!account.active) throw new Error("Votre compte Holy est désactivé.");
     const cacheKey = CLOUD_CACHE_PREFIX + uid;
     if (Array.isArray(data) && data.length > 0) {
-      const plans = (data as unknown as DbYearPlan[]).map(mapDbPlanToYearPlan);
+      const rows = data as unknown as DbYearPlan[];
+      let changed = false;
+      for (const row of rows) {
+        const plan = mapDbPlanToYearPlan(row);
+        const recovered = recoverMonthlyEntries(plan.year, plan.entries);
+        const replacements = plan.entries.filter(e => e.kind === "month").flatMap(entry => {
+          const first = recovered.find(e => e.id === entry.id);
+          if (!first || first.kind !== "dates") return [];
+          const originalIds = new Set(plan.entries.map(e => e.id));
+          const prefix = `${entry.id}~recovered~`;
+          const parts = recovered.filter(e => e.id === entry.id || (!originalIds.has(e.id) && e.id.startsWith(prefix) && /^\d+$/.test(e.id.slice(prefix.length))));
+          return [{ id: entry.id, parts }];
+        });
+        if (replacements.length === 0) continue;
+        const snapshot = (row.leave_entries ?? []).map(e => ({ id: e.id, updated_at: e.updated_at }));
+        const { data: applied, error: recoveryError } = await supabase.rpc("recover_monthly_leave", {
+          p_plan_id: row.id, p_snapshot: snapshot, p_replacements: replacements,
+        });
+        if (recoveryError) throw new Error("Impossible de reprendre vos anciennes saisies.");
+        if (applied !== true) throw new Error("Vos congés ont changé pendant la reprise. Réessayez.");
+        changed = true;
+      }
+      if (changed) return pullFromCloud(uid);
+      const plans = rows.map(mapDbPlanToYearPlan);
       await AsyncStorage.setItem(cacheKey, JSON.stringify(plans));
       return plans;
     }
@@ -152,11 +178,30 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
   }
 }
 
+type ExistingCloudEntry = { id: string; kind: string; label: string; month: number | null; days: number | string | null };
+
+async function existingCloudEntries(plan: YearPlan, uid: string): Promise<ExistingCloudEntry[]> {
+  if (!supabase) throw new Error("Connexion au serveur indisponible.");
+  const { data, error } = await supabase.from("leave_entries")
+    .select("id,kind,label,month,days").eq("user_id", uid).eq("plan_id", plan.id);
+  if (error || !Array.isArray(data)) throw new Error("Impossible de vérifier les anciennes saisies.");
+  const entries: ExistingCloudEntry[] = data;
+  for (const entry of plan.entries) {
+    if (entry.kind === "dates") { validDatesLeaveEntryDraftSchema.parse(entry); continue; }
+    const remote = entries.find(item => item.id === entry.id && item.kind === "month");
+    if (!remote || remote.label !== entry.label || remote.month !== entry.month || Number(remote.days) !== entry.days) {
+      throw new Error("Cette exception mensuelle ne peut pas être importée dans l’espace connecté.");
+    }
+  }
+  return entries;
+}
+
 export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<string> {
   if (!supabase) return plan.id;
   const uid = await resolveUserId(userId);
   if (!uid) return plan.id;
 
+  const existingEntries = await existingCloudEntries(plan, uid);
   const nowIso = new Date().toISOString();
   const planIso = new Date(plan.createdAt).toISOString();
 
@@ -226,69 +271,26 @@ export async function upsertCloudPlan(plan: YearPlan, userId?: string): Promise<
   // Ne remplace pas ces entrées avec l'instantané stale de la création perdante.
   if (canonicalPlanId !== plan.id) return canonicalPlanId;
 
-  if (plan.entries && plan.entries.length > 0) {
-    const entriesRows = plan.entries.map((entry) => ({
-      id: entry.id,
-      user_id: uid,
-      plan_id: canonicalPlanId,
-      kind: entry.kind,
-      label: entry.label,
-      start_date: entry.kind === "dates" ? entry.startDate : null,
-      end_date: entry.kind === "dates" ? entry.endDate : null,
-      start_half: entry.kind === "dates" ? (entry.startHalf ?? null) : null,
-      end_half: entry.kind === "dates" ? (entry.endHalf ?? null) : null,
-      month: entry.kind === "month" ? entry.month : null,
-      days: entry.kind === "month" ? entry.days : null,
-      created_at: new Date(entry.createdAt).toISOString(),
-      updated_at: nowIso,
+  const datedEntries = plan.entries.filter(entry => entry.kind === "dates");
+  if (datedEntries.length > 0) {
+    const entriesRows = datedEntries.map((entry) => ({
+      id: entry.id, user_id: uid, plan_id: canonicalPlanId, kind: "dates" as const,
+      estimated: entry.estimated ?? false, label: entry.label,
+      start_date: entry.startDate, end_date: entry.endDate,
+      start_half: entry.startHalf ?? null, end_half: entry.endHalf ?? null,
+      month: null, days: null, created_at: new Date(entry.createdAt).toISOString(), updated_at: nowIso,
     }));
-
     const { error: entriesError } = await supabase.from("leave_entries").upsert(entriesRows);
-    if (entriesError) {
-      throw new Error(`Erreur d'enregistrement des entrées: ${entriesError.message}`);
-    }
+    if (entriesError) throw new Error(`Erreur d'enregistrement des entrées: ${entriesError.message}`);
+  }
 
-    // Suppression des entrées orphelines (retirées du plan)
-    const currentEntryIds = new Set(plan.entries.map((e) => e.id));
-    const { data: existingEntries, error: fetchEntriesError } = await supabase
-      .from("leave_entries")
-      .select("id")
-      .eq("user_id", uid)
-      .eq("plan_id", canonicalPlanId);
-
-    if (fetchEntriesError) {
-      throw new Error(`Erreur lors de la vérification des entrées: ${fetchEntriesError.message}`);
-    }
-
-    if (existingEntries) {
-      const orphanIds = existingEntries
-        .map((e) => e.id)
-        .filter((id) => !currentEntryIds.has(id));
-
-      if (orphanIds.length > 0) {
-        const { error: delError } = await supabase
-          .from("leave_entries")
-          .delete()
-          .eq("user_id", uid)
-          .eq("plan_id", canonicalPlanId)
-          .in("id", orphanIds);
-
-        if (delError) {
-          throw new Error(`Erreur lors du nettoyage des entrées orphelines: ${delError.message}`);
-        }
-      }
-    }
-  } else {
-    // Aucune entrée dans le plan : suppression de toutes les entrées orphelines en base
-    const { error: delError } = await supabase
-      .from("leave_entries")
-      .delete()
-      .eq("user_id", uid)
-      .eq("plan_id", canonicalPlanId);
-
-    if (delError) {
-      throw new Error(`Erreur lors de la suppression des entrées orphelines: ${delError.message}`);
-    }
+  // Historic exceptions are never rewritten or removed by a stale plan snapshot.
+  const currentEntryIds = new Set(plan.entries.map(entry => entry.id));
+  const orphanIds = existingEntries.filter(entry => entry.kind === "dates" && !currentEntryIds.has(entry.id)).map(entry => entry.id);
+  if (orphanIds.length > 0) {
+    const { error: delError } = await supabase.from("leave_entries").delete()
+      .eq("user_id", uid).eq("plan_id", canonicalPlanId).in("id", orphanIds);
+    if (delError) throw new Error(`Erreur lors du nettoyage des entrées orphelines: ${delError.message}`);
   }
 
   return canonicalPlanId;
@@ -298,12 +300,6 @@ export async function deleteCloudPlan(planId: string, userId?: string): Promise<
   if (!supabase) return;
   const uid = await resolveUserId(userId);
   if (!uid) return;
-
-  await supabase
-    .from("leave_entries")
-    .delete()
-    .eq("user_id", uid)
-    .eq("plan_id", planId);
 
   const { error } = await supabase
     .from("year_plans")
@@ -320,6 +316,9 @@ export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<Y
   if (!supabase) return plans;
   const uid = await resolveUserId(userId);
   if (!uid) return plans;
+
+  // Validate every monthly exception before any destructive plan mutation.
+  for (const plan of plans) await existingCloudEntries(plan, uid);
 
   // 1. Détection et suppression des plans supprimés
   const { data: remotePlans, error: fetchPlansError } = await supabase
@@ -352,11 +351,13 @@ export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<Y
 
 // Une mutation cible uniquement la saisie concernée, jamais l'instantané du plan.
 export async function saveCloudEntry(planId: string, entry: LeaveEntry, operation: "create" | "update"): Promise<void> {
+  validDatesLeaveEntryDraftSchema.parse(entry);
   if (!supabase) throw new Error("Connexion au serveur indisponible.");
   const uid = await resolveUserId();
   if (!uid) throw new Error("Session Holy indisponible.");
   const row = {
     id: entry.id, user_id: uid, plan_id: planId, kind: entry.kind, label: entry.label,
+    estimated: entry.kind === "dates" ? (entry.estimated ?? false) : false,
     start_date: entry.kind === "dates" ? entry.startDate : null,
     end_date: entry.kind === "dates" ? entry.endDate : null,
     start_half: entry.kind === "dates" ? (entry.startHalf ?? null) : null,

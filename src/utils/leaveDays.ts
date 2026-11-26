@@ -11,7 +11,7 @@ export function parseISODate(iso: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if (!match) return null;
   const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return Number.isNaN(date.getTime()) ? null : date;
+  return Number.isNaN(date.getTime()) || toISODate(date) !== iso ? null : date;
 }
 
 export function formatDateFr(iso: string): string {

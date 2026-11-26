@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
-import { HalfDay, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
+import { HalfDay, LeaveEntryDraft } from "../types/yearPlan";
 import { colors, fonts, shape } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, toISODate, workingDaysCount } from "../utils/leaveDays";
@@ -31,7 +31,6 @@ export function LeaveEntryForm({
 }: Props) {
   const isMobile = useWindowDimensions().width < 768;
   const [label, setLabel] = useState(initial?.label ?? "");
-  const [kind, setKind] = useState<"dates" | "month">(initial?.kind ?? "dates");
   const [startDate, setStartDate] = useState(() =>
     initial?.kind === "dates" ? initial.startDate : defaultDate(year)
   );
@@ -43,13 +42,6 @@ export function LeaveEntryForm({
   );
   const [endHalf, setEndHalf] = useState<HalfDay>(() =>
     initial?.kind === "dates" ? (initial.endHalf ?? "afternoon") : "afternoon"
-  );
-
-  const [month, setMonth] = useState(() =>
-    initial?.kind === "month" ? initial.month : new Date().getMonth()
-  );
-  const [daysText, setDaysText] = useState(() =>
-    initial?.kind === "month" ? String(initial.days) : "1"
   );
 
   const handleSelectRange = (start: string, end: string) => {
@@ -64,24 +56,12 @@ export function LeaveEntryForm({
   const isSingleDay = startDate === endDate;
 
   const dateDays = workingDaysCount(startDate, endDate, startHalf, endHalf);
-  const monthDays = parseFloat(daysText.replace(",", ".")) || 0;
-  const total = kind === "dates" ? dateDays : monthDays;
+  const total = dateDays;
 
   const submit = () => {
     if (total <= 0) return;
     const trimmed = label.trim() || "Congés";
-    onSubmit(
-      kind === "dates"
-        ? {
-            kind: "dates",
-            label: trimmed,
-            startDate,
-            endDate,
-            startHalf,
-            endHalf,
-          }
-        : { kind: "month", label: trimmed, month, days: monthDays }
-    );
+    onSubmit({ kind: "dates", label: trimmed, startDate, endDate, startHalf, endHalf });
   };
 
   return (
@@ -96,22 +76,6 @@ export function LeaveEntryForm({
         autoFocus
       />
 
-      <View style={styles.modeRow}>
-        {(["dates", "month"] as const).map((option) => (
-          <Pressable
-            key={option}
-            style={[styles.modeButton, kind === option && styles.modeButtonActive, cursorPointer]}
-            onPress={() => setKind(option)}
-          >
-            <Text style={[styles.modeText, kind === option && styles.modeTextActive]}>
-              {option === "dates" ? "Dates précises" : "Nombre de jours"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {kind === "dates" ? (
-        <>
           <View style={[styles.calendarContainer, isMobile && styles.calendarContainerMobile]}>
             <Calendar
               startDate={startDate}
@@ -260,39 +224,11 @@ export function LeaveEntryForm({
               </View>
             )}
           </View>
-        </>
-      ) : (
-        <>
-          <Text style={styles.fieldLabel}>Mois</Text>
-          <View style={styles.chips}>
-            {MONTH_LABELS.map((name, index) => (
-              <Pressable
-                key={name}
-                style={[styles.chip, month === index && styles.chipActive, cursorPointer]}
-                onPress={() => setMonth(index)}
-              >
-                <Text style={[styles.chipText, month === index && styles.chipTextActive]}>
-                  {name}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={styles.fieldLabel}>Nombre de jours</Text>
-          <TextInput
-            style={[styles.input, styles.daysInput]}
-            value={daysText}
-            onChangeText={setDaysText}
-            keyboardType="decimal-pad"
-            selectTextOnFocus
-          />
-        </>
-      )}
 
       <View style={styles.footer}>
-        <Text style={styles.total}>
+        <Text testID="leave-day-total" style={styles.total}>
           {formatDays(total)}
-          {kind === "dates" ? (total > 1 ? " ouvrés" : " ouvré") : ""}
+          {total > 1 ? " ouvrés" : " ouvré"}
         </Text>
 
         <View style={styles.actions}>
@@ -300,6 +236,7 @@ export function LeaveEntryForm({
             <Text style={styles.cancelText}>Annuler</Text>
           </Pressable>
           <Pressable
+            testID="submit-leave-button"
             style={[styles.submitButton, total <= 0 && styles.submitDisabled, cursorPointer]}
             onPress={submit}
             disabled={total <= 0}
