@@ -77,11 +77,16 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId("member-search").fill("");
   await admin.setViewportSize({ width: 1600, height: 1000 });
   const wideRow = admin.getByTestId(`annual-member-${memberId}`);
-  const rowPositions = await wideRow.evaluate(element => Array.from(element.children).map(child => {
-    const bounds = child.getBoundingClientRect();
-    return bounds.y + bounds.height / 2;
-  }));
-  expect(Math.max(...rowPositions) - Math.min(...rowPositions)).toBeLessThan(2);
+  const rowPositions = await Promise.all(["identity", "fields", "actions"].map(group => admin.getByTestId(`annual-${group}-${memberId}`).evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    return { center: bounds.y + bounds.height / 2, left: bounds.left, right: bounds.right };
+  })));
+  const centers = rowPositions.map(position => position.center);
+  expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
+  expect(rowPositions[0].right).toBeLessThanOrEqual(rowPositions[1].left);
+  expect(rowPositions[1].right).toBeLessThanOrEqual(rowPositions[2].left);
+  const rowBounds = await wideRow.boundingBox();
+  expect(rowPositions[2].right).toBeLessThanOrEqual((rowBounds?.x ?? 0) + (rowBounds?.width ?? 0));
   await admin.getByTestId(`annual-initial-${memberId}`).fill("26");
   await admin.getByTestId(`annual-csupp-${memberId}`).fill("1");
   await admin.getByTestId(`annual-carried-${memberId}`).fill("3");
