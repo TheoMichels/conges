@@ -1,5 +1,5 @@
 # Build Report — admin-year-management
-- Statut : READY_FOR_QA ; cycle 3 ; branche feature/admin-year-management.
+- Statut : READY_FOR_QA ; cycle 4 ; branche feature/admin-year-management.
 - Périmètre : AnnualEntitlements, repository et types RPC, migration SQL, tests annuels ; aucun changement distant.
 - Données : fonction SQL `holy.admin_year_catalog` ajoutée ; migration `20261129000000_admin_year_catalog` à appliquer au go ; schéma Prisma inchangé.
 - UI : menu des années actives, création à droite, reprise des brouillons ; chargement squelette, état vide et erreur avec réessai ; champs inline et actions identifiées par testID, retours et contrôles tactiles.
@@ -18,4 +18,5 @@
 - Correction revue : réessai du catalogue après activation testé rouge puis vert.
 - Correction revue : réponse tardive ignorée après changement d’année ; test rouge avant correction, vert après.
 - QA : sélection de deux années, réponse invalide/réessai et report modifié persisté couverts en E2E.
+- QA : squelette du catalogue retardé et absence de débordement horizontal à 375 px testés en Playwright ; inspection visuelle @Browser indisponible.
 - Décisions modifiant les AC : aucune. Pas de commande sur base distante.

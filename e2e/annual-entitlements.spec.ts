@@ -141,6 +141,9 @@ test("une sauvegarde tardive ne remplace pas les droits de l’année sélection
   const gate = new Promise<void>(resolve => { releaseSave = resolve; });
   const started = new Promise<void>(resolve => { markSaveStarted = resolve; });
   const writes: string[] = [];
+  let releaseCatalog!: () => void;
+  const catalogGate = new Promise<void>(resolve => { releaseCatalog = resolve; });
+  let firstCatalog = true;
   let failYearLoad = true;
   await page.route("https://holidays.example/**", async route => {
     const url = new URL(route.request().url());
@@ -154,7 +157,10 @@ test("une sauvegarde tardive ne remplace pas les droits de l’année sélection
     if (url.includes("/auth/v1/user")) body = user;
     if (url.includes("/rpc/register_member")) body = [{ active: true, is_admin: true, display_name: "admin" }];
     if (url.includes("/rpc/admin_members")) body = [];
-    if (url.includes("/rpc/admin_year_catalog")) body = [{ year: "2025", has_active: true }, { year: "2024", has_active: true }];
+    if (url.includes("/rpc/admin_year_catalog")) {
+      if (firstCatalog) { firstCatalog = false; await catalogGate; }
+      body = [{ year: "2025", has_active: true }, { year: "2024", has_active: true }];
+    }
     if (url.includes("/rpc/admin_years")) {
       const { target_year } = route.request().postDataJSON() as { target_year: string };
       if (target_year === "2024" && failYearLoad) { failYearLoad = false; await route.fulfill({ status: 200, contentType: "application/json", body: "{}" }); return; }
@@ -168,12 +174,18 @@ test("une sauvegarde tardive ne remplace pas les droits de l’année sélection
     if (url.includes("/year_plans")) body = [];
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
+  await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("https://holidays.example/");
   await page.getByTestId("admin-button").click();
+  await expect(page.getByTestId("annual-entitlements").getByTestId("loading-skeleton")).toBeVisible();
+  await expect(page.getByTestId("annual-year-menu")).toHaveCount(0);
+  releaseCatalog();
+  await expect(page.getByTestId("annual-year-2024")).toBeVisible();
   await page.getByTestId("annual-year-2024").click();
   await expect(page.getByTestId("annual-error")).toBeVisible();
   await page.getByTestId("annual-retry").click();
   await expect(page.getByTestId(`annual-initial-${memberId}`)).toHaveValue("24");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   await page.getByTestId(`annual-save-${memberId}`).click();
   await started;
   await page.getByTestId("annual-year-2025").click();
