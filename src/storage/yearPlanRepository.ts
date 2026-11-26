@@ -101,9 +101,8 @@ export const yearPlanRepository = {
 
   async saveAll(plans: YearPlan[]): Promise<void> {
     const validated = yearPlansSchema.parse(plans);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
-
     if (isLocalMode) {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
       return;
     }
 
@@ -112,6 +111,5 @@ export const yearPlanRepository = {
       plans[index].id = canonicalPlans[index].id;
       validated[index].id = canonicalPlans[index].id;
     }
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
   },
 };

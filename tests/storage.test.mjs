@@ -185,6 +185,57 @@ const {
 const { setTestSupabase } = await import("virtual:supabase-client");
 const { syncService } = await import("../src/services/syncService.ts");
 
+describe("Legacy storage quarantine", () => {
+  beforeEach(async () => { await AsyncStorage.clear(); });
+  it("quarantines unknown legacy values once, without attributing them to a cloud account", async () => {
+    const { migrateLegacyStorage, getLegacyQuarantine, restoreLegacyStorage } = await import("../src/storage/legacyQuarantine.ts");
+    const original = '[{"id":"old-cloud-plan"}]';
+    await AsyncStorage.setItem(STORAGE_KEY, original);
+    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, 'legacy');
+    await migrateLegacyStorage();
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), null);
+    assert.equal(await AsyncStorage.getItem(LEGACY_STORAGE_KEY), null);
+    assert.deepEqual((await getLegacyQuarantine()).values, { [STORAGE_KEY]: original, [LEGACY_STORAGE_KEY]: 'legacy' });
+    await migrateLegacyStorage();
+    await syncService.clearLocalCache();
+    assert.equal(await AsyncStorage.getItem("@holy_cloud_year_plans_another-user"), null);
+    assert.equal((await getLegacyQuarantine()).values[STORAGE_KEY], original);
+    await restoreLegacyStorage();
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), original);
+    assert.equal(await AsyncStorage.getItem(LEGACY_STORAGE_KEY), 'legacy');
+    assert.equal((await getLegacyQuarantine()).restored, true);
+  });
+  it("never overwrites newer local data during explicit restoration", async () => {
+    const { migrateLegacyStorage, restoreLegacyStorage, getLegacyQuarantine } = await import("../src/storage/legacyQuarantine.ts");
+    await AsyncStorage.setItem(STORAGE_KEY, 'old');
+    await migrateLegacyStorage();
+    await AsyncStorage.setItem(STORAGE_KEY, 'new');
+    await assert.rejects(restoreLegacyStorage(), /données locales/);
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), 'new');
+    assert.equal((await getLegacyQuarantine()).values[STORAGE_KEY], 'old');
+  });
+});
+
+describe("Company accounts cache isolation", () => {
+  beforeEach(async () => { await AsyncStorage.clear(); setTestSupabase(null); });
+  it("refuses a deactivation during a pull and preserves the local and cloud data", async () => {
+    const local = '[{"id":"local"}]';
+    const cloud = '[{"id":"cloud"}]';
+    await AsyncStorage.setItem(STORAGE_KEY, local);
+    await AsyncStorage.setItem("@holy_cloud_year_plans_user-a", cloud);
+    setTestSupabase({
+      from() { return { select() { return { eq() { return { async order() { return { data: [], error: null }; } }; } }; } }; },
+      async rpc() { return { data: [{ active: false, is_admin: false, display_name: "membre" }], error: null }; },
+    });
+    await assert.rejects(syncService.pullFromCloud("user-a"), /désactivé/);
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), local);
+    assert.equal(await AsyncStorage.getItem("@holy_cloud_year_plans_user-a"), cloud);
+    await syncService.clearLocalCache();
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), local);
+    assert.equal(await AsyncStorage.getItem("@holy_cloud_year_plans_user-a"), null);
+  });
+});
+
 describe("Annual work percentage persistence — AC-03", () => {
   beforeEach(async () => { await AsyncStorage.clear(); setTestSupabase(null); });
   it("defaults legacy records without losing rights/entries and roundtrips updates", async () => {
@@ -204,7 +255,7 @@ describe("Annual work percentage persistence — AC-03", () => {
     let conflict = false;
     let uploaded;
     let updated;
-    setTestSupabase({ from(table) {
+    setTestSupabase({ async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; }, from(table) {
       assert.ok(["year_plans", "leave_entries"].includes(table));
       const query = {
         select() { return query; }, eq() { return query; },
@@ -656,10 +707,9 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
       assert.ok(pushedPlans !== null, "syncService.pushToCloud must have been called");
       assert.equal(pushedPlans[0].id, "plan-remote-2025");
 
-      // Verifies local cache was also updated
+      // Remote writes must not replace the autonomous local space.
       const cached = await AsyncStorage.getItem(STORAGE_KEY);
-      assert.ok(cached !== null);
-      assert.equal(JSON.parse(cached)[0].id, "plan-remote-2025");
+      assert.ok(!cached || !cached.includes("plan-remote-2025"));
     } finally {
       globalThis.fetch = originalFetch;
       delete globalThis.window;
@@ -707,6 +757,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     let upsertedPlan = null;
 
     const mockSupabase = {
+      async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; },
       auth: {
         async getSession() {
           return { data: { session: { user: { id: "user-auto-123" } } } };
@@ -944,7 +995,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     try {
       await remoteRepository.yearPlanRepository.saveAll([repositoryPlan]);
       assert.equal(repositoryPlan.id, "plan-canonical");
-      assert.match(await AsyncStorage.getItem(STORAGE_KEY), /plan-canonical/);
+      assert.doesNotMatch(await AsyncStorage.getItem(STORAGE_KEY) ?? "", /plan-canonical/);
     } finally {
       if (previousMode === undefined) delete globalThis.__TEST_STORAGE_MODE__;
       else globalThis.__TEST_STORAGE_MODE__ = previousMode;
@@ -955,6 +1006,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     let deletedAllEntries = false;
 
     const mockSupabase = {
+      async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; },
       auth: {
         async getSession() {
           return { data: { session: { user: { id: "user-auto-123" } } } };
@@ -1013,6 +1065,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     const upsertedPlanIds = [];
 
     const mockSupabase = {
+      async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; },
       auth: {
         async getSession() {
           return { data: { session: { user: { id: "user-auto-123" } } } };
@@ -1120,6 +1173,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
 
   it("AC-01 / AC-02: syncService.pullFromCloud fetches plans and caches into AsyncStorage", async () => {
     const mockSupabase = {
+      async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; },
       auth: {
         async getSession() {
           return { data: { session: { user: { id: "user-auto-123" } } } };
@@ -1185,7 +1239,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
       assert.equal(plans[0].entries.length, 1);
       assert.equal(plans[0].entries[0].id, "e-remote-1");
 
-      const cachedRaw = await AsyncStorage.getItem(STORAGE_KEY);
+      const cachedRaw = await AsyncStorage.getItem("@holy_cloud_year_plans_user-auto-123");
       assert.ok(cachedRaw !== null);
       assert.equal(JSON.parse(cachedRaw)[0].id, "db-plan-2025");
     } finally {
@@ -1193,7 +1247,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     }
   });
 
-  it("AC-02: empty cloud account clears local plans without uploading them", async () => {
+  it("AC-02: empty cloud account preserves local plans without uploading them", async () => {
     const cachedPlan = {
       id: "unrelated-local-plan", year: "2024", createdAt: 1,
       initialLeave: 25, carriedOver: 0, csupp: 0, publicHolidays: 0, entries: [],
@@ -1201,6 +1255,7 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([cachedPlan]));
     let uploadAttempted = false;
     setTestSupabase({
+      async rpc() { return { data: [{ active: true, is_admin: false, display_name: "membre" }], error: null }; },
       auth: { async getSession() { return { data: { session: { user: { id: "new-user" } } } }; } },
       from(table) {
         if (table === "year_plans") return {
@@ -1213,9 +1268,9 @@ describe("Sync & Remote Mode — Non-régression 405 (AC-01, AC-02, AC-03)", () 
     });
     try {
       assert.deepEqual(await syncService.pullFromCloud(), []);
-      assert.deepEqual(JSON.parse(await AsyncStorage.getItem(STORAGE_KEY)), []);
+      assert.deepEqual(JSON.parse(await AsyncStorage.getItem(STORAGE_KEY)), [cachedPlan]);
       assert.deepEqual(await syncService.pullFromCloud(), []);
-      assert.deepEqual(JSON.parse(await AsyncStorage.getItem(STORAGE_KEY)), []);
+      assert.deepEqual(JSON.parse(await AsyncStorage.getItem(STORAGE_KEY)), [cachedPlan]);
       assert.equal(uploadAttempted, false);
     } finally {
       setTestSupabase(null);

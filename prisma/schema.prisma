@@ -70,3 +70,14 @@ model UserSettings {
   @@map("user_settings")
   @@schema("holy")
 }
+
+model Member {
+  userId String @id @map("user_id") @db.Uuid
+  displayName String? @map("display_name")
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("members")
+  @@schema("holy")
+}

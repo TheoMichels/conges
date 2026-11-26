@@ -7,7 +7,7 @@
 
 ## Stack
 - Expo SDK 57 (RN Web 0.21, React 19.2, RN 0.86), TS strict, Zod · `@supabase/supabase-js`.
-- Stockage : `src/storage/localStorage.ts`, `yearPlanRepository.ts` (`@holy_year_plans_v1` avec migration auto depuis `@holidays_year_plans_v1`).
+- Stockage : espace local `@holy_year_plans_v1` (migration depuis `@holidays_year_plans_v1`), cache cloud isolé `@holy_cloud_year_plans_<user-id>` ; anciennes données sans provenance en quarantaine, reprise manuelle locale.
 - Base de données : Prisma multiSchema (`holy`, `auth`), RLS 100 %, Supabase Postgres partagé.
 - Auth & Sync : `src/services/authService.ts`, `useAuth`, `src/services/syncService.ts`.
 
@@ -26,6 +26,7 @@
 - Taux annuel `workPercentage` / `work_percentage` : défaut 100 %, >0 à 100, 2 décimales ; tous les fériés récupérables proratisés ; reports en centièmes.
 | LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
 | UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
+| Member | `members` (FK `auth.users`, RLS, accès par fonctions contrôlées) | `src/storage/memberRepository.ts` |
 
 ## Design
 - Tokens §2 `src/theme/colors.ts` · brand `#14333E` · primary `#356859` · surfaces verre perle/menthe/sauge (`glassStyle`) · radius 12-24 · clair forcé sur web (`color-scheme: only light`).

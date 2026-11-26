@@ -223,7 +223,8 @@ describe("Lot 5 — Clear Local Cache (AC-04 / AC-05)", () => {
     await AsyncStorage.clear();
   });
 
-  it("removes all @holy_* and @holidays_* keys from AsyncStorage while preserving third-party keys", async () => {
+  it("removes cloud cache from AsyncStorage while preserving local and third-party keys", async () => {
+    await AsyncStorage.setItem("@holy_cloud_year_plans_user-a", "cloud");
     await AsyncStorage.setItem("@holy_year_plans_v1", JSON.stringify([{ id: "1" }]));
     await AsyncStorage.setItem("@holy_draft_cache", "draft");
     await AsyncStorage.setItem("@holidays_year_plans_v1", JSON.stringify([{ id: "legacy" }]));
@@ -234,16 +235,18 @@ describe("Lot 5 — Clear Local Cache (AC-04 / AC-05)", () => {
     await clearLocalCache();
 
     const remainingKeys = await AsyncStorage.getAllKeys();
-    assert.equal(remainingKeys.includes("@holy_year_plans_v1"), false);
-    assert.equal(remainingKeys.includes("@holy_draft_cache"), false);
-    assert.equal(remainingKeys.includes("@holidays_year_plans_v1"), false);
-    assert.equal(remainingKeys.includes("@holidays_draft_cache"), false);
+    assert.equal(remainingKeys.includes("@holy_cloud_year_plans_user-a"), false);
+    assert.equal(remainingKeys.includes("@holy_year_plans_v1"), true);
+    assert.equal(remainingKeys.includes("@holy_draft_cache"), true);
+    assert.equal(remainingKeys.includes("@holidays_year_plans_v1"), true);
+    assert.equal(remainingKeys.includes("@holidays_draft_cache"), true);
     assert.equal(remainingKeys.includes("sb-synthetic-auth-token"), true);
     assert.equal(remainingKeys.includes("user-theme-preference"), true);
   });
 
-  it("also purges @holy_* and @holidays_* keys from window.localStorage when in web environment", async () => {
+  it("also purges only cloud cache from window.localStorage", async () => {
     const mockLocalStorage = new Map();
+    mockLocalStorage.set("@holy_cloud_year_plans_user-a", "cloud");
     mockLocalStorage.set("@holy_year_plans_v1", "data");
     mockLocalStorage.set("@holy_state", "state");
     mockLocalStorage.set("@holidays_year_plans_v1", "legacy-data");
@@ -274,10 +277,11 @@ describe("Lot 5 — Clear Local Cache (AC-04 / AC-05)", () => {
     try {
       await clearLocalCache();
 
-      assert.equal(mockLocalStorage.has("@holy_year_plans_v1"), false);
-      assert.equal(mockLocalStorage.has("@holy_state"), false);
-      assert.equal(mockLocalStorage.has("@holidays_year_plans_v1"), false);
-      assert.equal(mockLocalStorage.has("@holidays_state"), false);
+      assert.equal(mockLocalStorage.has("@holy_cloud_year_plans_user-a"), false);
+      assert.equal(mockLocalStorage.has("@holy_year_plans_v1"), true);
+      assert.equal(mockLocalStorage.has("@holy_state"), true);
+      assert.equal(mockLocalStorage.has("@holidays_year_plans_v1"), true);
+      assert.equal(mockLocalStorage.has("@holidays_state"), true);
       assert.equal(mockLocalStorage.has("sb-synthetic-auth-token"), true);
       assert.equal(mockLocalStorage.has("other_service_key"), true);
     } finally {

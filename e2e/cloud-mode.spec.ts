@@ -170,6 +170,10 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
 
     await page.route("https://synthetic.supabase.invalid/**", async (route) => {
       const url = route.request().url();
+      if (url.includes("/rpc/register_member")) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ active: true, is_admin: false, display_name: "collaborateur" }]) });
+        return;
+      }
       if (url.includes("/auth/v1/token")) {
         await route.fulfill({
           status: 200,
@@ -238,6 +242,7 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
     // Pré-remplit le cache local et les tokens auth avant le chargement
     await page.addInitScript(
       ({ user }) => {
+        window.localStorage.setItem("@holy_storage_isolation_v2", "1");
         const now = Math.floor(Date.now() / 1000);
         const sessionPayload = {
           access_token: "mock-token",
@@ -269,6 +274,10 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
 
     await page.route("https://synthetic.supabase.invalid/**", async (route) => {
       const url = route.request().url();
+      if (url.includes("/rpc/register_member")) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ active: true, is_admin: false, display_name: "collaborateur" }]) });
+        return;
+      }
       if (url.includes("/auth/v1/token")) {
         await route.fulfill({
           status: 200,
@@ -324,7 +333,7 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
     const authScreen = page.locator('[data-testid="auth-screen"]');
     await expect(authScreen).toBeVisible({ timeout: 15_000 });
 
-    // Vérifie que toutes les clés @holidays_* ont été purgées du stockage local
+    // Le stockage personnel local doit survivre à la déconnexion cloud.
     const storageKeys = await page.evaluate(() => {
       const keys: string[] = [];
       for (let i = 0; i < window.localStorage.length; i++) {
@@ -335,7 +344,8 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
     });
 
     const remainingHolidaysKeys = storageKeys.filter((k) => k.startsWith("@holidays_"));
-    expect(remainingHolidaysKeys).toEqual([]);
+    expect(remainingHolidaysKeys).toContain("@holidays_year_plans_v1");
+    expect(remainingHolidaysKeys).toContain("@holidays_temp_draft");
 
     // La clé tierce doit être conservée
     expect(storageKeys.includes("unrelated_third_party_key")).toBe(true);

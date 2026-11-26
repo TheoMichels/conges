@@ -1,0 +1,12 @@
+# Build Report — company-accounts / AC-05
+- Statut : READY_FOR_QA ; branche : feature/company-accounts ; cycle : complément AC-05.
+- Périmètre : App.tsx, Header, CompanyScreen, e2e/company-accounts.spec.ts ; plan et rapports de passation.
+- Données : aucun changement de schéma ni commande sur base distante.
+- AC-05 : bouton local, écran marqué « Démonstration locale », deux membres fictifs en mémoire ; recherche, activation et retour.
+- Les modifications fictives disparaissent à la sortie ; aucun accès au repository admin en mode local.
+- UI : tokens existants ; liste remplie, recherche vide, chargement/erreur du parcours connecté conservés ; testIDs admin-button, demo-banner, member-search, member-demo-* et company-close.
+- E2E : parcours local hors connexion et six régressions connectées PASS (7 tests) ; première exécution sur ancien build rouge (bouton absent).
+- AC-01 à AC-04 : preuves antérieures dans qa-report.md et review-report.md ; aucune décision modifiant ces critères.
+- QA antérieure : navigateur intégré indisponible ; inspection visuelle indépendante à reprendre si disponible.
+- Harness complet : à lancer après commit ; résultat final dans .agents/state/verify-result.json.
+- Intégrations : aucune nouvelle intégration de données ; aucune migration ou variable d’environnement à pousser.

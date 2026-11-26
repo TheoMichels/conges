@@ -1,7 +1,9 @@
 import { test, expect } from "./fixtures";
 
+test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem("@holy_storage_isolation_v2", "1")); });
+
 for (const width of [1440, 375]) {
-  test(`annual rate validation, totals, persistence and independence at ${width}px`, async ({ page }) => {
+  test(`annual rate validation, totals, persistence and independence at ${width}px`, async ({ page }, testInfo) => {
     await page.clock.setFixedTime(new Date("2022-01-05T10:00:00Z"));
     await page.setViewportSize({ width, height: 1000 });
     await page.addInitScript(() => {
@@ -35,7 +37,7 @@ for (const width of [1440, 375]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const inputBox = await rate.boundingBox();
     expect(inputBox!.x + inputBox!.width).toBeLessThanOrEqual(width);
-    await page.screenshot({ path: `.agents/handoff/work-percentage/screens/${width}.png`, fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(`${width}.png`), fullPage: true });
     // New annual plan defaults to 100, rather than inheriting the previous rate.
     if (width === 375) {
       await page.getByText("+ Ajouter", { exact: true }).click();

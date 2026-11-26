@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import type { User } from "@supabase/supabase-js";
@@ -20,6 +20,10 @@ import { useYearPlans } from "./src/hooks/useYearPlans";
 import { AuthScreen } from "./src/components/AuthScreen";
 import { LoadingScreen, LoadingSkeleton } from "./src/components/LoadingScreen";
 import { Header } from "./src/components/Header";
+import { CompanyScreen } from "./src/components/CompanyScreen";
+import { LegacyRecovery } from "./src/components/LegacyRecovery";
+import { getLegacyQuarantine, migrateLegacyStorage } from "./src/storage/legacyQuarantine";
+import { Account, registerMember } from "./src/storage/memberRepository";
 import { KpiCards } from "./src/components/KpiCards";
 import { Sidebar } from "./src/components/Sidebar";
 import { SummaryFields } from "./src/components/SummaryFields";
@@ -42,9 +46,11 @@ const SIDEBAR_TOTAL_WIDTH = 240;
 interface MainAppProps {
   user?: User | null;
   onSignOut?: () => void;
+  onProfile?: () => void;
+  onAdmin?: () => void;
 }
 
-function MainApp({ user, onSignOut }: MainAppProps) {
+function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const {
@@ -147,6 +153,8 @@ function MainApp({ user, onSignOut }: MainAppProps) {
               isMobile={isMobile}
               user={user}
               onSignOut={onSignOut}
+              onProfile={onProfile}
+              onAdmin={onAdmin}
             />
 
             {isMobile && (
@@ -284,38 +292,60 @@ export default function App() {
     }
   }, []);
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
-  const [isPulling, setIsPulling] = useState(false);
-  const pulledFor = useRef<string | null>(null);
-
+  const [storageReady, setStorageReady] = useState(false);
+  const [recoveryPending, setRecoveryPending] = useState(false);
+  const [storageError, setStorageError] = useState("");
+  const [storageAttempt, setStorageAttempt] = useState(0);
   useEffect(() => {
-    if (isLocalMode || !user) {
-      pulledFor.current = null;
-      setIsPulling(false);
-      return;
-    }
-    if (pulledFor.current === user.id) return;
-    pulledFor.current = user.id;
-
+    let cancelled = false;
+    setStorageError("");
+    void (async () => {
+      try {
+        await migrateLegacyStorage();
+        const legacy = await getLegacyQuarantine();
+        if (!cancelled) { setRecoveryPending(isLocalMode && !!legacy && !legacy.restored); setStorageReady(true); }
+      } catch { if (!cancelled) setStorageError("Impossible de protéger les données anciennes. Réessayez."); }
+    })();
+    return () => { cancelled = true; };
+  }, [storageAttempt]);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [isPulling, setIsPulling] = useState(false);
+  const [accountError, setAccountError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [screen, setScreen] = useState<"home" | "admin" | "profile">(() =>
+    Platform.OS === "web" && window.location.pathname === "/administration" ? "admin" : "home"
+  );
+  useEffect(() => {
+    if (!storageReady || isLocalMode || !user) { setAccount(null); setIsPulling(false); return; }
     let cancelled = false;
     setIsPulling(true);
-    pullFromCloud(user.id).finally(() => {
-      if (!cancelled) setIsPulling(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
-
-  if (!isLocalMode && (isLoading || isPulling)) {
-    return <LoadingScreen />;
-  }
-
-  if (!isLocalMode && !isAuthenticated) {
-    return <AuthScreen />;
-  }
-
-  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} />;
+    setAccount(null);
+    setAccountError("");
+    void (async () => {
+      try {
+        const current = await registerMember();
+        if (!current.active) throw new Error("Votre compte Holy est désactivé.");
+        await pullFromCloud(user.id);
+        if (!cancelled) setAccount(current);
+      } catch (e) {
+        if (!cancelled) setAccountError(e instanceof Error ? e.message : "Impossible de vérifier votre compte.");
+      } finally { if (!cancelled) setIsPulling(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, attempt, storageReady]);
+  const navigate = (next: "home" | "admin" | "profile") => {
+    setScreen(next);
+    if (Platform.OS === "web") window.history.pushState({}, "", next === "admin" ? "/administration" : "/");
+  };
+  if (storageError) return <View style={styles.stateContainer} testID="storage-error"><Text>{storageError}</Text><Pressable onPress={() => setStorageAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable></View>;
+  if (!storageReady) return <LoadingScreen />;
+  if (recoveryPending) return <LegacyRecovery onDone={() => setRecoveryPending(false)} />;
+  if (!isLocalMode && (isLoading || isPulling || (user && !account && !accountError))) return <LoadingScreen />;
+  if (!isLocalMode && !isAuthenticated) return <AuthScreen />;
+  if (!isLocalMode && accountError) return <View style={styles.stateContainer} testID="account-error"><Text>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable><Pressable onPress={signOut} style={styles.retryButton}><Text>Se déconnecter</Text></Pressable></View>;
+  if (isLocalMode && screen === "admin") return <CompanyScreen account={{ active: true, is_admin: true, display_name: "Démonstration" }} userId="demo-admin" admin demo onClose={() => navigate("home")} />;
+  if (!isLocalMode && user && account && screen !== "home") return <CompanyScreen account={account} userId={user.id} admin={screen === "admin"} onClose={() => navigate("home")} onName={name => setAccount({ ...account, display_name: name })} />;
+  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={isLocalMode || account?.is_admin ? () => navigate("admin") : undefined} />;
 }
 
 const styles = StyleSheet.create({
