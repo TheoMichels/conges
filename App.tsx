@@ -20,6 +20,7 @@ import { useYearPlans } from "./src/hooks/useYearPlans";
 import { AuthScreen } from "./src/components/AuthScreen";
 import { LoadingScreen, LoadingSkeleton } from "./src/components/LoadingScreen";
 import { Header } from "./src/components/Header";
+import { SharedCalendar } from "./src/components/SharedCalendar";
 import { CompanyScreen } from "./src/components/CompanyScreen";
 import { LegacyRecovery } from "./src/components/LegacyRecovery";
 import { getLegacyQuarantine, migrateLegacyStorage } from "./src/storage/legacyQuarantine";
@@ -48,9 +49,10 @@ interface MainAppProps {
   onSignOut?: () => void;
   onProfile?: () => void;
   onAdmin?: () => void;
+  onSharedCalendar?: () => void;
 }
 
-function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
+function MainApp({ user, onSignOut, onProfile, onAdmin, onSharedCalendar }: MainAppProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const {
@@ -154,6 +156,7 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
             onSignOut={onSignOut}
             onProfile={onProfile}
             onAdmin={onAdmin}
+            onSharedCalendar={onSharedCalendar}
           />
 
           {isMobile && (
@@ -319,7 +322,7 @@ export default function App() {
   const [isPulling, setIsPulling] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [screen, setScreen] = useState<"home" | "admin" | "profile">(() =>
+  const [screen, setScreen] = useState<"home" | "admin" | "profile" | "calendar">(() =>
     Platform.OS === "web" && window.location.pathname === "/administration" ? "admin" : "home"
   );
   useEffect(() => {
@@ -340,7 +343,7 @@ export default function App() {
     })();
     return () => { cancelled = true; };
   }, [user?.id, attempt, storageReady]);
-  const navigate = (next: "home" | "admin" | "profile") => {
+  const navigate = (next: "home" | "admin" | "profile" | "calendar") => {
     setScreen(next);
     if (Platform.OS === "web") window.history.pushState({}, "", next === "admin" ? "/administration" : "/");
   };
@@ -351,8 +354,9 @@ export default function App() {
   if (!isLocalMode && !isAuthenticated) return <AuthScreen />;
   if (!isLocalMode && accountError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="account-error"><Text style={styles.errorText}>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Réessayer</Text></Pressable><Pressable onPress={signOut} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Se déconnecter</Text></Pressable></View></View>;
   if (isLocalMode && screen === "admin") return <CompanyScreen account={{ active: true, is_admin: true, display_name: "Démonstration" }} userId="demo-admin" admin demo onClose={() => navigate("home")} />;
+  if (!isLocalMode && account && screen === "calendar") return <SharedCalendar onClose={() => navigate("home")} />;
   if (!isLocalMode && user && account && screen !== "home") return <CompanyScreen account={account} userId={user.id} admin={screen === "admin"} onClose={() => navigate("home")} onName={name => setAccount({ ...account, display_name: name })} />;
-  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={isLocalMode || account?.is_admin ? () => navigate("admin") : undefined} />;
+  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={isLocalMode || account?.is_admin ? () => navigate("admin") : undefined} onSharedCalendar={account ? () => navigate("calendar") : undefined} />;
 }
 
 const styles = StyleSheet.create({
