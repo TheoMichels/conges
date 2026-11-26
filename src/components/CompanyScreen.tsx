@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Account, listMembers, Member, saveDisplayName, setMemberActive } from "../storage/memberRepository";
-import { colors, fonts, glassStyle, radius, spacing } from "../theme/colors";
+import { colors, fonts, shape, spacing } from "../theme/colors";
+import { cursorPointer } from "../theme/webCursor";
 import { AnnualEntitlements } from "./AnnualEntitlements";
 import { LoadingSkeleton } from "./LoadingScreen";
 
@@ -36,27 +37,41 @@ export function CompanyScreen({ account, userId, admin, demo = false, onClose, o
     catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); }
     finally { setBusy(false); }
   };
-  if (admin && !account.is_admin) return <View testID="access-denied" style={styles.page}><Text>Accès refusé.</Text><Pressable testID="company-close" onPress={onClose}><Text>Retour</Text></Pressable></View>;
-  return <ScrollView testID={admin ? "administration-screen" : "profile-screen"} contentContainerStyle={styles.page}>
-    <Pressable testID="company-close" onPress={onClose} style={styles.button}><Text>← Retour</Text></Pressable>
+  if (admin && !account.is_admin) return <View testID="access-denied" style={[styles.page, styles.pageCenter]}><View style={styles.card}><Text style={styles.error}>Accès refusé.</Text><Pressable testID="company-close" onPress={onClose} style={[styles.button, cursorPointer]}><Text style={styles.buttonText}>Retour</Text></Pressable></View></View>;
+  const filtered = members?.filter(m => m.email.toLowerCase().includes(query.toLowerCase()));
+  return <ScrollView testID={admin ? "administration-screen" : "profile-screen"} style={styles.scroll} contentContainerStyle={styles.page}>
+    <Pressable testID="company-close" onPress={onClose} style={[styles.button, cursorPointer]}><Text style={styles.buttonText}>← Retour</Text></Pressable>
     <Text style={styles.title}>{admin ? "Administration" : "Mon profil"}</Text>
-    {demo && <Text testID="demo-banner">Démonstration locale : membres fictifs, modifications temporaires sans effet sur les comptes réels.</Text>}
-    {error ? <View testID="company-error"><Text style={styles.error}>{error}</Text>{admin && <Pressable onPress={() => void load()} style={styles.button}><Text>Réessayer</Text></Pressable>}</View> : null}
-    {notice ? <Text testID="company-notice">{notice}</Text> : null}
-    {!admin ? <View style={styles.card}><Text style={styles.label}>Nom d’affichage</Text><TextInput testID="display-name-input" value={name} onChangeText={setName} style={styles.input} maxLength={100} /><Pressable testID="save-display-name" disabled={busy} onPress={() => void submit()} style={styles.button}><Text>Enregistrer</Text></Pressable></View> : <View style={styles.card}>
+    {demo && <Text testID="demo-banner" style={styles.demoBanner}>Démonstration locale : membres fictifs, modifications temporaires sans effet sur les comptes réels.</Text>}
+    {error ? <View testID="company-error" style={styles.errorBox}><Text style={styles.error}>{error}</Text>{admin && <Pressable onPress={() => void load()} style={[styles.button, cursorPointer]}><Text style={styles.buttonText}>Réessayer</Text></Pressable>}</View> : null}
+    {notice ? <Text testID="company-notice" style={styles.notice}>{notice}</Text> : null}
+    {!admin ? <View style={styles.card}><Text style={styles.label}>Nom d’affichage</Text><TextInput testID="display-name-input" value={name} onChangeText={setName} style={styles.input} maxLength={100} /><Pressable testID="save-display-name" disabled={busy} onPress={() => void submit()} style={[styles.button, styles.primaryButton, busy && styles.disabled, cursorPointer]}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable></View> : <View style={styles.card}>
       <AnnualEntitlements demo={demo} />
-      <Text style={styles.label}>Membres</Text><TextInput testID="member-search" placeholder="Rechercher par e-mail" value={query} onChangeText={setQuery} style={styles.input} autoCapitalize="none" />
-      {members === null && !error ? <LoadingSkeleton /> : members?.filter(m => m.email.toLowerCase().includes(query.toLowerCase())).length ? members.filter(m => m.email.toLowerCase().includes(query.toLowerCase())).map(member => <View key={member.user_id} testID={`member-${member.user_id}`} style={styles.row}><View><Text>{member.display_name}</Text><Text>{member.email} · {member.active ? "Actif" : "Désactivé"}</Text></View>{member.user_id !== userId && <Pressable testID={`toggle-member-${member.user_id}`} disabled={busy} onPress={() => void toggle(member)} style={styles.button}><Text>{member.active ? "Désactiver" : "Réactiver"}</Text></Pressable>}</View>) : <Text testID="members-empty">Aucun membre trouvé.</Text>}
+      <Text style={styles.label}>Membres</Text><TextInput testID="member-search" placeholder="Rechercher par e-mail" placeholderTextColor={colors.textSecondary} value={query} onChangeText={setQuery} style={styles.input} autoCapitalize="none" />
+      {members === null && !error ? <LoadingSkeleton /> : filtered?.length ? filtered.map(member => <View key={member.user_id} testID={`member-${member.user_id}`} style={styles.row}><View style={styles.rowMain}><Text style={styles.memberName}>{member.display_name}</Text><Text style={styles.memberMeta}>{member.email} · {member.active ? "Actif" : "Désactivé"}</Text></View>{member.user_id !== userId && <Pressable testID={`toggle-member-${member.user_id}`} disabled={busy} onPress={() => void toggle(member)} style={[styles.button, busy && styles.disabled, cursorPointer]}><Text style={styles.buttonText}>{member.active ? "Désactiver" : "Réactiver"}</Text></Pressable>}</View>) : <Text testID="members-empty" style={styles.empty}>Aucun membre trouvé.</Text>}
     </View>}
   </ScrollView>;
 }
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: spacing.xl, gap: spacing.lg, backgroundColor: colors.background },
-  title: { fontFamily: fonts.base, fontSize: 28, color: colors.brand },
-  card: { ...glassStyle, padding: spacing.lg, borderRadius: radius.lg, gap: spacing.md },
-  label: { fontSize: 18, color: colors.textPrimary },
-  input: { minHeight: 44, borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.sm, paddingHorizontal: spacing.md, color: colors.textPrimary },
-  button: { minHeight: 44, padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.surfaceActive, alignSelf: "flex-start", justifyContent: "center" },
-  row: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
-  error: { color: colors.danger },
+  scroll: { flex: 1, backgroundColor: colors.background },
+  page: { flexGrow: 1, width: "100%", maxWidth: 1040, alignSelf: "center", paddingVertical: 36, paddingHorizontal: spacing.xl, gap: spacing.lg, backgroundColor: colors.background },
+  pageCenter: { flex: 1, justifyContent: "center" },
+  title: { fontFamily: fonts.base, fontSize: 30, fontWeight: "700", letterSpacing: -0.4, color: colors.textPrimary },
+  card: { padding: 24, borderRadius: shape.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, gap: spacing.md },
+  label: { fontFamily: fonts.base, fontSize: 18, fontWeight: "700", color: colors.textPrimary },
+  input: { fontFamily: fonts.base, fontSize: 16, minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: colors.panel, color: colors.textPrimary },
+  button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, alignSelf: "flex-start", justifyContent: "center" },
+  buttonText: { fontFamily: fonts.base, fontSize: 14, color: colors.textPrimary },
+  primaryButton: { backgroundColor: colors.cta, borderColor: colors.cta },
+  primaryButtonText: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.textOnBrand },
+  disabled: { opacity: 0.5 },
+  row: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row },
+  rowMain: { flexShrink: 1, gap: 2 },
+  memberName: { fontFamily: fonts.base, fontSize: 16, fontWeight: "700", color: colors.textPrimary },
+  memberMeta: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
+  empty: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary, textAlign: "center", paddingVertical: 20, borderWidth: 1, borderStyle: "dashed", borderColor: colors.borderDashed, borderRadius: shape.row },
+  demoBanner: { fontFamily: fonts.base, fontSize: 14, color: colors.ctaText, backgroundColor: colors.ctaSoft, borderRadius: shape.row, paddingHorizontal: 16, paddingVertical: 12, overflow: "hidden" },
+  notice: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.positive, backgroundColor: colors.positiveSoft, borderRadius: shape.row, paddingHorizontal: 16, paddingVertical: 12, overflow: "hidden" },
+  errorBox: { gap: spacing.sm, backgroundColor: colors.dangerSoft, borderWidth: 1, borderColor: "#F5C2C2", borderRadius: shape.row, padding: 14 },
+  error: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.danger },
 });

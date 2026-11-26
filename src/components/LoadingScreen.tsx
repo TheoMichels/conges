@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors, fonts, gradient, pearlBackground, glassStyle, radius, shadows, spacing } from "../theme/colors";
+import { colors, fonts, gradient, pearlBackground, shadows, shape, spacing } from "../theme/colors";
 
 export function LoadingSkeleton() {
   return <View testID="loading-skeleton" style={styles.skeletonGroup}>
@@ -24,7 +24,7 @@ export function LoadingScreen() {
     >
       <View style={styles.card}>
         <LoadingSkeleton />
-        <ActivityIndicator size="small" color={colors.textSecondary} />
+        <ActivityIndicator size="small" color={colors.primary} />
         <Text style={styles.text}>Chargement en cours...</Text>
       </View>
     </LinearGradient>
@@ -40,26 +40,27 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   skeletonGroup: { width: "100%", maxWidth: 520, gap: spacing.lg },
-  skeletonTitle: { width: "45%", height: 20, borderRadius: radius.sm, backgroundColor: colors.selection },
+  skeletonTitle: { width: "45%", height: 22, borderRadius: 8, backgroundColor: colors.divider },
   skeletonRow: { flexDirection: "row", gap: spacing.md },
-  skeletonCard: { flex: 1, height: 90, borderRadius: radius.lg, backgroundColor: colors.panel },
-  skeletonPanel: { height: 120, borderRadius: radius.lg, backgroundColor: colors.panel },
+  skeletonCard: { flex: 1, height: 90, borderRadius: shape.card, backgroundColor: colors.panelSubtle, borderWidth: 1, borderColor: colors.border },
+  skeletonPanel: { height: 120, borderRadius: shape.card, backgroundColor: colors.panelSubtle, borderWidth: 1, borderColor: colors.border },
   card: {
     width: "100%",
     maxWidth: 580,
-    padding: spacing.xl,
-    backgroundColor: colors.panelSubtle,
-    borderRadius: radius.xl,
-    ...glassStyle,
-    ...shadows.sm,
+    padding: 28,
+    backgroundColor: colors.panel,
+    borderRadius: shape.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.md,
   },
   text: {
     fontFamily: fonts.base,
-    fontSize: 16,
+    fontSize: 15,
     color: colors.textSecondary,
-    fontWeight: "500",
+    fontWeight: "600",
   },
 });

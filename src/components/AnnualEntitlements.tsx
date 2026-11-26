@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { AnnualEntitlement, listAdminYears, listAnnualEntitlements, saveAnnualEntitlement } from "../storage/annualEntitlementRepository";
-import { colors, radius, spacing } from "../theme/colors";
+import { colors, fonts, shape, spacing } from "../theme/colors";
 import { LoadingSkeleton } from "./LoadingScreen";
 
 type Props = { demo: boolean };
@@ -25,16 +25,16 @@ function EntitlementRow({ row, year, onSaved }: { row: AnnualEntitlement; year: 
     finally { setBusy(false); }
   };
   return <View testID={`annual-member-${row.user_id}`} style={styles.member}>
-    <Text>{row.display_name} · {row.email}</Text>
-    <Text>{row.plan_id ? row.year_active ? "Active" : "Brouillon" : "À créer"}{row.plan_id ? ` · Pris : ${row.taken} · Restant : ${row.remaining}` : ""}</Text>
+    <Text style={styles.memberName}>{row.display_name} · {row.email}</Text>
+    <Text style={styles.memberMeta}>{row.plan_id ? row.year_active ? "Active" : "Brouillon" : "À créer"}{row.plan_id ? ` · Pris : ${row.taken} · Restant : ${row.remaining}` : ""}</Text>
     {error ? <Text testID={`annual-row-error-${row.user_id}`} style={styles.error}>{error}</Text> : null}
     <View style={styles.fields}>
-      <View style={styles.field}><Text>Solde initial</Text><TextInput testID={`annual-initial-${row.user_id}`} accessibilityLabel={`Solde initial de ${row.display_name}`} style={styles.input} value={initial} onChangeText={setInitial} keyboardType="decimal-pad" /></View>
-      <View style={styles.field}><Text>Reportés{row.plan_id ? "" : " (proposition)"}</Text><TextInput testID={`annual-carried-${row.user_id}`} accessibilityLabel={`Reportés de ${row.display_name}`} style={styles.input} value={carried} onChangeText={setCarried} keyboardType="decimal-pad" /></View>
-      <View style={styles.field}><Text>CSupp</Text><TextInput testID={`annual-csupp-${row.user_id}`} accessibilityLabel={`CSupp de ${row.display_name}`} style={styles.input} value={csupp} onChangeText={setCsupp} keyboardType="decimal-pad" /></View>
-      <View style={styles.field}><Text>Fériés {holiday === "" ? `auto (${row.automatic_holidays})` : "manuel"}</Text><TextInput testID={`annual-holiday-${row.user_id}`} accessibilityLabel={`Fériés de ${row.display_name}`} style={styles.input} value={holiday} onChangeText={setHoliday} placeholder={String(row.automatic_holidays)} keyboardType="decimal-pad" /></View>
+      <View style={styles.field}><Text style={styles.fieldLabel}>Solde initial</Text><TextInput testID={`annual-initial-${row.user_id}`} accessibilityLabel={`Solde initial de ${row.display_name}`} style={styles.input} value={initial} onChangeText={setInitial} keyboardType="decimal-pad" /></View>
+      <View style={styles.field}><Text style={styles.fieldLabel}>Reportés{row.plan_id ? "" : " (proposition)"}</Text><TextInput testID={`annual-carried-${row.user_id}`} accessibilityLabel={`Reportés de ${row.display_name}`} style={styles.input} value={carried} onChangeText={setCarried} keyboardType="decimal-pad" /></View>
+      <View style={styles.field}><Text style={styles.fieldLabel}>CSupp</Text><TextInput testID={`annual-csupp-${row.user_id}`} accessibilityLabel={`CSupp de ${row.display_name}`} style={styles.input} value={csupp} onChangeText={setCsupp} keyboardType="decimal-pad" /></View>
+      <View style={styles.field}><Text style={styles.fieldLabel}>Fériés {holiday === "" ? `auto (${row.automatic_holidays})` : "manuel"}</Text><TextInput testID={`annual-holiday-${row.user_id}`} accessibilityLabel={`Fériés de ${row.display_name}`} style={styles.input} value={holiday} onChangeText={setHoliday} placeholder={String(row.automatic_holidays)} keyboardType="decimal-pad" /></View>
     </View>
-    <View style={styles.row}><Pressable testID={`annual-auto-${row.user_id}`} style={styles.button} onPress={() => setHoliday("")}><Text>Mode automatique</Text></Pressable><Pressable testID={`annual-save-${row.user_id}`} disabled={busy} style={styles.button} onPress={() => void save(!!row.year_active)}><Text>Enregistrer</Text></Pressable>{!row.year_active && <Pressable testID={`annual-activate-${row.user_id}`} disabled={busy} style={styles.button} onPress={() => void save(true)}><Text>Activer l’année</Text></Pressable>}</View>
+    <View style={styles.row}><Pressable testID={`annual-auto-${row.user_id}`} style={styles.button} onPress={() => setHoliday("")}><Text style={styles.buttonText}>Mode automatique</Text></Pressable><Pressable testID={`annual-save-${row.user_id}`} disabled={busy} style={[styles.button, styles.primaryButton, busy && styles.disabled]} onPress={() => void save(!!row.year_active)}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable>{!row.year_active && <Pressable testID={`annual-activate-${row.user_id}`} disabled={busy} style={styles.button} onPress={() => void save(true)}><Text style={styles.buttonText}>Activer l’année</Text></Pressable>}</View>
   </View>;
 }
 
@@ -69,15 +69,40 @@ export function AnnualEntitlements({ demo }: Props) {
     if (catalog?.some(item => item.year === newYear && item.has_active)) { setRetryTarget(null); setError("Cette année existe déjà."); return; }
     setError(""); setNotice(catalog?.some(item => item.year === newYear) ? "Brouillon existant repris." : "Nouvelle année : enregistrez les droits d’un membre pour créer un brouillon."); selectYear(newYear); setCreating(false); setNewYear("");
   };
-  if (demo) return <Text>La gestion des droits est disponible en mode connecté.</Text>;
+  if (demo) return <Text style={styles.note}>La gestion des droits est disponible en mode connecté.</Text>;
   return <View testID="annual-entitlements" style={styles.box}>
-    <View style={styles.heading}><Text style={styles.title}>Droits annuels</Text><Pressable testID="annual-create-button" accessibilityRole="button" style={styles.button} onPress={() => setCreating(current => !current)}><Text>+ Créer une année</Text></Pressable></View>
-    {creating && <View style={styles.row}><TextInput testID="annual-year" accessibilityLabel="Nouvelle année" value={newYear} onChangeText={setNewYear} keyboardType="number-pad" maxLength={4} placeholder="Année" style={styles.input} /><Pressable testID="annual-load" style={styles.button} onPress={create}><Text>Créer</Text></Pressable></View>}
-    {error ? <View testID="annual-error"><Text style={styles.error}>{error}</Text>{retryTarget && <Pressable testID="annual-retry" onPress={() => { if (retryTarget === "catalog") void loadCatalog(); else void loadRows(); }} style={styles.button}><Text>Réessayer</Text></Pressable>}</View> : null}
-    {notice ? <Text testID="annual-notice">{notice}</Text> : null}
-    {catalog === null && !error ? <LoadingSkeleton /> : catalog && <View testID="annual-year-menu" style={styles.row}>{catalog.filter(item => item.has_active).map(item => <Pressable key={item.year} testID={`annual-year-${item.year}`} accessibilityRole="button" accessibilityState={{ selected: item.year === year }} onPress={() => { selectYear(item.year); setNotice(""); }} style={styles.button}><Text>{item.year}{item.year === year ? " ✓" : ""}</Text></Pressable>)}</View>}
-    {catalog && !year && <Text testID="annual-empty">Aucune année active. Créez une année pour commencer.</Text>}
-    {year ? <><Text style={styles.title}>Année {year}</Text>{rows === null && !error ? <LoadingSkeleton /> : rows?.length === 0 ? <Text testID="annual-members-empty">Aucun membre.</Text> : rows?.map(row => <EntitlementRow key={`${year}-${row.user_id}`} row={row} year={year} onSaved={async message => { if (selectedYear.current === year) { setNotice(message); await loadRows(true); } await loadCatalog(); }} />)}</> : null}
+    <View style={styles.heading}><Text style={styles.title}>Droits annuels</Text><Pressable testID="annual-create-button" accessibilityRole="button" style={styles.button} onPress={() => setCreating(current => !current)}><Text style={styles.buttonText}>+ Créer une année</Text></Pressable></View>
+    {creating && <View style={styles.row}><TextInput testID="annual-year" accessibilityLabel="Nouvelle année" value={newYear} onChangeText={setNewYear} keyboardType="number-pad" maxLength={4} placeholder="Année" placeholderTextColor={colors.textSecondary} style={styles.input} /><Pressable testID="annual-load" style={styles.button} onPress={create}><Text style={styles.buttonText}>Créer</Text></Pressable></View>}
+    {error ? <View testID="annual-error" style={styles.errorBox}><Text style={styles.error}>{error}</Text>{retryTarget && <Pressable testID="annual-retry" onPress={() => { if (retryTarget === "catalog") void loadCatalog(); else void loadRows(); }} style={styles.button}><Text style={styles.buttonText}>Réessayer</Text></Pressable>}</View> : null}
+    {notice ? <Text testID="annual-notice" style={styles.notice}>{notice}</Text> : null}
+    {catalog === null && !error ? <LoadingSkeleton /> : catalog && <View testID="annual-year-menu" style={styles.row}>{catalog.filter(item => item.has_active).map(item => <Pressable key={item.year} testID={`annual-year-${item.year}`} accessibilityRole="button" accessibilityState={{ selected: item.year === year }} onPress={() => { selectYear(item.year); setNotice(""); }} style={[styles.button, styles.chip, item.year === year && styles.chipSelected]}><Text style={[styles.buttonText, item.year === year && styles.chipTextSelected]}>{item.year}{item.year === year ? " ✓" : ""}</Text></Pressable>)}</View>}
+    {catalog && !year && <Text testID="annual-empty" style={styles.empty}>Aucune année active. Créez une année pour commencer.</Text>}
+    {year ? <><Text style={styles.title}>Année {year}</Text>{rows === null && !error ? <LoadingSkeleton /> : rows?.length === 0 ? <Text testID="annual-members-empty" style={styles.empty}>Aucun membre.</Text> : rows?.map(row => <EntitlementRow key={`${year}-${row.user_id}`} row={row} year={year} onSaved={async message => { if (selectedYear.current === year) { setNotice(message); await loadRows(true); } await loadCatalog(); }} />)}</> : null}
   </View>;
 }
-const styles = StyleSheet.create({ box: { gap: spacing.md }, title: { fontSize: 18, color: colors.textPrimary }, heading: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md }, row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, fields: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, field: { flexGrow: 1, minWidth: 120, gap: spacing.xs }, member: { gap: spacing.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm }, input: { minHeight: 44, minWidth: 100, borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.sm, paddingHorizontal: spacing.md, color: colors.textPrimary }, button: { minHeight: 44, padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.surfaceActive, alignSelf: "flex-start", justifyContent: "center" }, error: { color: colors.danger } });
+const styles = StyleSheet.create({
+  box: { gap: spacing.md, paddingBottom: spacing.lg, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  title: { fontFamily: fonts.base, fontSize: 18, fontWeight: "700", color: colors.textPrimary },
+  heading: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
+  fields: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.lg, columnGap: 20 },
+  field: { flexGrow: 1, minWidth: 120, gap: 8 },
+  fieldLabel: { fontFamily: fonts.base, fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  member: { gap: spacing.md, padding: 16, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, backgroundColor: colors.panel },
+  memberName: { fontFamily: fonts.base, fontSize: 16, fontWeight: "700", color: colors.textPrimary },
+  memberMeta: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
+  input: { fontFamily: fonts.base, fontSize: 16, minHeight: 46, minWidth: 100, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: colors.panel, color: colors.textPrimary },
+  button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, alignSelf: "flex-start", justifyContent: "center" },
+  buttonText: { fontFamily: fonts.base, fontSize: 14, color: colors.textPrimary },
+  primaryButton: { backgroundColor: colors.cta, borderColor: colors.cta },
+  primaryButtonText: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.textOnBrand },
+  disabled: { opacity: 0.5 },
+  chip: { borderRadius: shape.pill },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipTextSelected: { color: colors.textOnBrand, fontWeight: "600" },
+  note: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary, backgroundColor: colors.panelSubtle, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, padding: 14, overflow: "hidden" },
+  notice: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.positive, backgroundColor: colors.positiveSoft, borderRadius: shape.row, paddingHorizontal: 16, paddingVertical: 12, overflow: "hidden" },
+  empty: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary, textAlign: "center", paddingVertical: 20, borderWidth: 1, borderStyle: "dashed", borderColor: colors.borderDashed, borderRadius: shape.row },
+  errorBox: { gap: spacing.sm, backgroundColor: colors.dangerSoft, borderWidth: 1, borderColor: "#F5C2C2", borderRadius: shape.row, padding: 14 },
+  error: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.danger },
+});

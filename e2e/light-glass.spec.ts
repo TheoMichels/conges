@@ -23,7 +23,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.goto("/");
       await expect(page.getByTestId("kpi-cards")).toBeVisible();
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("light only");
-      await expect(page.getByTestId("kpi-taken").getByText("2", { exact: true })).toHaveCSS("color", "rgb(20, 51, 62)");
+      await expect(page.getByTestId("kpi-taken").getByText("2", { exact: true })).toHaveCSS("color", "rgb(27, 43, 58)");
       await page.screenshot({ path: test.info().outputPath(`${width}-${colorScheme}-overview.png`), fullPage: true });
       await page.getByTestId("add-leave-button").click();
       await expect(page.getByPlaceholder("Motif des congés")).toBeVisible();

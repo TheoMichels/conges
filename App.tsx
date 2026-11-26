@@ -30,7 +30,7 @@ import { SummaryFields } from "./src/components/SummaryFields";
 import { LeaveEntries } from "./src/components/LeaveEntries";
 import { MobileDashboard } from "./src/components/MobileDashboard";
 import { YearSelectorMobile } from "./src/components/YearSelectorMobile";
-import { colors, fonts, gradient, pearlBackground, radius, shadows, spacing } from "./src/theme/colors";
+import { colors, fonts, gradient, pearlBackground, shadows, shape, spacing } from "./src/theme/colors";
 import { cursorPointer } from "./src/theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -40,8 +40,8 @@ import {
   findPreviousYearPlan,
 } from "./src/utils/yearPlanUtils";
 
-// Matches Sidebar's own width (220) + marginRight (20).
-const SIDEBAR_TOTAL_WIDTH = 240;
+// Matches Sidebar's own width (240) + marginRight (28).
+const SIDEBAR_TOTAL_WIDTH = 268;
 
 interface MainAppProps {
   user?: User | null;
@@ -148,25 +148,25 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
           style={styles.flex}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
-            <Header
-              isMobile={isMobile}
-              user={user}
-              onSignOut={onSignOut}
-              onProfile={onProfile}
-              onAdmin={onAdmin}
+          <Header
+            isMobile={isMobile}
+            user={user}
+            onSignOut={onSignOut}
+            onProfile={onProfile}
+            onAdmin={onAdmin}
+          />
+
+          {isMobile && (
+            <YearSelectorMobile
+              readOnly={!isLocalMode}
+              plans={plans}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onAdd={handleAddYear}
             />
+          )}
 
-            {isMobile && (
-              <YearSelectorMobile
-                readOnly={!isLocalMode}
-                plans={plans}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-                onAdd={handleAddYear}
-              />
-            )}
-
+          <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
             <View style={styles.layout}>
               {!isMobile && (
                 <View style={styles.sidebarWrapper}>
@@ -217,18 +217,24 @@ function MainApp({ user, onSignOut, onProfile, onAdmin }: MainAppProps) {
                     <Text style={styles.empty}>{isLocalMode ? "Aucune année de congés enregistrée." : "Aucune année de congés activée"}</Text>
                     {isLocalMode && <Pressable
                       accessibilityRole="button"
-                      style={[styles.retryButton, cursorPointer]}
+                      style={[styles.retryButton, styles.ctaButton, cursorPointer]}
                       onPress={() => handleAddYear(new Date().getFullYear().toString())}
                     >
-                      <Text style={styles.retryText}>+ Créer une année</Text>
+                      <Text style={styles.ctaText}>+ Créer une année</Text>
                     </Pressable>}
                   </View>
                 ) : (
                   <ScrollView
                     style={[styles.content, isMobile && styles.contentMobile]}
+                    contentContainerStyle={[styles.contentInner, isMobile && styles.contentInnerMobile]}
                     showsVerticalScrollIndicator={false}
                   >
-                    {!isMobile && <Text style={styles.header}>Mes congés <Text style={styles.headerYear}>{selectedPlan.year}</Text></Text>}
+                    {!isMobile && (
+                      <View style={styles.titleRow}>
+                        <Text style={styles.header}>Mes congés</Text>
+                        <Text style={styles.headerYear}>{selectedPlan.year}</Text>
+                      </View>
+                    )}
 
                     <KpiCards
                       remaining={remaining}
@@ -338,12 +344,12 @@ export default function App() {
     setScreen(next);
     if (Platform.OS === "web") window.history.pushState({}, "", next === "admin" ? "/administration" : "/");
   };
-  if (storageError) return <View style={styles.stateContainer} testID="storage-error"><Text>{storageError}</Text><Pressable onPress={() => setStorageAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable></View>;
+  if (storageError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="storage-error"><Text style={styles.errorText}>{storageError}</Text><Pressable onPress={() => setStorageAttempt(n => n + 1)} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Réessayer</Text></Pressable></View></View>;
   if (!storageReady) return <LoadingScreen />;
   if (recoveryPending) return <LegacyRecovery onDone={() => setRecoveryPending(false)} />;
   if (!isLocalMode && (isLoading || isPulling || (user && !account && !accountError))) return <LoadingScreen />;
   if (!isLocalMode && !isAuthenticated) return <AuthScreen />;
-  if (!isLocalMode && accountError) return <View style={styles.stateContainer} testID="account-error"><Text>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable><Pressable onPress={signOut} style={styles.retryButton}><Text>Se déconnecter</Text></Pressable></View>;
+  if (!isLocalMode && accountError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="account-error"><Text style={styles.errorText}>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Réessayer</Text></Pressable><Pressable onPress={signOut} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Se déconnecter</Text></Pressable></View></View>;
   if (isLocalMode && screen === "admin") return <CompanyScreen account={{ active: true, is_admin: true, display_name: "Démonstration" }} userId="demo-admin" admin demo onClose={() => navigate("home")} />;
   if (!isLocalMode && user && account && screen !== "home") return <CompanyScreen account={account} userId={user.id} admin={screen === "admin"} onClose={() => navigate("home")} onName={name => setAccount({ ...account, display_name: name })} />;
   return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={isLocalMode || account?.is_admin ? () => navigate("admin") : undefined} />;
@@ -359,13 +365,14 @@ const styles = StyleSheet.create({
   },
   pageContent: {
     flex: 1,
-    padding: spacing.xl,
+    paddingTop: 36,
+    paddingHorizontal: 40,
     width: "100%",
     alignSelf: "center",
   },
   pageContentMobile: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingHorizontal: 16,
+    paddingTop: 18,
   },
   layout: {
     flex: 1,
@@ -381,20 +388,26 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    borderRadius: radius.lg,
     backgroundColor: "transparent",
-    padding: spacing.xl,
   },
   contentMobile: {
-    padding: 0,
     backgroundColor: "transparent",
-    borderWidth: 0,
-    shadowOpacity: 0,
-    elevation: 0,
+  },
+  contentInner: {
+    paddingBottom: 44,
+  },
+  contentInnerMobile: {
+    paddingBottom: 24,
+  },
+  screenState: {
+    ...pearlBackground,
+    flex: 1,
+    padding: spacing.xl,
+    justifyContent: "center",
   },
   stateContainer: {
     flex: 1,
-    borderRadius: radius.lg,
+    borderRadius: shape.card,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
@@ -402,46 +415,78 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 220,
-    ...shadows.sm,
+  },
+  stateCard: {
+    flex: 0,
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+    ...shadows.md,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: spacing.xl,
   },
   header: {
     fontFamily: fonts.base,
-    fontSize: 29,
-    fontWeight: "400",
-    marginBottom: spacing.lg,
-    color: colors.brand,
-    letterSpacing: -0.5,
+    fontSize: 30,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    letterSpacing: -0.4,
   },
-  headerYear: { color: colors.textSecondary, fontWeight: "400" },
+  headerYear: {
+    fontFamily: fonts.base,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.cta,
+    backgroundColor: colors.ctaSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: shape.pill,
+    overflow: "hidden",
+  },
   empty: {
     fontFamily: fonts.base,
     textAlign: "center",
-    color: colors.textMuted,
-    fontSize: 15,
+    color: colors.textSecondary,
+    fontSize: 16,
   },
   errorText: {
     fontFamily: fonts.base,
     textAlign: "center",
     color: colors.danger,
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   retryButton: {
     alignSelf: "center",
     marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     minHeight: 44,
     justifyContent: "center",
-    borderRadius: radius.sm,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceActive,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
   },
   retryText: {
     fontFamily: fonts.base,
-    color: colors.brand,
-    fontWeight: "500",
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  ctaButton: {
+    borderColor: colors.cta,
+    backgroundColor: colors.cta,
+  },
+  ctaText: {
+    fontFamily: fonts.base,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textOnBrand,
   },
   errorBanner: {
     flexDirection: "row",
@@ -449,9 +494,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: radius.sm,
-    paddingHorizontal: 14,
+    borderColor: "#F5C2C2",
+    borderRadius: shape.row,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     minHeight: 44,
     marginBottom: 16,
@@ -460,12 +505,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.base,
     color: colors.danger,
     flex: 1,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   errorBannerClose: {
     fontFamily: fonts.base,
     color: colors.danger,
-    fontWeight: "500",
+    fontWeight: "600",
     marginLeft: 12,
     padding: 4,
   },
