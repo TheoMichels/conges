@@ -242,6 +242,7 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
     // Pré-remplit le cache local et les tokens auth avant le chargement
     await page.addInitScript(
       ({ user }) => {
+        window.localStorage.setItem("@holy_storage_isolation_v2", "1");
         const now = Math.floor(Date.now() / 1000);
         const sessionPayload = {
           access_token: "mock-token",

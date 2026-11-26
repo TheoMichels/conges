@@ -1,5 +1,7 @@
 import { test, expect } from "./fixtures";
 
+test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem("@holy_storage_isolation_v2", "1")); });
+
 test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-01-05T10:00:00Z"));
   await page.addInitScript(() => localStorage.setItem("@holy_year_plans_v1", JSON.stringify([{

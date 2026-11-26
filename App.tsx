@@ -21,6 +21,8 @@ import { AuthScreen } from "./src/components/AuthScreen";
 import { LoadingScreen, LoadingSkeleton } from "./src/components/LoadingScreen";
 import { Header } from "./src/components/Header";
 import { CompanyScreen } from "./src/components/CompanyScreen";
+import { LegacyRecovery } from "./src/components/LegacyRecovery";
+import { getLegacyQuarantine, migrateLegacyStorage } from "./src/storage/legacyQuarantine";
 import { Account, registerMember } from "./src/storage/memberRepository";
 import { KpiCards } from "./src/components/KpiCards";
 import { Sidebar } from "./src/components/Sidebar";
@@ -290,6 +292,22 @@ export default function App() {
     }
   }, []);
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
+  const [storageReady, setStorageReady] = useState(false);
+  const [recoveryPending, setRecoveryPending] = useState(false);
+  const [storageError, setStorageError] = useState("");
+  const [storageAttempt, setStorageAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setStorageError("");
+    void (async () => {
+      try {
+        await migrateLegacyStorage();
+        const legacy = await getLegacyQuarantine();
+        if (!cancelled) { setRecoveryPending(isLocalMode && !!legacy && !legacy.restored); setStorageReady(true); }
+      } catch { if (!cancelled) setStorageError("Impossible de protéger les données anciennes. Réessayez."); }
+    })();
+    return () => { cancelled = true; };
+  }, [storageAttempt]);
   const [account, setAccount] = useState<Account | null>(null);
   const [isPulling, setIsPulling] = useState(false);
   const [accountError, setAccountError] = useState("");
@@ -298,7 +316,7 @@ export default function App() {
     Platform.OS === "web" && window.location.pathname === "/administration" ? "admin" : "home"
   );
   useEffect(() => {
-    if (isLocalMode || !user) { setAccount(null); setIsPulling(false); return; }
+    if (!storageReady || isLocalMode || !user) { setAccount(null); setIsPulling(false); return; }
     let cancelled = false;
     setIsPulling(true);
     setAccount(null);
@@ -314,11 +332,14 @@ export default function App() {
       } finally { if (!cancelled) setIsPulling(false); }
     })();
     return () => { cancelled = true; };
-  }, [user?.id, attempt]);
+  }, [user?.id, attempt, storageReady]);
   const navigate = (next: "home" | "admin" | "profile") => {
     setScreen(next);
     if (Platform.OS === "web") window.history.pushState({}, "", next === "admin" ? "/administration" : "/");
   };
+  if (storageError) return <View style={styles.stateContainer} testID="storage-error"><Text>{storageError}</Text><Pressable onPress={() => setStorageAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable></View>;
+  if (!storageReady) return <LoadingScreen />;
+  if (recoveryPending) return <LegacyRecovery onDone={() => setRecoveryPending(false)} />;
   if (!isLocalMode && (isLoading || isPulling || (user && !account && !accountError))) return <LoadingScreen />;
   if (!isLocalMode && !isAuthenticated) return <AuthScreen />;
   if (!isLocalMode && accountError) return <View style={styles.stateContainer} testID="account-error"><Text>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable><Pressable onPress={signOut} style={styles.retryButton}><Text>Se déconnecter</Text></Pressable></View>;

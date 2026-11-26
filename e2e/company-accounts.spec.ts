@@ -100,6 +100,7 @@ test("désactivation pendant le chargement : accès refusé et données locales 
   });
   await page.addInitScript(user => {
     localStorage.setItem("sb-synthetic-auth-token", JSON.stringify({ access_token: "mock-token", refresh_token: "mock-refresh", token_type: "bearer", expires_at: Math.floor(Date.now()/1000)+3600, user }));
+    localStorage.setItem("@holy_storage_isolation_v2", "1");
     localStorage.setItem("@holy_year_plans_v1", '[{"id":"local-plan"}]');
   }, user);
   await page.route("https://synthetic.supabase.invalid/**", async route => {
@@ -114,4 +115,28 @@ test("désactivation pendant le chargement : accès refusé et données locales 
   await expect(page.getByTestId("account-error")).toContainText("désactivé");
   await expect(page.getByTestId("app-header")).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem("@holy_year_plans_v1"))).toBe('[{"id":"local-plan"}]');
+});
+
+test("anciennes données : récupération locale volontaire sans perte", async ({ page }) => {
+  const plan = { id: "old-local", year: "2023", createdAt: 1, initialLeave: 26, carriedOver: 0, csupp: 0, publicHolidays: 0, workPercentage: 100, entries: [] };
+  await page.addInitScript(plan => { if (!localStorage.getItem("@holy_storage_isolation_v2")) localStorage.setItem("@holy_year_plans_v1", JSON.stringify([plan])); }, plan);
+  await page.goto("http://localhost:4173/");
+  await expect(page.getByTestId("legacy-recovery-screen")).toContainText("ancien compte connecté");
+  await page.getByTestId("legacy-recover-button").click();
+  await expect(page.getByTestId("app-header")).toBeVisible();
+  await expect(page.getByText("2023").first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("legacy-recovery-screen")).toHaveCount(0);
+  await expect(page.getByText("2023").first()).toBeVisible();
+});
+
+test("ancien cache cloud : quarantaine sans attribution au nouveau compte", async ({ page }) => {
+  await setup(page, false);
+  await page.addInitScript(() => { if (!localStorage.getItem("@holy_storage_isolation_v2")) localStorage.setItem("@holy_year_plans_v1", '[{"id":"ancien-compte"}]'); });
+  await page.goto("https://holidays.example/");
+  await expect(page.getByTestId("app-header")).toBeVisible();
+  const stored = await page.evaluate(() => ({ local: localStorage.getItem("@holy_year_plans_v1"), quarantine: localStorage.getItem("@holy_legacy_quarantine_v1") }));
+  expect(stored.local).toBeNull();
+  expect(stored.quarantine).toContain("ancien-compte");
+  await expect(page.getByTestId("legacy-recovery-screen")).toHaveCount(0);
 });

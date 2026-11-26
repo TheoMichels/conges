@@ -185,6 +185,37 @@ const {
 const { setTestSupabase } = await import("virtual:supabase-client");
 const { syncService } = await import("../src/services/syncService.ts");
 
+describe("Legacy storage quarantine", () => {
+  beforeEach(async () => { await AsyncStorage.clear(); });
+  it("quarantines unknown legacy values once, without attributing them to a cloud account", async () => {
+    const { migrateLegacyStorage, getLegacyQuarantine, restoreLegacyStorage } = await import("../src/storage/legacyQuarantine.ts");
+    const original = '[{"id":"old-cloud-plan"}]';
+    await AsyncStorage.setItem(STORAGE_KEY, original);
+    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, 'legacy');
+    await migrateLegacyStorage();
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), null);
+    assert.equal(await AsyncStorage.getItem(LEGACY_STORAGE_KEY), null);
+    assert.deepEqual((await getLegacyQuarantine()).values, { [STORAGE_KEY]: original, [LEGACY_STORAGE_KEY]: 'legacy' });
+    await migrateLegacyStorage();
+    await syncService.clearLocalCache();
+    assert.equal(await AsyncStorage.getItem("@holy_cloud_year_plans_another-user"), null);
+    assert.equal((await getLegacyQuarantine()).values[STORAGE_KEY], original);
+    await restoreLegacyStorage();
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), original);
+    assert.equal(await AsyncStorage.getItem(LEGACY_STORAGE_KEY), 'legacy');
+    assert.equal((await getLegacyQuarantine()).restored, true);
+  });
+  it("never overwrites newer local data during explicit restoration", async () => {
+    const { migrateLegacyStorage, restoreLegacyStorage, getLegacyQuarantine } = await import("../src/storage/legacyQuarantine.ts");
+    await AsyncStorage.setItem(STORAGE_KEY, 'old');
+    await migrateLegacyStorage();
+    await AsyncStorage.setItem(STORAGE_KEY, 'new');
+    await assert.rejects(restoreLegacyStorage(), /données locales/);
+    assert.equal(await AsyncStorage.getItem(STORAGE_KEY), 'new');
+    assert.equal((await getLegacyQuarantine()).values[STORAGE_KEY], 'old');
+  });
+});
+
 describe("Company accounts cache isolation", () => {
   beforeEach(async () => { await AsyncStorage.clear(); setTestSupabase(null); });
   it("refuses a deactivation during a pull and preserves the local and cloud data", async () => {

@@ -1,5 +1,7 @@
 import { test, expect } from "./fixtures";
 
+test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem("@holy_storage_isolation_v2", "1")); });
+
 for (const width of [1440, 375]) {
   test(`annual rate validation, totals, persistence and independence at ${width}px`, async ({ page }) => {
     await page.clock.setFixedTime(new Date("2022-01-05T10:00:00Z"));
