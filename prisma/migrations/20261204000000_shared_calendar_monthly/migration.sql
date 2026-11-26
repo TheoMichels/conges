@@ -1,10 +1,12 @@
 -- Same per-call team authorization as the original projection; no labels or balances.
 DROP FUNCTION holy.shared_calendar(date, uuid);
 CREATE FUNCTION holy.shared_calendar(month_start date, selected_team uuid DEFAULT NULL)
-RETURNS TABLE(id text, display_name text, member_key text, kind text, start_date text, end_date text, start_half text, end_half text, month integer, days numeric, created_at timestamptz)
+RETURNS TABLE(id text, display_name text, member_key text, kind text, start_date text, end_date text, start_half text, end_half text, month integer, days numeric, created_at timestamptz, reserved_ids text[])
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
  SELECT e.id, coalesce(m.display_name, split_part(u.email, '@', 1)), md5(e.user_id::text), e.kind,
-   e.start_date, e.end_date, e.start_half, e.end_half, e.month, e.days, e.created_at
+   e.start_date, e.end_date, e.start_half, e.end_half, e.month, e.days, e.created_at,
+   CASE WHEN e.kind='month' THEN ARRAY(SELECT other.id FROM holy.leave_entries other
+     WHERE other.plan_id=e.plan_id AND left(other.id, length(e.id) + 11)=e.id || '~recovered~') ELSE ARRAY[]::text[] END
  FROM holy.leave_entries e
  JOIN holy.year_plans p ON p.id=e.plan_id AND p.user_id=e.user_id
  JOIN holy.members m ON m.user_id=e.user_id AND m.active

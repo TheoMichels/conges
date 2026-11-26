@@ -19,10 +19,11 @@ test('F06 : projection minimale, équipes communes et révocation immédiate', a
    INSERT INTO holy.year_plans(id,user_id,year) VALUES ('plan','${ids[1]}','2026'),('other-plan','${ids[2]}','2026');
    INSERT INTO holy.leave_entries(id,user_id,plan_id,kind,label,start_date,end_date,start_half,end_half) VALUES ('entry','${ids[1]}','plan','dates','Secret','2026-02-27','2026-03-03','afternoon','morning'),('other','${ids[2]}','other-plan','dates','Secret','2026-03-02','2026-03-02','morning','afternoon');
    INSERT INTO holy.leave_entries(id,user_id,plan_id,kind,label,month,days,created_at) VALUES ('monthly','${ids[1]}','plan','month','Privé',2,1,'2026-01-01'),('outside','${ids[2]}','other-plan','month','Privé',2,1,'2026-01-01');
+   INSERT INTO holy.leave_entries(id,user_id,plan_id,kind,label,start_date,end_date) VALUES ('monthly~recovered~1','${ids[1]}','plan','dates','Privé','2026-04-01','2026-04-01');
    SET ROLE authenticated; SET request.jwt.claim.sub='${ids[0]}';`);
   const get = async (month='2026-03-01', team=null) => (await db.query('SELECT * FROM holy.shared_calendar($1,$2)',[month,team])).rows;
   assert.equal((await db.query('SELECT * FROM holy.my_calendar_teams()')).rows.length,2);
-  const rows = await get(); assert.equal(rows.length,2); assert.deepEqual(Object.keys(rows[0]).sort(),['display_name','end_date','end_half','id','start_date','start_half','member_key','kind','month','days','created_at'].sort()); assert.equal(rows.filter(row => row.kind === 'month').length, 1); assert.ok(!JSON.stringify(rows).includes('Privé'));
+  const rows = await get(); assert.equal(rows.length,2); assert.deepEqual(Object.keys(rows[0]).sort(),['display_name','end_date','end_half','id','start_date','start_half','member_key','kind','month','days','created_at','reserved_ids'].sort()); assert.equal(rows.filter(row => row.kind === 'month').length, 1); assert.deepEqual(rows.find(row => row.kind === 'month').reserved_ids, ['monthly~recovered~1']); assert.ok(!JSON.stringify(rows).includes('Privé'));
   assert.equal(rows[0].display_name,'Camille'); assert.equal((await get('2026-02-01')).length,1);
   assert.equal((await get('2026-03-01',teams[0])).length,2); assert.equal((await get('2026-03-01',teams[1])).length,2); assert.equal((await get('2026-03-01',teams[2])).length,0);
   await db.exec(`RESET ROLE; DELETE FROM holy.team_members WHERE team_id='${teams[0]}' AND user_id='${ids[0]}'; SET ROLE authenticated`);
