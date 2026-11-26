@@ -4,9 +4,12 @@ import { Account, listMembers, Member, saveDisplayName, setMemberActive } from "
 import { colors, fonts, glassStyle, radius, spacing } from "../theme/colors";
 import { LoadingSkeleton } from "./LoadingScreen";
 
-type Props = { account: Account; userId: string; admin: boolean; onClose: () => void; onName: (name: string) => void };
-export function CompanyScreen({ account, userId, admin, onClose, onName }: Props) {
-  const [members, setMembers] = useState<Member[] | null>(null);
+type Props = { account: Account; userId: string; admin: boolean; demo?: boolean; onClose: () => void; onName?: (name: string) => void };
+export function CompanyScreen({ account, userId, admin, demo = false, onClose, onName }: Props) {
+  const [members, setMembers] = useState<Member[] | null>(() => demo ? [
+    { user_id: "demo-alice", email: "alice@example.com", display_name: "Alice Martin", active: true },
+    { user_id: "demo-bob", email: "bob@example.com", display_name: "Bob Durand", active: true },
+  ] : null);
   const [name, setName] = useState(account.display_name);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -16,13 +19,18 @@ export function CompanyScreen({ account, userId, admin, onClose, onName }: Props
     try { setError(""); setMembers(await listMembers()); }
     catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); }
   };
-  useEffect(() => { if (admin) void load(); }, [admin]);
+  useEffect(() => { if (admin && !demo) void load(); }, [admin, demo]);
   const submit = async () => {
-    try { setBusy(true); setError(""); await saveDisplayName(name); onName(name.trim()); setNotice("Nom enregistré."); }
+    try { setBusy(true); setError(""); await saveDisplayName(name); onName?.(name.trim()); setNotice("Nom enregistré."); }
     catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); }
     finally { setBusy(false); }
   };
   const toggle = async (member: Member) => {
+    if (demo) {
+      setMembers(current => current?.map(item => item.user_id === member.user_id ? { ...item, active: !item.active } : item) ?? null);
+      setNotice("Modification de démonstration enregistrée pour cette visite.");
+      return;
+    }
     try { setBusy(true); setError(""); await setMemberActive(member.user_id, !member.active); await load(); }
     catch (e) { setError(e instanceof Error ? e.message : "Une erreur est survenue."); }
     finally { setBusy(false); }
@@ -31,6 +39,7 @@ export function CompanyScreen({ account, userId, admin, onClose, onName }: Props
   return <ScrollView testID={admin ? "administration-screen" : "profile-screen"} contentContainerStyle={styles.page}>
     <Pressable testID="company-close" onPress={onClose} style={styles.button}><Text>← Retour</Text></Pressable>
     <Text style={styles.title}>{admin ? "Administration" : "Mon profil"}</Text>
+    {demo && <Text testID="demo-banner">Démonstration locale : membres fictifs, modifications temporaires sans effet sur les comptes réels.</Text>}
     {error ? <View testID="company-error"><Text style={styles.error}>{error}</Text>{admin && <Pressable onPress={() => void load()} style={styles.button}><Text>Réessayer</Text></Pressable>}</View> : null}
     {notice ? <Text testID="company-notice">{notice}</Text> : null}
     {!admin ? <View style={styles.card}><Text style={styles.label}>Nom d’affichage</Text><TextInput testID="display-name-input" value={name} onChangeText={setName} style={styles.input} maxLength={100} /><Pressable testID="save-display-name" disabled={busy} onPress={() => void submit()} style={styles.button}><Text>Enregistrer</Text></Pressable></View> : <View style={styles.card}>

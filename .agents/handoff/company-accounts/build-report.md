@@ -1,19 +1,12 @@
-# Build Report — company-accounts
-- **Statut** : READY_FOR_QA ; cycle 3 ; branche `feature/company-accounts`.
-- **Données** : migration `20261126000000_company_accounts` et schéma Prisma ; aucune écriture distante.
-- **Sécurité** : identité vérifiée dans `auth.users`, état actif relu en base, RPC à privilèges et RLS.
-- **UI** : profil et administration avec chargement, vide, erreur et données ; tokens existants et testID.
-| AC | Preuve |
-|---|---|
-| 01 | `tests/companyAccounts.test.mjs`, `e2e/company-accounts.spec.ts` |
-| 02 | mêmes tests ; contrôle SQL direct et URL |
-| 03 | mêmes tests ; RLS PostgreSQL isolé et actions UI |
-| 04 | mêmes tests ; RPC profil et liste admin |
-- Tests ciblés : PostgreSQL isolé PASS ; Playwright 3 parcours PASS. Harness complet : typecheck, lint, unit, build, e2e PASS ; voir `verify-result.json`.
-- La spécification utilisateur `docs/COMPANY_LEAVE_SPEC.md` est conservée sans modification et versionnée.
-- Correction revue : cache cloud par compte, espace local préservé ; compte revalidé après chaque lecture cloud.
-- Régression : PostgreSQL isolé, stockage et E2E course de désactivation ; confidentialité et nom par défaut vérifiés.
-- Upgrade : clés historiques sans provenance en quarantaine ; reprise volontaire locale, sans écraser les données récentes.
-- Capture E2E existante dirigée vers les artefacts Playwright pour éviter une modification du dépôt.
-- Limite : appareil partagé sans authentification locale ; l’identité de la personne qui restaure ne peut être vérifiée.
-- Revue sécurité et QA indépendantes à relancer.
+# Build Report — company-accounts / AC-05
+- Statut : READY_FOR_QA ; branche : feature/company-accounts ; cycle : complément AC-05.
+- Périmètre : App.tsx, Header, CompanyScreen, e2e/company-accounts.spec.ts ; plan et rapports de passation.
+- Données : aucun changement de schéma ni commande sur base distante.
+- AC-05 : bouton local, écran marqué « Démonstration locale », deux membres fictifs en mémoire ; recherche, activation et retour.
+- Les modifications fictives disparaissent à la sortie ; aucun accès au repository admin en mode local.
+- UI : tokens existants ; liste remplie, recherche vide, chargement/erreur du parcours connecté conservés ; testIDs admin-button, demo-banner, member-search, member-demo-* et company-close.
+- E2E : parcours local hors connexion et six régressions connectées PASS (7 tests) ; première exécution sur ancien build rouge (bouton absent).
+- AC-01 à AC-04 : preuves antérieures dans qa-report.md et review-report.md ; aucune décision modifiant ces critères.
+- QA antérieure : navigateur intégré indisponible ; inspection visuelle indépendante à reprendre si disponible.
+- Harness complet : à lancer après commit ; résultat final dans .agents/state/verify-result.json.
+- Intégrations : aucune nouvelle intégration de données ; aucune migration ou variable d’environnement à pousser.

@@ -7,3 +7,5 @@ AC-03 — Un admin désactive et réactive un autre membre ; dès la prochaine r
 AC-04 — Chaque membre peut renseigner son nom d’affichage ; à défaut utiliser la partie avant @ ; seuls le membre et l’admin peuvent accéder à son adresse complète. Le mode local reste autonome.
 
 Respecter docs/COMPANY_LEAVE_SPEC.md, contraintes communes, Prisma et migrations versionnées ; aucune écriture distante. Preuves : intégration base isolée pour migrations et autorisations, E2E Playwright et harness front. Revue sécurité et QA indépendantes requises.
+
+AC-05 — En local hors connexion, accéder à Administration en mode démonstration clairement identifié, rechercher des membres fictifs, désactiver puis réactiver un membre et revenir à l’espace personnel ; aucune requête ni modification des comptes ou données réels. Vérifier parcours Playwright et régression mode connecté.

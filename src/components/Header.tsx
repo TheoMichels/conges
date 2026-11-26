@@ -58,9 +58,12 @@ export function Header({
             )}
           </View>
         ) : (
-          <View testID="local-badge" style={styles.badge}>
-            <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>{storageModeLabel}</Text>
+          <View style={styles.authArea}>
+            <View testID="local-badge" style={styles.badge}>
+              <View style={styles.badgeDot} />
+              <Text style={styles.badgeText}>{storageModeLabel}</Text>
+            </View>
+            {onAdmin && <Pressable testID="admin-button" accessibilityRole="button" onPress={onAdmin} style={styles.signOutButton}><Text>Administration</Text></Pressable>}
           </View>
         )}
       </View>

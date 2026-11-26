@@ -343,8 +343,9 @@ export default function App() {
   if (!isLocalMode && (isLoading || isPulling || (user && !account && !accountError))) return <LoadingScreen />;
   if (!isLocalMode && !isAuthenticated) return <AuthScreen />;
   if (!isLocalMode && accountError) return <View style={styles.stateContainer} testID="account-error"><Text>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={styles.retryButton}><Text>Réessayer</Text></Pressable><Pressable onPress={signOut} style={styles.retryButton}><Text>Se déconnecter</Text></Pressable></View>;
+  if (isLocalMode && screen === "admin") return <CompanyScreen account={{ active: true, is_admin: true, display_name: "Démonstration" }} userId="demo-admin" admin demo onClose={() => navigate("home")} />;
   if (!isLocalMode && user && account && screen !== "home") return <CompanyScreen account={account} userId={user.id} admin={screen === "admin"} onClose={() => navigate("home")} onName={name => setAccount({ ...account, display_name: name })} />;
-  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={account?.is_admin ? () => navigate("admin") : undefined} />;
+  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={isLocalMode || account?.is_admin ? () => navigate("admin") : undefined} />;
 }
 
 const styles = StyleSheet.create({

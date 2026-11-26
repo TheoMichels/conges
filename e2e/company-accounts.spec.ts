@@ -27,6 +27,28 @@ async function setup(page: Page, admin: boolean) {
   });
 }
 
+test("administration locale : démonstration isolée hors connexion", async ({ page, context }) => {
+  const externalRequests: string[] = [];
+  page.on("request", request => { if (!request.url().startsWith("http://localhost:4173/")) externalRequests.push(request.url()); });
+  await page.goto("http://localhost:4173/");
+  await expect(page.getByTestId("app-header")).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  await context.setOffline(true);
+  await page.getByTestId("admin-button").click();
+  await expect(page.getByTestId("demo-banner")).toContainText("Démonstration");
+  await page.getByTestId("member-search").fill("alice@example.com");
+  const member = page.getByTestId("member-demo-alice");
+  await expect(member).toBeVisible();
+  await expect(page.getByTestId("member-demo-bob")).toHaveCount(0);
+  await member.getByText("Désactiver").click();
+  await expect(member).toContainText("Désactivé");
+  await member.getByText("Réactiver").click();
+  await expect(member).toContainText("Actif");
+  await page.getByTestId("company-close").click();
+  await expect(page.getByTestId("app-header")).toBeVisible();
+  expect(externalRequests).toEqual([]);
+});
+
 test("administrateur : liste, désactivation et réactivation", async ({ page }) => {
   await setup(page, true);
   await page.goto("https://holidays.example/");
