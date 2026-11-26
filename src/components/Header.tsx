@@ -12,6 +12,7 @@ type Props = {
   onSignOut?: () => void;
   onProfile?: () => void;
   onAdmin?: () => void;
+  onSharedCalendar?: () => void;
 };
 
 export function Header({
@@ -21,12 +22,14 @@ export function Header({
   onSignOut,
   onProfile,
   onAdmin,
+  onSharedCalendar,
 }: Props) {
   // Desktop : Profil / Administration deviennent des liens de navigation, « Mes congés » actif.
   const showNav = !isMobile && (!!onProfile || !!onAdmin);
   const linkStyle = isMobile ? [styles.ghostButton, styles.ghostButtonMobile] : styles.navLink;
   const linkTextStyle = isMobile ? [styles.ghostText, styles.ghostTextMobile] : styles.navText;
 
+  const calendarLink = onSharedCalendar && <Pressable testID="shared-calendar-button" accessibilityRole="button" onPress={onSharedCalendar} style={[linkStyle, cursorPointer]}><Text style={linkTextStyle}>Congés d’équipe</Text></Pressable>;
   const profileLink = onProfile && (
     <Pressable testID="profile-button" accessibilityRole="button" onPress={onProfile} style={[linkStyle, cursorPointer]}>
       <Text style={linkTextStyle}>Profil</Text>
@@ -55,6 +58,7 @@ export function Header({
           <View style={styles.navLink}>
             <Text style={[styles.navText, styles.navTextActive]}>Mes congés</Text>
           </View>
+          {calendarLink}
           {profileLink}
           {adminLink}
         </View>
@@ -71,6 +75,7 @@ export function Header({
               <Avatar label={user.email ?? "?"} size={isMobile ? 34 : 40} />
               {!isMobile && <Text style={styles.userName}>{user.email}</Text>}
             </View>
+            {isMobile && calendarLink}
             {isMobile && profileLink}
             {isMobile && adminLink}
             {onSignOut && (

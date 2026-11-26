@@ -23,7 +23,7 @@
 | Entité | Tables Postgres (`holy`) | Repository / Schéma |
 |---|---|---|
 | YearPlan | `year_plans` (FK `auth.users`, RLS 100%) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
-- Années cloud actives ou en brouillon, droits administrés et agrégats privés via fonctions contrôlées ; reports et droits en centièmes.
+- Années cloud actives ou en brouillon, droits administrés et agrégats privés via fonctions contrôlées ; calendrier partagé par projection SQL minimale ; reports et droits en centièmes.
 - Fériés récupérables automatiques ou montant manuel conservé `holidayOverride` / `holiday_override`.
 | LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS ; exceptions mensuelles historiques) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
 | UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
