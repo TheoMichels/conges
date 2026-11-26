@@ -47,6 +47,28 @@ test('Annual rate AC-03: additive migration defaults old records, enforces bound
   } finally { await db.close(); }
 });
 
+test('F02 cloud migration preserves prorated credits and entries and is idempotent', async () => {
+  const db = await database();
+  try {
+    await db.exec(readFileSync(path.join(rootDir, migrationFile), 'utf8'));
+    await db.exec(readFileSync(path.join(rootDir, 'prisma/migrations/20261106000000_annual_work_percentage/migration.sql'), 'utf8'));
+    await db.exec(`INSERT INTO holy.year_plans (id,user_id,year,initial_leave,carried_over,csupp,public_holidays,work_percentage) VALUES
+      ('part','${userA}','2022',26,2.45,3,3,80),('full','${userB}','2022',26,0,0,3,100),('rounding','${userB}','2023',26,0,0,1,14.5),('zero','${userA}','2025',26,0,0,0,99.99)`);
+    await db.exec(`INSERT INTO holy.leave_entries (id,user_id,plan_id,kind,label,month,days) VALUES ('entry','${userA}','part','month','été',0,2)`);
+    const migration = readFileSync(path.join(rootDir, 'prisma/migrations/20261127000000_remove_work_percentage/migration.sql'), 'utf8');
+    await db.exec(migration);
+    const before = (await db.query("SELECT id,holiday_override,initial_leave,carried_over,csupp,public_holidays FROM holy.year_plans ORDER BY id")).rows;
+    const part = before.find(row => row.id === 'part');
+    assert.equal(Number(part.holiday_override), 2.4);
+    assert.equal(Number(part.initial_leave) + Number(part.carried_over) + Number(part.csupp) + Number(part.holiday_override) - 2, 31.85);
+    assert.equal(before.find(row => row.id === 'full').holiday_override, null);
+    assert.equal(Number(before.find(row => row.id === 'rounding').holiday_override), 0.14);
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM holy.leave_entries WHERE id='entry'")).rows[0].n, 1);
+    await db.exec(migration);
+    assert.deepEqual((await db.query("SELECT id,holiday_override,initial_leave,carried_over,csupp,public_holidays FROM holy.year_plans ORDER BY id")).rows, before);
+  } finally { await db.close(); }
+});
+
 test('AC-01 / AC-02: prisma/schema.prisma est configuré en multiSchema (holy, auth) avec les modèles canoniques', () => {
   const schemaPath = path.join(rootDir, 'prisma', 'schema.prisma');
   assert.ok(existsSync(schemaPath), 'prisma/schema.prisma doit exister');

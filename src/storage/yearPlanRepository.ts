@@ -36,7 +36,7 @@ export interface CreateYearPlanInput {
   initialLeave?: number;
   carriedOver?: number;
   csupp?: number;
-  workPercentage?: number;
+  holidayOverride?: number | null;
   publicHolidays?: number;
   entries?: LeaveEntry[];
 }
@@ -63,7 +63,7 @@ export const yearPlanRepository = {
       initialLeave: data.initialLeave ?? 0,
       carriedOver: data.carriedOver ?? 0,
       csupp: data.csupp ?? 0,
-      workPercentage: data.workPercentage ?? 100,
+      holidayOverride: data.holidayOverride ?? null,
       publicHolidays: data.publicHolidays ?? 0,
       entries: data.entries ?? [],
     };
