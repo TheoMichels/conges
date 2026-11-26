@@ -55,3 +55,34 @@ test('F04 recovery respects active-member RLS and keeps annual rights independen
     assert.equal(Number(result.initial_leave),26); assert.equal(Number(result.taken),1.5);
   } finally { await db.close(); }
 });
+
+
+test('removing estimated preserves existing data and recovery remains atomic and idempotent', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+      CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY);
+      CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+      GRANT USAGE ON SCHEMA auth TO authenticated; INSERT INTO auth.users VALUES ('${user}');`);
+    await db.exec(readFileSync('prisma/migrations/20261017000000_holidays_multischema/migration.sql','utf8'));
+    await db.exec(`INSERT INTO holy.year_plans(id,user_id,year,initial_leave) VALUES ('p','${user}','2026',26);
+      INSERT INTO holy.leave_entries(id,user_id,plan_id,kind,label,month,days) VALUES
+      ('old','${user}','p','month','Vacances',1,1.5),('fraction','${user}','p','month','À dater',1,1.2);`);
+    await db.exec(readFileSync('prisma/migrations/20261130000000_dated_leave/migration.sql','utf8'));
+    await db.exec(`INSERT INTO holy.leave_entries(id,user_id,plan_id,kind,label,start_date,end_date,estimated) VALUES
+      ('dated','${user}','p','dates','Déjà posé','2026-02-09','2026-02-10',true);`);
+    const before = (await db.query('SELECT id,kind,label,month,days,start_date,end_date FROM holy.leave_entries ORDER BY id')).rows;
+    await db.exec(readFileSync('prisma/migrations/20261201000000_remove_estimated_dates/migration.sql','utf8'));
+    assert.deepEqual((await db.query('SELECT id,kind,label,month,days,start_date,end_date FROM holy.leave_entries ORDER BY id')).rows,before);
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema='holy' AND table_name='leave_entries' AND column_name='estimated'")).rows[0].n,0);
+    await db.exec(`SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','${user}',false);`);
+    const snapshot = (await db.query("SELECT id,updated_at FROM holy.leave_entries WHERE plan_id='p'")).rows;
+    const replacements = [{id:'old',parts:[{id:'old',startDate:'2026-02-02',endDate:'2026-02-03',startHalf:'afternoon',endHalf:'afternoon'}]}];
+    const params = ['p',JSON.stringify(snapshot),JSON.stringify(replacements)];
+    assert.equal((await db.query('SELECT holy.recover_monthly_leave($1,$2::jsonb,$3::jsonb) AS applied',params)).rows[0].applied,true);
+    assert.equal((await db.query('SELECT holy.recover_monthly_leave($1,$2::jsonb,$3::jsonb) AS applied',params)).rows[0].applied,false);
+    const rows = (await db.query('SELECT id,kind,label,month,days,start_date,end_date FROM holy.leave_entries ORDER BY id')).rows;
+    assert.deepEqual(rows.filter(r => r.id !== 'old'),before.filter(r => r.id !== 'old'));
+    assert.deepEqual(rows.find(r => r.id === 'old'),{id:'old',kind:'dates',label:'Vacances',month:null,days:null,start_date:'2026-02-02',end_date:'2026-02-03'});
+  } finally { await db.close(); }
+});

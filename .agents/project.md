@@ -25,7 +25,7 @@
 | YearPlan | `year_plans` (FK `auth.users`, RLS 100%) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
 - Années cloud actives ou en brouillon, droits administrés et agrégats privés via fonctions contrôlées ; reports et droits en centièmes.
 - Fériés récupérables automatiques ou montant manuel conservé `holidayOverride` / `holiday_override`.
-| LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS ; dates estimées et exceptions mensuelles historiques) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
+| LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS ; exceptions mensuelles historiques) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
 | UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
 | Member | `members` (FK `auth.users`, RLS, accès par fonctions contrôlées) | `src/storage/memberRepository.ts` |
 

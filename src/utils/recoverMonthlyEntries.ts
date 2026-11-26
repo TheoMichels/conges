@@ -50,7 +50,7 @@ export function recoverMonthlyEntries(year: string, entries: LeaveEntry[]): Leav
       if (index > 0 && ids.has(id)) conflict = true;
       result.push({ id, kind: "dates", label: entry.label, createdAt: entry.createdAt,
         startDate: group[0].slot.date, endDate: group[group.length - 1].slot.date,
-        startHalf: group[0].slot.half, endHalf: group[group.length - 1].slot.half, estimated: true });
+        startHalf: group[0].slot.half, endHalf: group[group.length - 1].slot.half });
     });
     if (conflict) continue;
     chosen.forEach(({ index }) => occupied.add(index));

@@ -90,7 +90,7 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
                 <Text style={styles.entryLabel} numberOfLines={1}>
                   {entry.label}
                 </Text>
-                <Text style={styles.entryDetail}>{describe(entry)}{entry.kind === "dates" && entry.estimated ? " · Dates estimées" : ""}</Text>
+                <Text style={styles.entryDetail}>{describe(entry)}</Text>
               </View>
               <Text
                 style={[

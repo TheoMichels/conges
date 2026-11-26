@@ -10,7 +10,6 @@ export const datesLeaveEntryDraftSchema = z.object({
   endDate: z.string(),
   startHalf: halfDaySchema.optional(),
   endHalf: halfDaySchema.optional(),
-  estimated: z.boolean().optional(),
 });
 
 function isCalendarDate(value: string): boolean {

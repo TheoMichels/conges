@@ -41,15 +41,16 @@ for (const width of [375, 1440]) {
       if (!localStorage.getItem("@holy_year_plans_v1")) localStorage.setItem("@holy_year_plans_v1", JSON.stringify([{
         id: "plan", year: "2026", createdAt: 1, initialLeave: 26, carriedOver: 0, csupp: 0,
         holidayOverride: null, publicHolidays: 0, entries: [
-          { id: "occupied", kind: "dates", label: "Matin déjà pris", startDate: "2026-02-02", endDate: "2026-02-02", startHalf: "morning", endHalf: "morning", createdAt: 1 },
+          { id: "occupied", kind: "dates", label: "Matin déjà pris", startDate: "2026-02-02", endDate: "2026-02-02", startHalf: "morning", endHalf: "morning", estimated: true, createdAt: 1 },
           { id: "legacy", kind: "month", label: "Ancien congé", month: 1, days: 1.5, createdAt: 2 },
           { id: "exception", kind: "month", label: "À régulariser", month: 1, days: 1.2, createdAt: 3 },
         ],
       }]));
     });
     await page.goto("/");
-    await expect(page.getByText(/Dates estimées/)).toBeVisible();
+    await expect(page.getByText(/Dates estimées/)).toHaveCount(0);
     await expect(page.getByText(/À dater/)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("@holy_year_plans_v1"))).not.toContain("estimated");
     await expect(page.getByTestId("kpi-taken")).toContainText("3,2");
     await page.getByTestId("edit-leave-exception").click();
     await expect(page.getByText("Nombre de jours", { exact: true })).toHaveCount(0);
@@ -58,7 +59,7 @@ for (const width of [375, 1440]) {
     await expect(page.getByText(/À dater/)).toHaveCount(0);
     await expect(page.getByTestId("kpi-taken")).toContainText("3");
     await page.reload();
-    await expect(page.getByText(/Dates estimées/)).toBeVisible();
+    await expect(page.getByText(/Dates estimées/)).toHaveCount(0);
     await expect(page.getByText(/À dater/)).toHaveCount(0);
     await page.getByTestId("edit-leave-legacy").click();
     await page.getByTestId("submit-leave-button").click();
