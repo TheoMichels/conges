@@ -10,4 +10,5 @@
 | 03 | mêmes tests ; RLS PostgreSQL isolé et actions UI |
 | 04 | mêmes tests ; RPC profil et liste admin |
 - Tests ciblés, harness et limites : voir résultat de vérification final et message de livraison.
+- La spécification utilisateur `docs/COMPANY_LEAVE_SPEC.md` est conservée sans modification et versionnée.
 - Revue sécurité et QA indépendantes requises.
