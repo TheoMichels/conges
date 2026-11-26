@@ -13,7 +13,7 @@ async function setup(page: Page, state: "normal" | "no-teams" | "error" = "norma
   if (url.includes('/year_plans')) body = [];
   if (url.includes('/rpc/my_calendar_teams')) body = state === 'no-teams' ? [] : [{ id:team, name:'Alpha' }];
   if (url.includes('/rpc/shared_calendar') && state === 'error' && !failed) { failed = true; await route.fulfill({ status:200, contentType:'application/json', body:'{}' }); return; }
-  if (url.includes('/rpc/shared_calendar')) { const p = route.request().postDataJSON() as { month_start:string }; body = p.month_start === '2026-03-01' || p.month_start === '2026-02-01' ? [{ id:'entry', display_name:'Camille', start_date:'2026-02-27', end_date:'2026-03-03', start_half:'afternoon', end_half:'morning' }] : []; }
+  if (url.includes('/rpc/shared_calendar')) { const p = route.request().postDataJSON() as { month_start:string }; body = p.month_start === '2026-03-01' || p.month_start === '2026-02-01' ? [{ id:'entry', display_name:'Camille', start_date:'2026-02-27', end_date:'2026-03-03', start_half:'afternoon', end_half:'morning' }] : p.month_start === '2026-04-01' ? [{ id:'future-entry', display_name:'Camille', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' }] : []; }
   await route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(body)});
  });
 }
@@ -31,6 +31,11 @@ for (const width of [375, 1200]) test(`calendrier partagé et filtres ${width}px
  await page.getByTestId(`calendar-team-${team}`).click();
  await expect(page.getByTestId('calendar-entry')).toHaveCount(2);
  await page.getByTestId('calendar-next').click();
+ await expect(page.getByTestId('calendar-month')).toContainText('avril 2026');
+ await expect(page.getByTestId('calendar-entry')).toHaveCount(1);
+ await expect(page.getByTestId('calendar-entry')).toContainText('Camille');
+ await expect(page.getByTestId('calendar-entry')).toContainText('7 avr. 2026');
+ await expect(page.getByTestId('calendar-entry')).toContainText('Journée');
  await page.getByTestId('calendar-previous').click();
  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
 });
