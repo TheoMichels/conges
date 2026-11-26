@@ -4,6 +4,7 @@ import { NumberField } from './NumberField';
 import { formatDayNumber } from '../utils/format';
 
 type Props = {
+  readOnly?: boolean;
   holidayIsManual: boolean;
   initialLeave: number;
   carriedOver: number;
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function MobileDashboard({
+  readOnly = false,
   holidayIsManual,
   initialLeave,
   carriedOver,
@@ -28,13 +30,13 @@ export function MobileDashboard({
     <View testID="mobile-dashboard" style={styles.card}>
       <View style={styles.grid}>
         <View style={styles.gridItem}>
-          <NumberField label="Congés" value={initialLeave} onChange={onChangeInitialLeave} />
+          <NumberField readOnly={readOnly} label="Congés" value={initialLeave} onChange={onChangeInitialLeave} />
         </View>
         <View style={styles.gridItem}>
-          <NumberField label="Report" value={carriedOver} onChange={onChangeCarriedOver} />
+          <NumberField readOnly={readOnly} label="Report" value={carriedOver} onChange={onChangeCarriedOver} />
         </View>
         <View style={styles.gridItem}>
-          <NumberField label="Csupp" value={csupp} onChange={onChangeCsupp} />
+          <NumberField readOnly={readOnly} label="Csupp" value={csupp} onChange={onChangeCsupp} />
         </View>
         <View style={styles.gridItem}>
           <View style={styles.readOnlyContainer}>

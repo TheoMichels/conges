@@ -350,8 +350,39 @@ export async function pushToCloud(plans: YearPlan[], userId?: string): Promise<Y
   return plans.map((plan, index) => ({ ...plan, id: canonicalIds[index] }));
 }
 
+// Une mutation cible uniquement la saisie concernée, jamais l'instantané du plan.
+export async function saveCloudEntry(planId: string, entry: LeaveEntry, operation: "create" | "update"): Promise<void> {
+  if (!supabase) throw new Error("Connexion au serveur indisponible.");
+  const uid = await resolveUserId();
+  if (!uid) throw new Error("Session Holy indisponible.");
+  const row = {
+    id: entry.id, user_id: uid, plan_id: planId, kind: entry.kind, label: entry.label,
+    start_date: entry.kind === "dates" ? entry.startDate : null,
+    end_date: entry.kind === "dates" ? entry.endDate : null,
+    start_half: entry.kind === "dates" ? (entry.startHalf ?? null) : null,
+    end_half: entry.kind === "dates" ? (entry.endHalf ?? null) : null,
+    month: entry.kind === "month" ? entry.month : null,
+    days: entry.kind === "month" ? entry.days : null,
+    created_at: new Date(entry.createdAt).toISOString(), updated_at: new Date().toISOString(),
+  };
+  const result = operation === "create"
+    ? await supabase.from("leave_entries").insert([row])
+    : await supabase.from("leave_entries").update(row).eq("user_id", uid).eq("plan_id", planId).eq("id", entry.id);
+  if (result.error) throw new Error("Impossible d’enregistrer la saisie de congé.");
+}
+
+export async function deleteCloudEntry(planId: string, entryId: string): Promise<void> {
+  if (!supabase) throw new Error("Connexion au serveur indisponible.");
+  const uid = await resolveUserId();
+  if (!uid) throw new Error("Session Holy indisponible.");
+  const { error } = await supabase.from("leave_entries").delete().eq("user_id", uid).eq("plan_id", planId).eq("id", entryId);
+  if (error) throw new Error("Impossible de supprimer la saisie de congé.");
+}
+
 export const syncService = {
   pullFromCloud,
+  saveCloudEntry,
+  deleteCloudEntry,
   pushToCloud,
   upsertCloudPlan,
   deleteCloudPlan,

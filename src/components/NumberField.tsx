@@ -5,6 +5,7 @@ import { colors, fonts, radius } from "../theme/colors";
 type Props = {
   label: string;
   hint?: string;
+  readOnly?: boolean;
   value: number;
   onChange: (value: number) => void;
 };
@@ -18,7 +19,7 @@ function parseNumber(raw: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function NumberField({ label, hint, value, onChange }: Props) {
+export function NumberField({ label, hint, value, onChange, readOnly = false }: Props) {
   const [text, setText] = useState(() => formatNumber(value));
   const lastPropagated = useRef(value);
 
@@ -48,6 +49,7 @@ export function NumberField({ label, hint, value, onChange }: Props) {
       </View>
       <TextInput
         style={styles.input}
+        editable={!readOnly}
         value={text}
         onChangeText={handleChangeText}
         onBlur={handleBlur}

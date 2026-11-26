@@ -5,13 +5,14 @@ import { cursorPointer } from '../theme/webCursor';
 import { sortPlansChronologically } from '../utils/yearPlanUtils';
 
 type Props = {
+  readOnly?: boolean;
   plans: YearPlan[];
   selectedId: string | undefined;
   onSelect: (id: string) => void;
   onAdd: (year: string) => void;
 };
 
-export function YearSelectorMobile({ plans, selectedId, onSelect, onAdd }: Props) {
+export function YearSelectorMobile({ plans, selectedId, onSelect, onAdd, readOnly = false }: Props) {
   const sortedPlans = sortPlansChronologically(plans);
 
   return (
@@ -35,7 +36,7 @@ export function YearSelectorMobile({ plans, selectedId, onSelect, onAdd }: Props
             </Pressable>
           );
         })}
-        <Pressable
+        {!readOnly && <Pressable
           style={[styles.chip, styles.chipAdd, cursorPointer]}
           onPress={() => {
             const nextYear = new Date().getFullYear() + 1;
@@ -43,7 +44,7 @@ export function YearSelectorMobile({ plans, selectedId, onSelect, onAdd }: Props
           }}
         >
           <Text style={styles.chipTextAdd}>+ Ajouter</Text>
-        </Pressable>
+        </Pressable>}
       </ScrollView>
     </View>
   );

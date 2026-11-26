@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Account, listMembers, Member, saveDisplayName, setMemberActive } from "../storage/memberRepository";
 import { colors, fonts, glassStyle, radius, spacing } from "../theme/colors";
+import { AnnualEntitlements } from "./AnnualEntitlements";
 import { LoadingSkeleton } from "./LoadingScreen";
 
 type Props = { account: Account; userId: string; admin: boolean; demo?: boolean; onClose: () => void; onName?: (name: string) => void };
@@ -43,6 +44,7 @@ export function CompanyScreen({ account, userId, admin, demo = false, onClose, o
     {error ? <View testID="company-error"><Text style={styles.error}>{error}</Text>{admin && <Pressable onPress={() => void load()} style={styles.button}><Text>Réessayer</Text></Pressable>}</View> : null}
     {notice ? <Text testID="company-notice">{notice}</Text> : null}
     {!admin ? <View style={styles.card}><Text style={styles.label}>Nom d’affichage</Text><TextInput testID="display-name-input" value={name} onChangeText={setName} style={styles.input} maxLength={100} /><Pressable testID="save-display-name" disabled={busy} onPress={() => void submit()} style={styles.button}><Text>Enregistrer</Text></Pressable></View> : <View style={styles.card}>
+      <AnnualEntitlements demo={demo} />
       <Text style={styles.label}>Membres</Text><TextInput testID="member-search" placeholder="Rechercher par e-mail" value={query} onChangeText={setQuery} style={styles.input} autoCapitalize="none" />
       {members === null && !error ? <LoadingSkeleton /> : members?.filter(m => m.email.toLowerCase().includes(query.toLowerCase())).length ? members.filter(m => m.email.toLowerCase().includes(query.toLowerCase())).map(member => <View key={member.user_id} testID={`member-${member.user_id}`} style={styles.row}><View><Text>{member.display_name}</Text><Text>{member.email} · {member.active ? "Actif" : "Désactivé"}</Text></View>{member.user_id !== userId && <Pressable testID={`toggle-member-${member.user_id}`} disabled={busy} onPress={() => void toggle(member)} style={styles.button}><Text>{member.active ? "Désactiver" : "Réactiver"}</Text></Pressable>}</View>) : <Text testID="members-empty">Aucun membre trouvé.</Text>}
     </View>}

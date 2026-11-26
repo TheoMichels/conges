@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isLocalMode } from "../config/storageMode";
 import { LeaveEntryDraft, YearPlan } from "../types/yearPlan";
 import { yearPlanRepository } from "../storage/yearPlanRepository";
 import {
@@ -41,13 +42,17 @@ export function useYearPlans() {
   // several edits fire back-to-back before a re-render happens.
   const plansRef = useRef<YearPlan[]>([]);
 
-  const commit = useCallback((updater: (prev: YearPlan[]) => YearPlan[]) => {
+  const pending = useRef<Promise<void>>(Promise.resolve());
+  const commit = useCallback((updater: (prev: YearPlan[]) => YearPlan[], mutation?: () => Promise<void>) => {
     const next = updater(plansRef.current);
     plansRef.current = next;
     setPlans(next);
-    yearPlanRepository.saveAll(next).catch((e) => {
-      setError(e instanceof Error ? e.message : "Erreur d'enregistrement");
-    });
+    const write = isLocalMode ? () => yearPlanRepository.saveAll(next) : mutation;
+    if (write) {
+      pending.current = pending.current.then(write).catch((e) => {
+        setError(e instanceof Error ? e.message : "Erreur d'enregistrement");
+      });
+    }
     return next;
   }, []);
 
@@ -56,7 +61,7 @@ export function useYearPlans() {
     setError(null);
     try {
       const loaded = await yearPlanRepository.list();
-      if (loaded.length === 0) {
+      if (loaded.length === 0 && isLocalMode) {
         commit(() => [makePlan(currentYearLabel())]);
       } else {
         const sorted = sortPlansChronologically(loaded);
@@ -96,7 +101,7 @@ export function useYearPlans() {
 
       commit((prev) => {
         const updated = sortPlansChronologically([...prev, newPlan]);
-        return propagateCarryOverFrom(updated, yearNum);
+        return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
       });
 
       return newPlan;
@@ -173,7 +178,7 @@ export function useYearPlans() {
         const updated = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
       });
@@ -193,10 +198,10 @@ export function useYearPlans() {
         );
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
-      });
+      }, () => yearPlanRepository.saveEntry(planId, entry, "create"));
     },
     [commit]
   );
@@ -205,6 +210,9 @@ export function useYearPlans() {
     (planId: string, entryId: string, draft: LeaveEntryDraft) => {
       const target = plansRef.current.find((p) => p.id === planId);
       if (!target) return;
+      const existing = target.entries.find(e => e.id === entryId);
+      if (!existing) return;
+      const entry = { ...draft, id: existing.id, createdAt: existing.createdAt };
 
       commit((prev) => {
         const updated = prev.map((p) =>
@@ -219,10 +227,10 @@ export function useYearPlans() {
         );
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
-      });
+      }, () => yearPlanRepository.saveEntry(planId, entry, "update"));
     },
     [commit]
   );
@@ -240,10 +248,10 @@ export function useYearPlans() {
         );
         const yearNum = parseYearNumber(target.year);
         if (yearNum !== null) {
-          return propagateCarryOverFrom(updated, yearNum);
+          return isLocalMode ? propagateCarryOverFrom(updated, yearNum) : updated;
         }
         return updated;
-      });
+      }, () => yearPlanRepository.deleteEntry(planId, entryId));
     },
     [commit]
   );
