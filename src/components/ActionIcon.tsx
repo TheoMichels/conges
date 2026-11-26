@@ -9,8 +9,7 @@ export function ActionIcon({ name }: Props) {
   return (
     <View style={styles.box}>
       <Svg width={15} height={15} viewBox="0 0 24 24" fill="none"
-        stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
-        accessible={false}>
+        stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         {name === "edit" ? (
           <Path d="m16 3 5 5M4 20l4-1L21 6a2.12 2.12 0 0 0-3-3L5 16l-1 4Z" />
         ) : (
