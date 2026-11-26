@@ -9,6 +9,8 @@ type Props = {
   storageModeLabel?: string;
   user?: User | null;
   onSignOut?: () => void;
+  onProfile?: () => void;
+  onAdmin?: () => void;
 };
 
 export function Header({
@@ -16,6 +18,8 @@ export function Header({
   storageModeLabel = "Stockage local",
   user,
   onSignOut,
+  onProfile,
+  onAdmin,
 }: Props) {
   return (
     <View
@@ -37,6 +41,8 @@ export function Header({
             <View testID="user-badge" style={styles.badge}>
               <Text style={styles.badgeText}>🟢 {user.email}</Text>
             </View>
+            {onProfile && <Pressable testID="profile-button" accessibilityRole="button" onPress={onProfile} style={styles.signOutButton}><Text>Profil</Text></Pressable>}
+            {onAdmin && <Pressable testID="admin-button" accessibilityRole="button" onPress={onAdmin} style={styles.signOutButton}><Text>Administration</Text></Pressable>}
             {onSignOut && (
               <Pressable
                 testID="sign-out-button"

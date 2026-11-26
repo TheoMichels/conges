@@ -26,6 +26,7 @@
 - Taux annuel `workPercentage` / `work_percentage` : défaut 100 %, >0 à 100, 2 décimales ; tous les fériés récupérables proratisés ; reports en centièmes.
 | LeaveEntry | `leave_entries` (FK `year_plans`, FK `auth.users`, RLS) | `src/types/yearPlan.ts` (Zod) / `yearPlanRepository.ts` |
 | UserSettings | `user_settings` (FK `auth.users`, RLS 100%) | `prisma/schema.prisma` |
+| Member | `members` (FK `auth.users`, RLS, accès par fonctions contrôlées) | `src/storage/memberRepository.ts` |
 
 ## Design
 - Tokens §2 `src/theme/colors.ts` · brand `#14333E` · primary `#356859` · surfaces verre perle/menthe/sauge (`glassStyle`) · radius 12-24 · clair forcé sur web (`color-scheme: only light`).

@@ -116,7 +116,7 @@ async function handleSignUp(credentials: Credentials) {
     updateState({ error: result.error.message });
   } else {
     updateState({
-      user: result.user,
+      user: result.session?.user ?? null,
       session: result.session,
       error: null,
     });
@@ -146,7 +146,7 @@ export function useAuth() {
     user: state.user,
     session: state.session,
     isLoading: state.isLoading,
-    isAuthenticated: Boolean(state.user),
+    isAuthenticated: Boolean(state.session && state.user),
     error: state.error,
     signIn: handleSignIn,
     signUp: handleSignUp,

@@ -128,8 +128,7 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
       .order("year", { ascending: true });
 
     if (error) {
-      console.warn("Erreur de récupération Supabase:", error);
-      return loadFromLocalStorage();
+      throw new Error("Impossible de charger vos données Holy. Réessayez.");
     }
 
     if (Array.isArray(data) && data.length > 0) {
@@ -141,9 +140,8 @@ export async function pullFromCloud(userId?: string): Promise<YearPlan[]> {
     // Un compte cloud vide est la source de vérité, même si un cache local existe.
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     return [];
-  } catch (err) {
-    console.warn("Échec du pull cloud:", err);
-    return loadFromLocalStorage();
+  } catch {
+    throw new Error("Impossible de charger vos données Holy. Réessayez.");
   }
 }
 

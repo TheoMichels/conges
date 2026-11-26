@@ -170,6 +170,10 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
 
     await page.route("https://synthetic.supabase.invalid/**", async (route) => {
       const url = route.request().url();
+      if (url.includes("/rpc/register_member")) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ active: true, is_admin: false, display_name: "collaborateur" }]) });
+        return;
+      }
       if (url.includes("/auth/v1/token")) {
         await route.fulfill({
           status: 200,
@@ -269,6 +273,10 @@ test.describe("Mode Cloud Supabase — 7 cas obligatoires (§5 stack-target.md)"
 
     await page.route("https://synthetic.supabase.invalid/**", async (route) => {
       const url = route.request().url();
+      if (url.includes("/rpc/register_member")) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ active: true, is_admin: false, display_name: "collaborateur" }]) });
+        return;
+      }
       if (url.includes("/auth/v1/token")) {
         await route.fulfill({
           status: 200,

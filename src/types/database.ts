@@ -153,7 +153,12 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      register_member: { Args: Record<string, never>; Returns: { active: boolean; is_admin: boolean; display_name: string }[] };
+      set_display_name: { Args: { value: string }; Returns: undefined };
+      admin_members: { Args: Record<string, never>; Returns: { user_id: string; email: string; display_name: string; active: boolean }[] };
+      admin_set_active: { Args: { target: string; enabled: boolean }; Returns: undefined };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
