@@ -1,6 +1,6 @@
 import { ScrollView, Pressable, Text, View, StyleSheet } from 'react-native';
 import { YearPlan } from '../types/yearPlan';
-import { colors, fonts, glassStyle, radius } from '../theme/colors';
+import { colors, fonts, shape } from '../theme/colors';
 import { cursorPointer } from '../theme/webCursor';
 import { sortPlansChronologically } from '../utils/yearPlanUtils';
 
@@ -52,48 +52,47 @@ export function YearSelectorMobile({ plans, selectedId, onSelect, onAdd, readOnl
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.panel,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    gap: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    gap: 8,
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     minHeight: 44,
     justifyContent: 'center',
-    borderRadius: radius.xl,
-    backgroundColor: colors.panelSubtle,
+    borderRadius: shape.pill,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
-    ...glassStyle,
   },
   chipSelected: {
-    backgroundColor: colors.selection,
-    shadowColor: colors.brand,
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: '500',
-    color: colors.textSecondary,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   chipTextSelected: {
-    color: colors.textPrimary,
+    color: colors.textOnBrand,
   },
   chipAdd: {
     backgroundColor: 'transparent',
-    borderColor: colors.borderStrong,
+    borderColor: colors.borderDashed,
     borderStyle: 'dashed',
   },
   chipTextAdd: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: '500',
-    color: colors.textMuted,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 });

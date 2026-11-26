@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { LeaveEntry, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
+import { colors, fonts, shape, tagPalette } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { entryOrderKey, entryTotalDays, formatDateFr } from "../utils/leaveDays";
 import { formatDays } from "../utils/format";
@@ -71,7 +71,7 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
       {sorted.length === 0 ? (
         <Text style={styles.empty}>Aucun congé saisi pour {year}.</Text>
       ) : (
-        sorted.map((entry) =>
+        sorted.map((entry, index) =>
           editingId === entry.id ? (
             <LeaveEntryForm
               key={entry.id}
@@ -92,7 +92,18 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
                 </Text>
                 <Text style={styles.entryDetail}>{describe(entry)}</Text>
               </View>
-              <Text style={styles.entryDays}>{formatDays(entryTotalDays(entry))}</Text>
+              <Text
+                style={[
+                  styles.entryDays,
+                  {
+                    backgroundColor: tagPalette[index % tagPalette.length].background,
+                    color: tagPalette[index % tagPalette.length].text,
+                  },
+                ]}
+              >
+                {formatDays(entryTotalDays(entry))}
+              </Text>
+              <View style={styles.entryActions}>
               <Pressable
                 testID={`edit-leave-${entry.id}`}
                 accessibilityLabel="Modifier le congé"
@@ -113,6 +124,7 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
               >
                 <ActionIcon name="delete" />
               </Pressable>
+              </View>
             </View>
           )
         )
@@ -123,69 +135,66 @@ export function LeaveEntries({ year, entries, onAdd, onUpdate, onRemove }: Props
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.lg,
+    borderRadius: shape.card,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 20,
-    ...glassStyle,
-    ...shadows.sm,
+    padding: 24,
   },
   cardMobile: {
-    backgroundColor: colors.panel,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: 12,
     marginBottom: 20,
-    ...glassStyle,
-    ...shadows.sm,
   },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 },
   title: {
     fontFamily: fonts.base,
-    fontSize: 15,
-    fontWeight: "500",
-    letterSpacing: -0.2,
-    color: colors.textMuted,
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.textPrimary,
     marginBottom: 0,
   },
   addButton: {
     alignSelf: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     minHeight: 44,
     justifyContent: "center",
-    borderRadius: radius.sm,
-    backgroundColor: colors.primary,
+    borderRadius: 12,
+    backgroundColor: colors.cta,
     marginBottom: 0,
   },
   addButtonText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     color: colors.textOnBrand,
   },
   empty: {
     fontFamily: fonts.base,
-    color: colors.textMuted,
-    marginTop: 8,
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: 20,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.borderDashed,
+    borderRadius: shape.row,
   },
   entry: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 4,
-    borderRadius: 0,
-    borderTopWidth: 1,
+    gap: 16,
+    borderRadius: shape.row,
+    borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "transparent",
+    backgroundColor: colors.panel,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
+    paddingVertical: 14,
+    marginBottom: 10,
     minHeight: 44,
   },
-  entryMobile: { flexWrap: "nowrap", gap: 4, paddingHorizontal: 0 },
+  entryMobile: { flexWrap: "nowrap", gap: 8, paddingHorizontal: 12, paddingVertical: 12 },
   entryMainMobile: { minWidth: 0 },
   entryMain: {
     flex: 1,
@@ -193,30 +202,39 @@ const styles = StyleSheet.create({
   },
   entryLabel: {
     fontFamily: fonts.base,
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "700",
     color: colors.textPrimary,
     marginBottom: 2,
   },
   entryDetail: {
     fontFamily: fonts.base,
-    fontSize: 13,
-    color: colors.textMuted,
+    fontSize: 14,
+    color: colors.textSecondary,
   },
   entryDays: {
     fontFamily: fonts.base,
-    fontSize: 15,
-    fontWeight: "500",
-    color: colors.brand,
+    fontSize: 14,
+    fontWeight: "600",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: shape.pill,
+    overflow: "hidden",
+  },
+  entryActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: -7,
+    marginRight: -7,
   },
   iconButtonPressed: {
-    backgroundColor: colors.surfaceActive,
+    opacity: 0.6,
   },
   iconButton: {
     width: 44,
     height: 44,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: radius.sm,
+    borderRadius: 10,
   },
 });

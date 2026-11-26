@@ -1,10 +1,19 @@
 import type { ViewStyle } from "react-native";
 
-// Verre dépoli clair : perle, menthe et sauge ; vert forêt pour les CTA.
+// Refonte visuelle ITS4U : fond blanc net, cartes à bordure fine, bleu ITS4U pour
+// l'identité, orange ITS4U pour les CTA et l'état actif.
 
+// Fond d'écran uni (structure à 4 teintes conservée pour LinearGradient).
 export const gradient = {
-  colors: ["#F3F5F1", "#F0F4F3", "#EAF2EE", "#DCEBE5"] as const,
+  colors: ["#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"] as const,
   locations: [0, 0.35, 0.7, 1] as const,
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
+};
+
+// Dégradé bleu ITS4U des avatars et pastilles KPI.
+export const brandGradient = {
+  colors: ["#1F4E79", "#2F80C0"] as const,
   start: { x: 0, y: 0 },
   end: { x: 1, y: 1 },
 };
@@ -12,90 +21,110 @@ export const gradient = {
 // Segoe UI est la police du template ; repli sur la police système ailleurs.
 export const fonts = {
   base: '"Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif',
+  mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
 };
 
 export const colors = {
   // Brand & DA
-  brand: "#14333E",
-  brandMuted: "#45616A",
-  primary: "#356859",
-  primaryLight: "#8FA99C",
-  primarySoft: "rgba(53, 104, 89, 0.12)",
-  primaryBackground: "#F2F6F2",
+  brand: "#1B2B3A",
+  brandMuted: "#4B5B6B",
+  primary: "#1F4E79",
+  primaryLight: "#2F80C0",
+  primarySoft: "#EAF1F8",
+  primaryBorder: "#BFD3E6",
+  primaryBackground: "#F8F9FB",
+
+  // CTA & état actif
+  cta: "#EE6A24",
+  ctaSoft: "#FEF0E7",
+  ctaText: "#C2541A",
 
   // Typographie
-  textPrimary: "#14333E",
-  textSecondary: "#63767D",
-  textMuted: "#63767D",
+  textPrimary: "#1B2B3A",
+  textSecondary: "#6B7280",
+  textMuted: "#6B7280",
+  textBody: "#374151",
   textOnBrand: "#FFFFFF",
 
-  // Glassmorphism & surfaces
-  panel: "rgba(255, 255, 255, 0.68)",
-  panelSubtle: "rgba(255, 255, 255, 0.48)",
-  surface: "rgba(255, 255, 255, 0.68)",
-  surfaceActive: "rgba(255, 255, 255, 0.78)",
+  // Surfaces
+  panel: "#FFFFFF",
+  panelSubtle: "#F8F9FB",
+  surface: "#FFFFFF",
+  surfaceActive: "#F8F9FB",
 
-  accentSurface: "#E7EFEC",
-  selection: "#DDE9E4",
-  background: "#F0F4F3",
+  accentSurface: "#EAF1F8",
+  selection: "#EAF1F8",
+  background: "#FFFFFF",
 
   // Bordures & séparateurs
-  border: "rgba(20, 51, 62, 0.09)",
-  borderStrong: "rgba(20, 51, 62, 0.16)",
-  divider: "rgba(20, 51, 62, 0.06)",
+  border: "#E6E8EE",
+  borderStrong: "#D5D9E2",
+  borderDashed: "#C9CDD8",
+  divider: "#EEF0F4",
 
   // États sémantiques
-  warning: "#526B4F",
-  warningSoft: "#E9F0E5",
-  danger: "#C0392B",
-  dangerSoft: "#FDE8E8",
-  positive: "#1F7A5C",
-  positiveSoft: "#E6F4EA",
+  warning: "#A16207",
+  warningSoft: "#FEF5E2",
+  danger: "#DC2626",
+  dangerSoft: "#FDECEC",
+  positive: "#15803D",
+  positiveSoft: "#E9F9EF",
+  statusOk: "#22C55E",
 
   // Overlays
-  backdrop: "rgba(20, 51, 62, 0.40)",
+  backdrop: "rgba(27, 43, 58, 0.40)",
 
   // Alias rétrocompatibles
-  accent: "#356859",
-  accentSoft: "#8FA99C",
-  sidebar: "rgba(255, 255, 255, 0.68)",
+  accent: "#1F4E79",
+  accentSoft: "#2F80C0",
+  sidebar: "#FFFFFF",
 };
+
+// Tags pastel pour les durées de congés.
+export const tagPalette = [
+  { background: "#FEF0E7", text: "#C2541A" },
+  { background: "#E7F0FF", text: "#1D4ED8" },
+  { background: "#FEF5E2", text: "#A16207" },
+  { background: "#FDECF1", text: "#BE123C" },
+] as const;
 
 const isNativeRuntime =
   typeof navigator !== "undefined" && navigator.product === "ReactNative";
 
-export const glassStyle: ViewStyle = isNativeRuntime
-  ? {}
-  : ({
-      backdropFilter: "blur(16px)",
-      WebkitBackdropFilter: "blur(16px)",
-    } as unknown as ViewStyle);
+// Plus de verre dépoli : surfaces opaques. Export conservé pour compatibilité.
+export const glassStyle: ViewStyle = {};
 
-export const pearlBackground: ViewStyle = isNativeRuntime ? {} : ({
-  backgroundImage: "radial-gradient(ellipse at 94% 0%, #E4ECE5, transparent 52%), radial-gradient(ellipse at 5% 70%, #DCEBE5, transparent 60%)",
-  backgroundColor: colors.background,
-} as unknown as ViewStyle);
+export const pearlBackground: ViewStyle = { backgroundColor: colors.background };
+
+// Liseré orange à gauche de l'élément sélectionné (web uniquement).
+export const selectedInset: ViewStyle = isNativeRuntime
+  ? { borderLeftWidth: 3, borderLeftColor: colors.cta }
+  : ({ boxShadow: `inset 3px 0 0 ${colors.cta}` } as unknown as ViewStyle);
+
+// Halo autour du point de statut des KPI (web uniquement).
+export const statusHalo = (color: string): ViewStyle =>
+  isNativeRuntime ? {} : ({ boxShadow: `0 0 0 4px ${color}` } as unknown as ViewStyle);
 
 export const shadows = {
   sm: {
-    shadowColor: "#14333E",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowColor: "#141E3C",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   md: {
-    shadowColor: "#14333E",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.035,
-    shadowRadius: 14,
+    shadowColor: "#141E3C",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 30,
     elevation: 4,
   },
   lg: {
-    shadowColor: "#14333E",
+    shadowColor: "#141E3C",
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.05,
-    shadowRadius: 24,
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
     elevation: 8,
   },
 };
@@ -105,6 +134,13 @@ export const radius = {
   md: 16,
   lg: 20,
   xl: 24,
+};
+
+// Rayons spécifiques à la refonte (cartes 18, lignes 14, pastilles 999).
+export const shape = {
+  row: 14,
+  card: 18,
+  pill: 999,
 };
 
 export const spacing = {

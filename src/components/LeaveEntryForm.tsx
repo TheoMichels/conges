@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { HalfDay, LeaveEntryDraft, MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts, glassStyle, radius, shadows } from "../theme/colors";
+import { colors, fonts, shape } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, toISODate, workingDaysCount } from "../utils/leaveDays";
 import { formatDays } from "../utils/format";
@@ -112,7 +112,7 @@ export function LeaveEntryForm({
 
       {kind === "dates" ? (
         <>
-          <View style={styles.calendarContainer}>
+          <View style={[styles.calendarContainer, isMobile && styles.calendarContainerMobile]}>
             <Calendar
               startDate={startDate}
               endDate={endDate}
@@ -312,85 +312,89 @@ export function LeaveEntryForm({
   );
 }
 
+const OPTION = {
+  minHeight: 44,
+  justifyContent: "center" as const,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: colors.border,
+  backgroundColor: colors.panel,
+};
+const OPTION_ACTIVE = {
+  borderColor: colors.primaryBorder,
+  backgroundColor: colors.primarySoft,
+};
+const OPTION_TEXT = {
+  fontFamily: fonts.base,
+  fontSize: 13,
+  fontWeight: "600" as const,
+  color: colors.textSecondary,
+};
+const OPTION_TEXT_ACTIVE = { color: colors.primary };
+
 const styles = StyleSheet.create({
   form: {
-    borderRadius: radius.md,
+    borderRadius: shape.row,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    padding: 18,
+    borderColor: colors.border,
+    backgroundColor: colors.panelSubtle,
+    padding: 20,
     marginBottom: 16,
-    ...glassStyle,
-    ...shadows.sm,
   },
-  formMobile: { padding: 4 },
+  formMobile: { padding: 4, borderWidth: 0, backgroundColor: "transparent" },
   fieldLabel: {
     fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "600",
     color: colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   subFieldLabel: {
     fontFamily: fonts.base,
-    fontSize: 11,
-    fontWeight: "500",
-    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   input: {
-    minHeight: 44,
+    minHeight: 46,
     justifyContent: "center",
     fontFamily: fonts.base,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceActive,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
     color: colors.textPrimary,
     marginBottom: 16,
   },
   daysInput: {
     width: 120,
-    fontWeight: "500",
   },
   modeRow: {
     flexDirection: "row",
     gap: 8,
     marginBottom: 16,
   },
-  modeButton: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.panel,
-  },
-  modeButtonActive: {
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.selection,
-  },
-  modeText: {
-    fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: "500",
-    color: colors.textSecondary,
-  },
-  modeTextActive: {
-    color: colors.textPrimary,
-  },
+  modeButton: { ...OPTION, paddingHorizontal: 16, paddingVertical: 8 },
+  modeButtonActive: OPTION_ACTIVE,
+  modeText: OPTION_TEXT,
+  modeTextActive: OPTION_TEXT_ACTIVE,
   calendarContainer: {
     alignSelf: "flex-start",
     marginBottom: 16,
+    padding: 12,
+    borderRadius: shape.row,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
   },
+  calendarContainerMobile: { padding: 0, borderWidth: 0, backgroundColor: "transparent" },
   halfDaySection: {
     marginBottom: 16,
-    paddingTop: 12,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -399,29 +403,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  halfDayButton: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.panel,
-  },
-  halfDayButtonActive: {
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.selection,
-  },
-  halfDayText: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.textSecondary,
-  },
-  halfDayTextActive: {
-    color: colors.textPrimary,
-  },
+  halfDayButton: { ...OPTION, paddingHorizontal: 14, paddingVertical: 8 },
+  halfDayButtonActive: OPTION_ACTIVE,
+  halfDayText: OPTION_TEXT,
+  halfDayTextActive: OPTION_TEXT_ACTIVE,
   multiDayHalfRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -435,61 +420,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
   },
-  halfDayOption: {
-    minHeight: 44,
-    justifyContent: "center",
-    flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    alignItems: "center",
-  },
-  halfDayOptionActive: {
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.selection,
-  },
-  halfDayOptionText: {
-    fontFamily: fonts.base,
-    fontSize: 11,
-    fontWeight: "500",
-    color: colors.textSecondary,
-    textAlign: "center",
-  },
-  halfDayOptionTextActive: {
-    color: colors.textPrimary,
-  },
+  halfDayOption: { ...OPTION, flex: 1, paddingHorizontal: 10, paddingVertical: 7, alignItems: "center" },
+  halfDayOptionActive: OPTION_ACTIVE,
+  halfDayOptionText: { ...OPTION_TEXT, fontSize: 12, textAlign: "center" },
+  halfDayOptionTextActive: OPTION_TEXT_ACTIVE,
   chips: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
     marginBottom: 16,
   },
-  chip: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.panel,
-  },
-  chipActive: {
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.selection,
-  },
-  chipText: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.textSecondary,
-  },
-  chipTextActive: {
-    color: colors.textPrimary,
-  },
+  chip: { ...OPTION, borderRadius: shape.pill, paddingHorizontal: 14, paddingVertical: 6 },
+  chipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+  chipText: OPTION_TEXT,
+  chipTextActive: { color: colors.textOnBrand },
   footer: {
     flexDirection: "row",
     alignItems: "center",
@@ -500,9 +444,14 @@ const styles = StyleSheet.create({
   },
   total: {
     fontFamily: fonts.base,
-    fontSize: 15,
-    fontWeight: "500",
-    color: colors.brand,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.cta,
+    backgroundColor: colors.ctaSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: shape.pill,
+    overflow: "hidden",
   },
   actions: {
     flexDirection: "row",
@@ -513,24 +462,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     backgroundColor: colors.panel,
   },
   cancelText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "500",
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
   submitButton: {
     minHeight: 44,
     justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.accent,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: colors.cta,
   },
   submitDisabled: {
     opacity: 0.4,
@@ -538,7 +486,7 @@ const styles = StyleSheet.create({
   submitText: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     color: colors.textOnBrand,
   },
 });

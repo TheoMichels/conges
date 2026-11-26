@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MONTH_LABELS } from "../types/yearPlan";
-import { colors, fonts, glassStyle } from "../theme/colors";
+import { colors, fonts } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, parseISODate, toISODate } from "../utils/leaveDays";
 
@@ -223,49 +223,44 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panelSubtle,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 6,
     marginBottom: 12,
-    ...glassStyle,
   },
   rangeChip: {
     minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
+    gap: 6,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.82)",
+    borderRadius: 10,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
   },
   rangeChipActive: {
-    borderColor: colors.brand,
-    backgroundColor: colors.surfaceActive,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
+    borderColor: colors.cta,
+    backgroundColor: colors.ctaSoft,
   },
   rangeChipPrefix: {
     fontFamily: fonts.base,
     fontSize: 11,
-    fontWeight: "500",
-    color: colors.textMuted,
+    fontWeight: "600",
+    color: colors.textSecondary,
     textTransform: "uppercase",
   },
   rangeChipDate: {
-    fontFamily: fonts.base,
+    fontFamily: fonts.mono,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     color: colors.textPrimary,
   },
   rangeSeparator: {
     fontFamily: fonts.base,
     fontSize: 14,
-    fontWeight: "500",
-    color: colors.textMuted,
+    fontWeight: "600",
+    color: colors.textSecondary,
   },
   header: {
     flexDirection: "row",
@@ -284,8 +279,8 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     fontFamily: fonts.base,
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 15,
+    fontWeight: "700",
     color: colors.textPrimary,
   },
   weekdayRow: {
@@ -297,8 +292,8 @@ const styles = StyleSheet.create({
     width: CELL_SIZE,
     textAlign: "center",
     fontSize: 11,
-    fontWeight: "500",
-    color: colors.textMuted,
+    fontWeight: "600",
+    color: colors.textSecondary,
   },
   grid: {
     flexDirection: "row",
@@ -318,7 +313,7 @@ const styles = StyleSheet.create({
     bottom: 3,
     left: 0,
     right: 0,
-    backgroundColor: "#DCEBF2",
+    backgroundColor: colors.primarySoft,
   },
   rangeTrackStart: {
     left: CELL_SIZE / 2,
@@ -331,12 +326,12 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: CELL_SIZE / 2,
   },
   rangeTrackRowStart: {
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
   },
   rangeTrackRowEnd: {
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
   },
   dayBadge: {
     width: CELL_SIZE - 6,
@@ -347,27 +342,27 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   dayBadgeSelected: {
-    backgroundColor: colors.brand,
+    backgroundColor: colors.primary,
   },
   dayBadgeToday: {
     borderWidth: 1.5,
-    borderColor: colors.accent,
+    borderColor: colors.cta,
   },
   dayText: {
     fontFamily: fonts.base,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
   dayTextWeekend: {
-    color: "#B4C0C8",
+    color: "#B5BAC5",
   },
   dayTextInRange: {
-    color: colors.brand,
-    fontWeight: "500",
+    color: colors.primary,
+    fontWeight: "600",
   },
   dayTextSelected: {
     color: colors.textOnBrand,
-    fontWeight: "500",
+    fontWeight: "700",
   },
 });

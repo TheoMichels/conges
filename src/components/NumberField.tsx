@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
-import { colors, fonts, radius } from "../theme/colors";
+import { colors, fonts } from "../theme/colors";
 
 type Props = {
   label: string;
@@ -48,7 +48,7 @@ export function NumberField({ label, hint, value, onChange, readOnly = false }: 
         {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       </View>
       <TextInput
-        style={styles.input}
+        style={[styles.input, readOnly && styles.inputReadOnly]}
         editable={!readOnly}
         value={text}
         onChangeText={handleChangeText}
@@ -69,37 +69,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   label: {
     fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "600",
     color: colors.textSecondary,
   },
   hint: {
-    fontFamily: fonts.base,
+    fontFamily: fonts.mono,
     fontSize: 11,
-    fontWeight: "500",
-    color: colors.brandMuted,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 4,
-    paddingHorizontal: 5,
+    color: colors.primary,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 6,
+    paddingHorizontal: 7,
     paddingVertical: 1,
+    overflow: "hidden",
   },
   input: {
     fontFamily: fonts.base,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceActive,
-    borderRadius: radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 16,
-    fontWeight: "500",
     color: colors.textPrimary,
-    minHeight: 44,
+    minHeight: 46,
+  },
+  inputReadOnly: {
+    backgroundColor: colors.panelSubtle,
   },
 });

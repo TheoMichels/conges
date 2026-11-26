@@ -17,7 +17,7 @@ for (const width of [390, 1920, 2560]) {
     await page.goto("/");
     const header = page.getByTestId("app-header");
     await expect(header).toBeVisible();
-    await expect(header).toHaveCSS("border-bottom-width", "0px");
+    await expect(header).toHaveCSS("border-bottom-width", "1px");
     await expect(page.getByTestId("sidebar-toggle")).toHaveCount(0);
     expect((await header.boundingBox())?.width).toBeGreaterThan(width - 65);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

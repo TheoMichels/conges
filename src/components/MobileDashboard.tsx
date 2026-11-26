@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts, glassStyle, radius, shadows } from '../theme/colors';
+import { colors, fonts, shape } from '../theme/colors';
 import { NumberField } from './NumberField';
 import { formatDayNumber } from '../utils/format';
 
@@ -54,13 +54,11 @@ export function MobileDashboard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.panel,
-    borderRadius: radius.lg,
+    borderRadius: shape.card,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,
-    marginBottom: 20,
-    ...glassStyle,
-    ...shadows.sm,
+    marginBottom: 14,
   },
   grid: {
     flexDirection: 'row',
@@ -76,25 +74,24 @@ const styles = StyleSheet.create({
   },
   readOnlyLabel: {
     fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   readOnlyBox: {
-    backgroundColor: colors.surfaceActive,
+    backgroundColor: colors.panelSubtle,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 46,
     justifyContent: 'center',
   },
   readOnlyValue: {
     fontFamily: fonts.base,
     fontSize: 16,
-    fontWeight: '500',
-    color: colors.brand,
+    color: colors.textPrimary,
   },
 });

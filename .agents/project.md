@@ -30,8 +30,8 @@
 | Member | `members` (FK `auth.users`, RLS, accès par fonctions contrôlées) | `src/storage/memberRepository.ts` |
 
 ## Design
-- Tokens §2 `src/theme/colors.ts` · brand `#14333E` · primary `#356859` · surfaces verre perle/menthe/sauge (`glassStyle`) · radius 12-24 · clair forcé sur web (`color-scheme: only light`).
-- Composants types : `Header` (logo voilier olive 3D détouré `home-boat-logo.png`, titre `Holy`), `AuthScreen`, `LoadingScreen`, `KpiCards`.
+- Tokens §2 `src/theme/colors.ts` · refonte ITS4U : fond blanc, bordure `#E6E8EE`, texte `#1B2B3A`, bleu `#1F4E79` (sélection, dégradé avatar `brandGradient`), orange `#EE6A24` (CTA, lien actif `cta`) · cartes rayon 18, lignes 14 (`shape`) · clair forcé sur web (`color-scheme: only light`).
+- Composants types : `Header` (barre pleine largeur, nav desktop, logo `home-boat-logo.png`), `Avatar` (initiales en dégradé), `AuthScreen`, `LoadingScreen`, `KpiCards`. Mockup : `.agents/handoff/visual-refresh/mockup.html`.
 
 ## Déploiement & Sécurité
 - Logo officiel : masters 1024 px, fond perle `#F5F5EE` ; `scripts/generate-logo-icons.py --input <RGBA>` (Pillow).
