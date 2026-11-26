@@ -154,6 +154,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      admin_year_catalog: { Args: Record<string, never>; Returns: { year: string; has_active: boolean }[] };
       admin_years: { Args: { target_year: string }; Returns: { user_id: string; email: string; display_name: string; active: boolean; plan_id: string | null; year_active: boolean | null; initial_leave: number | null; carried_over: number | null; csupp: number | null; holiday_override: number | null; automatic_holidays: number; taken: number; remaining: number | null; suggested_carry: number }[] };
       admin_save_year: { Args: { target: string; target_year: string; initial: number; carried: number; supplementary: number; holiday: number | null; activate: boolean }; Returns: undefined };
       register_member: { Args: Record<string, never>; Returns: { active: boolean; is_admin: boolean; display_name: string }[] };
