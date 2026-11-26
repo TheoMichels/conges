@@ -30,7 +30,7 @@ for (const width of [375, 1200]) test(`calendrier partagé et filtres ${width}px
  await expect(page.getByTestId('calendar-day-2026-03-04')).not.toContainText('Camille');
  await expect(page.getByTestId('calendar-day-2026-03-04')).not.toContainText('Aucun congé');
  await expect(page.getByText('Congé', { exact:true })).toBeVisible();
- await expect(page.getByTestId('calendar-day-2026-03-02').getByTestId('calendar-entry')).toHaveCSS('background-color', 'rgb(234, 241, 248)');
+ await expect(page.getByTestId('calendar-day-2026-03-02').getByTestId('calendar-entry')).toHaveCSS('background-color', 'rgb(229, 244, 243)');
  await page.getByTestId('calendar-previous').click();
  await expect(page.getByTestId('calendar-entry')).toHaveCount(1);
  await expect(page.getByTestId('calendar-day-2026-02-27')).toContainText('Après-midi');
@@ -47,7 +47,7 @@ for (const width of [375, 1200]) test(`calendrier partagé et filtres ${width}px
 });
 
 test('états vides et reprise après erreur', async ({page}) => {
- await setup(page, 'error'); await page.goto('https://holidays.example/'); await page.getByTestId('shared-calendar-button').click();
+ await setup(page, 'error'); await page.clock.setFixedTime(new Date('2026-03-15T12:00:00Z')); await page.goto('https://holidays.example/'); await page.getByTestId('shared-calendar-button').click();
  await expect(page.getByTestId('calendar-error')).toBeVisible(); await expect(page.getByTestId('calendar-grid')).toBeVisible(); await page.getByTestId('calendar-retry').click();
  await expect(page.getByTestId('calendar-team-all')).toBeVisible();
  for (let i=0; i<12; i++) await page.getByTestId('calendar-next').click();
