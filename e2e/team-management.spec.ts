@@ -31,7 +31,7 @@ async function setup(page: Page, failRefresh = false) {
  });
 }
 test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ page }) => {
- await page.setViewportSize({ width: 390, height: 844 }); await setup(page); await page.goto("https://holidays.example/");
+ await page.setViewportSize({ width: 375, height: 812 }); await setup(page); await page.goto("https://holidays.example/");
  await page.getByTestId("admin-button").click();
  await expect(page.getByTestId("members-section")).toBeVisible();
  await expect(page.getByTestId("teams-section")).toBeVisible();
@@ -40,8 +40,18 @@ test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ 
  await expect(page.getByTestId(`team-${alpha}`)).toBeVisible();
  await page.getByTestId("team-name").fill("Beta"); await page.getByTestId("team-save").click();
  await expect(page.getByTestId(`team-${beta}`)).toBeVisible();
+ for (const id of ["team-name", "team-save", `team-rename-${alpha}`, `team-archive-${alpha}`, `toggle-member-${memberId}`, `team-member-open-${memberId}`]) {
+  const bounds = await page.getByTestId(id).boundingBox();
+  expect(bounds, `${id} dispose d’une cible visible`).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(375);
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+ }
+ expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
  await expect(page.getByTestId(`member-${memberId}`).getByTestId(`toggle-member-${memberId}`)).toBeVisible();
  await page.getByTestId(`member-${memberId}`).getByTestId(`team-member-open-${memberId}`).click();
+ await expect(page.getByTestId(`team-assignment-${memberId}-${alpha}`)).toBeVisible();
+ expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
  await page.getByTestId(`team-assignment-${memberId}-${alpha}`).click();
  await page.getByTestId(`team-assignment-${memberId}-${beta}`).click();
  await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toContainText("☑");
