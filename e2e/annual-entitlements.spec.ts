@@ -8,6 +8,7 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   let saved = false;
   let override: number | null = null;
   let initial = 26;
+  let carried = 2;
   let releaseEntry!: () => void;
   let markEntryStarted!: () => void;
   const entryStarted = new Promise<void>(resolve => { markEntryStarted = resolve; });
@@ -30,15 +31,15 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
       if (url.includes("/rpc/register_member")) body = [{ active: true, is_admin: admin, display_name: admin ? "admin" : "member" }];
       if (url.includes("/rpc/admin_members")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true }];
       if (url.includes("/rpc/admin_year_catalog")) body = saved ? [{ year: "2024", has_active: activated }] : [];
-      if (url.includes("/rpc/admin_years")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? 2 : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + 2 + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 }];
-      if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null; initial: number }; saved = true; activated = data.activate; override = data.holiday; initial = data.initial; }
+      if (url.includes("/rpc/admin_years")) body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: saved ? "annual-plan" : null, year_active: saved ? activated : null, initial_leave: saved ? initial : null, carried_over: saved ? carried : null, csupp: saved ? 1 : null, holiday_override: override, automatic_holidays: 2, taken: entries.length ? 1.5 : 0, remaining: saved ? initial + carried + 1 + (override ?? 2) - (entries.length ? 1.5 : 0) : null, suggested_carry: 2 }];
+      if (url.includes("/rpc/admin_save_year")) { const data = route.request().postDataJSON() as { activate: boolean; holiday: number | null; initial: number; carried: number }; saved = true; activated = data.activate; override = data.holiday; initial = data.initial; carried = data.carried; }
       if (url.includes("/leave_entries")) {
         if (route.request().method() === "POST") { markEntryStarted(); await entryGate; entries = route.request().postDataJSON() as typeof entries; }
         if (route.request().method() === "GET") body = entries.map(entry => ({ id: entry.id }));
         else body = [];
       }
       if (url.includes("/year_plans") && route.request().method() !== "GET") planWrites++;
-      if (url.includes("/year_plans")) body = !admin && activated ? [{ id: "annual-plan", user_id: memberId, year: "2024", initial_leave: initial, carried_over: 2, csupp: 1, holiday_override: override, public_holidays: 2, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", leave_entries: entries }] : [];
+      if (url.includes("/year_plans")) body = !admin && activated ? [{ id: "annual-plan", user_id: memberId, year: "2024", initial_leave: initial, carried_over: carried, csupp: 1, holiday_override: override, public_holidays: 2, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", leave_entries: entries }] : [];
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
     });
   };
@@ -60,6 +61,7 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId("annual-load").click();
   await admin.getByTestId(`annual-initial-${memberId}`).fill("26");
   await admin.getByTestId(`annual-csupp-${memberId}`).fill("1");
+  await admin.getByTestId(`annual-carried-${memberId}`).fill("3");
   await admin.getByTestId(`annual-initial-${memberId}`).fill("1,234");
   await admin.getByTestId(`annual-save-${memberId}`).click();
   await expect(admin.getByTestId(`annual-row-error-${memberId}`)).toBeVisible();
@@ -74,6 +76,8 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId("annual-year").fill("2024");
   await admin.getByTestId("annual-load").click();
   await expect(admin.getByTestId("annual-notice")).toContainText("Brouillon existant");
+  await expect(admin.getByTestId(`annual-carried-${memberId}`)).toHaveValue("3");
+  await admin.getByTestId(`annual-carried-${memberId}`).fill("2");
   await admin.getByTestId(`annual-activate-${memberId}`).click();
   await expect(admin.getByTestId("annual-notice")).toContainText("activée");
   await page.reload();
@@ -120,4 +124,58 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await expect(page.getByTestId("kpi-remaining")).toContainText("29,5");
   await expect(page.getByText("Privé")).toBeVisible();
   await admin.close();
+});
+
+test("une sauvegarde tardive ne remplace pas les droits de l’année sélectionnée", async ({ page }) => {
+  const user = { id: adminId, aud: "authenticated", role: "authenticated", email: "michelstheo1@gmail.com" };
+  let releaseSave!: () => void;
+  let markSaveStarted!: () => void;
+  const gate = new Promise<void>(resolve => { releaseSave = resolve; });
+  const started = new Promise<void>(resolve => { markSaveStarted = resolve; });
+  const writes: string[] = [];
+  let failYearLoad = true;
+  await page.route("https://holidays.example/**", async route => {
+    const url = new URL(route.request().url());
+    const path = url.pathname === "/administration" ? "/" : url.pathname;
+    await route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:4174${path}${url.search}` }) });
+  });
+  await page.addInitScript(user => localStorage.setItem("sb-synthetic-auth-token", JSON.stringify({ access_token: "mock-token", refresh_token: "mock-refresh", token_type: "bearer", expires_at: Math.floor(Date.now() / 1000) + 3600, user })), user);
+  await page.route("https://synthetic.supabase.invalid/**", async route => {
+    const url = route.request().url();
+    let body: unknown = {};
+    if (url.includes("/auth/v1/user")) body = user;
+    if (url.includes("/rpc/register_member")) body = [{ active: true, is_admin: true, display_name: "admin" }];
+    if (url.includes("/rpc/admin_members")) body = [];
+    if (url.includes("/rpc/admin_year_catalog")) body = [{ year: "2025", has_active: true }, { year: "2024", has_active: true }];
+    if (url.includes("/rpc/admin_years")) {
+      const { target_year } = route.request().postDataJSON() as { target_year: string };
+      if (target_year === "2024" && failYearLoad) { failYearLoad = false; await route.fulfill({ status: 200, contentType: "application/json", body: "{}" }); return; }
+      body = [{ user_id: memberId, email: "member@example.com", display_name: "member", active: true, plan_id: `plan-${target_year}`, year_active: true, initial_leave: target_year === "2024" ? 24 : 40, carried_over: 0, csupp: 0, holiday_override: null, automatic_holidays: 2, taken: 0, remaining: target_year === "2024" ? 26 : 42, suggested_carry: 0 }];
+    }
+    if (url.includes("/rpc/admin_save_year")) {
+      const { target_year } = route.request().postDataJSON() as { target_year: string };
+      writes.push(target_year);
+      if (target_year === "2024") { markSaveStarted(); await gate; }
+    }
+    if (url.includes("/year_plans")) body = [];
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+  await page.goto("https://holidays.example/");
+  await page.getByTestId("admin-button").click();
+  await page.getByTestId("annual-year-2024").click();
+  await expect(page.getByTestId("annual-error")).toBeVisible();
+  await page.getByTestId("annual-retry").click();
+  await expect(page.getByTestId(`annual-initial-${memberId}`)).toHaveValue("24");
+  await page.getByTestId(`annual-save-${memberId}`).click();
+  await started;
+  await page.getByTestId("annual-year-2025").click();
+  await expect(page.getByTestId(`annual-initial-${memberId}`)).toHaveValue("40");
+  const response = page.waitForResponse(response => response.url().includes("/rpc/admin_save_year"));
+  releaseSave();
+  await response;
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByTestId(`annual-initial-${memberId}`)).toHaveValue("40");
+  await expect(page.getByTestId(`annual-member-${memberId}`)).toContainText("Restant : 42");
+  await page.getByTestId(`annual-save-${memberId}`).click();
+  await expect.poll(() => writes).toEqual(["2024", "2025"]);
 });
