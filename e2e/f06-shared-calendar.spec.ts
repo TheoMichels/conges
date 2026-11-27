@@ -61,7 +61,7 @@ for (const width of [375, 1200]) test(`calendrier partagé et filtres ${width}px
  await expect(page.getByTestId('calendar-month')).toContainText('avril 2026');
  await expect(page.getByTestId('calendar-entry')).toHaveCount(1);
  await expect(page.getByTestId('calendar-day-2026-04-07')).toContainText('Camille');
- await expect(page.getByTestId('calendar-day-2026-04-07')).toContainText('Journée');
+ await expect(page.getByTestId('calendar-day-2026-04-07').getByTestId('calendar-entry')).toHaveAttribute('aria-label', /Journée/);
  await page.getByTestId('calendar-previous').click();
  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
 });

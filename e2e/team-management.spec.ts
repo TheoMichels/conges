@@ -33,6 +33,7 @@ async function setup(page: Page, failRefresh = false) {
 test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ page }) => {
  await page.setViewportSize({ width: 375, height: 812 }); await setup(page); await page.goto("https://holidays.example/");
  await page.getByTestId("admin-button").click();
+ await page.getByTestId("admin-tab-members").click();
  await expect(page.getByTestId("members-section")).toBeVisible();
  await expect(page.getByTestId("teams-section")).toBeVisible();
  await expect(page.getByTestId("teams-empty")).toBeVisible();
@@ -59,24 +60,24 @@ test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ 
  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
  await page.getByTestId(`team-assignment-${memberId}-${alpha}`).click();
  await page.getByTestId(`team-assignment-${memberId}-${beta}`).click();
- await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toContainText("☑");
+ await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toHaveAttribute("aria-checked", "true");
  await page.getByTestId(`team-assignment-${memberId}-${alpha}`).click();
  await page.getByTestId(`team-assignment-${memberId}-${beta}`).click();
- await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toContainText("☐");
+ await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toHaveAttribute("aria-checked", "false");
  await page.reload();
  await page.getByTestId(`team-member-open-${memberId}`).click();
- await expect(page.getByTestId(`team-assignment-${memberId}-${alpha}`)).toContainText("☐");
- await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toContainText("☐");
+ await expect(page.getByTestId(`team-assignment-${memberId}-${alpha}`)).toHaveAttribute("aria-checked", "false");
+ await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toHaveAttribute("aria-checked", "false");
  await page.getByTestId(`team-assignment-${memberId}-${alpha}`).click();
  await page.getByTestId(`team-rename-${alpha}`).click(); await page.getByTestId("team-name").fill("Renommée"); await page.getByTestId("team-save").click();
- await expect(page.getByTestId(`team-archive-${alpha}`)).toHaveText("Supprimer");
+ await expect(page.getByTestId(`team-archive-${alpha}`)).toHaveText("Archiver");
  await page.getByTestId(`team-archive-${alpha}`).click();
  await expect(page.getByTestId(`team-archived-${alpha}`)).toContainText("Renommée");
  await expect(page.getByTestId(`team-archived-${alpha}`)).toContainText("Alex");
  await expect(page.getByTestId(`team-assignment-${memberId}-${alpha}`)).toHaveCount(0);
  await page.reload(); await expect(page.getByTestId(`team-archived-${alpha}`)).toContainText("Alex");
  await page.getByTestId(`team-member-open-${memberId}`).click();
- await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toContainText("☐");
+ await expect(page.getByTestId(`team-assignment-${memberId}-${beta}`)).toHaveAttribute("aria-checked", "false");
  await page.getByTestId("member-search").fill("inconnu");
  await expect(page.getByTestId("members-empty")).toBeVisible();
  await expect(page.getByTestId(`member-${memberId}`)).toHaveCount(0);
@@ -84,6 +85,7 @@ test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ 
 
 test("erreur de rechargement après écriture : aucun faux succès", async ({ page }) => {
  await setup(page, true); await page.goto("https://holidays.example/"); await page.getByTestId("admin-button").click();
+ await page.getByTestId("admin-tab-members").click();
  await page.getByTestId("team-name").fill("Alpha"); await page.getByTestId("team-save").click();
  await expect(page.getByTestId("teams-error")).toContainText("Réponse du serveur invalide");
  await expect(page.getByTestId("teams-notice")).toHaveCount(0);

@@ -44,8 +44,8 @@ test("administration locale : démonstration isolée hors connexion", async ({ p
   await expect(member).toContainText("Désactivé");
   await member.getByText("Réactiver").click();
   await expect(member).toContainText("Actif");
-  await page.getByTestId("company-close").click();
-  await expect(page.getByTestId("app-header")).toBeVisible();
+  await page.getByTestId("home-button").click();
+  await expect(page.getByTestId("kpi-cards")).toBeVisible();
   expect(externalRequests).toEqual([]);
 });
 
@@ -54,6 +54,7 @@ test("administrateur : liste, désactivation et réactivation", async ({ page })
   await page.goto("https://holidays.example/");
   await page.getByTestId("admin-button").click();
   await expect(page.getByTestId("administration-screen")).toBeVisible();
+  await page.getByTestId("admin-tab-members").click();
   const member = page.getByTestId(`member-${memberId}`);
   await member.getByText("Désactiver").click();
   await expect(member).toContainText("Désactivé");

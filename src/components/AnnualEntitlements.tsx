@@ -1,20 +1,53 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { AnnualEntitlement, listAdminYears, listAnnualEntitlements, saveAnnualEntitlement } from "../storage/annualEntitlementRepository";
-import { colors, fonts, shape, spacing } from "../theme/colors";
+import { colors, focusRing, fonts, shape, spacing, tabular } from "../theme/colors";
+import { formatDayNumber } from "../utils/format";
+import { Avatar } from "./Avatar";
 import { LoadingSkeleton } from "./LoadingScreen";
+import { Badge } from "./ui/Badge";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
+import { Icon } from "./ui/Icon";
+import { Segmented } from "./ui/Segmented";
 
 type Props = { demo: boolean; query: string };
 type Catalog = Awaited<ReturnType<typeof listAdminYears>>;
 const parse = (value: string) => Number(value.trim().replace(",", "."));
+const show = (value: number | null | undefined) => formatDayNumber(Number(value ?? 0));
 
-function EntitlementRow({ row, year, wide, onSaved }: { row: AnnualEntitlement; year: string; wide: boolean; onSaved: (message: string) => Promise<void> }) {
-  const [initial, setInitial] = useState(String(row.initial_leave ?? 0));
-  const [carried, setCarried] = useState(String(row.carried_over ?? row.suggested_carry));
-  const [csupp, setCsupp] = useState(String(row.csupp ?? 0));
-  const [holiday, setHoliday] = useState(row.holiday_override === null ? "" : String(row.holiday_override));
+function AmountInput({ testID, label, value, onChange, placeholder, wide, muted }: { testID: string; label: string; value: string; onChange: (value: string) => void; placeholder?: string; wide: boolean; muted?: boolean }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <TextInput
+      testID={testID}
+      accessibilityLabel={label}
+      style={[styles.input, wide && styles.inputWide, muted && styles.inputMuted, focused && styles.inputFocused, focused && focusRing]}
+      value={value}
+      onChangeText={onChange}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textFaint}
+      keyboardType="decimal-pad"
+    />
+  );
+}
+
+function EntitlementRow({ row, year, wide, first, onSaved }: { row: AnnualEntitlement; year: string; wide: boolean; first: boolean; onSaved: (message: string) => Promise<void> }) {
+  const initialValues = {
+    initial: show(row.initial_leave),
+    carried: show(row.carried_over ?? row.suggested_carry),
+    csupp: show(row.csupp),
+    holiday: row.holiday_override === null ? "" : show(row.holiday_override),
+  };
+  const [initial, setInitial] = useState(initialValues.initial);
+  const [carried, setCarried] = useState(initialValues.carried);
+  const [csupp, setCsupp] = useState(initialValues.csupp);
+  const [holiday, setHoliday] = useState(initialValues.holiday);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const dirty = initial !== initialValues.initial || carried !== initialValues.carried || csupp !== initialValues.csupp || holiday !== initialValues.holiday;
   const save = async (activate: boolean) => {
     if ([initial, carried, csupp].some(value => !/^-?\d+(?:[.,]\d{1,2})?$/.test(value.trim())) || (holiday !== "" && !/^\d+(?:[.,]\d{1,2})?$/.test(holiday.trim()))) { setError("Saisissez des montants valides avec au plus deux décimales."); return; }
     try {
@@ -24,18 +57,50 @@ function EntitlementRow({ row, year, wide, onSaved }: { row: AnnualEntitlement; 
     } catch (e) { setError(e instanceof Error ? e.message : "Impossible d’enregistrer les droits."); }
     finally { setBusy(false); }
   };
-  return <View testID={`annual-member-${row.user_id}`} style={[styles.member, wide && styles.memberWide]}>
-    <View testID={`annual-identity-${row.user_id}`} style={styles.identity}><Text style={styles.memberName}>{row.display_name}</Text>
-    <Text style={styles.memberMeta}>{row.plan_id ? row.year_active ? "Active" : "Brouillon" : "À créer"}{row.plan_id ? ` · Pris : ${row.taken}` : ""}</Text>{row.plan_id && row.remaining !== null && <Text testID={`annual-remaining-${row.user_id}`} style={[styles.memberMeta, Number(row.remaining) < 0 ? styles.negative : styles.positive]}>Restant : {row.remaining}</Text>}</View>
-    {error ? <Text testID={`annual-row-error-${row.user_id}`} style={styles.error}>{error}</Text> : null}
-    <View testID={`annual-fields-${row.user_id}`} style={[styles.fields, wide && styles.fieldsWide]}>
-      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Solde initial</Text><TextInput testID={`annual-initial-${row.user_id}`} accessibilityLabel={`Solde initial de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={initial} onChangeText={setInitial} keyboardType="decimal-pad" /></View>
-      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>{wide ? "Reportés" : `Reportés${row.plan_id ? "" : " (proposition)"}`}</Text><TextInput testID={`annual-carried-${row.user_id}`} accessibilityLabel={`Reportés de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={carried} onChangeText={setCarried} keyboardType="decimal-pad" /></View>
-      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>CSupp</Text><TextInput testID={`annual-csupp-${row.user_id}`} accessibilityLabel={`CSupp de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={csupp} onChangeText={setCsupp} keyboardType="decimal-pad" /></View>
-      <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Fériés {holiday === "" ? `auto (${row.automatic_holidays})` : "manuel"}</Text><TextInput testID={`annual-holiday-${row.user_id}`} accessibilityLabel={`Fériés de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={holiday} onChangeText={setHoliday} placeholder={String(row.automatic_holidays)} keyboardType="decimal-pad" /></View>
+  const status = row.plan_id ? row.year_active ? <Badge tone="ok" dot label="Active" /> : <Badge tone="warn" dot label="Brouillon" /> : <Badge tone="neutral" dot label="À créer" />;
+  const negative = row.remaining !== null && Number(row.remaining) < 0;
+  const field = (key: string, label: string, input: React.ReactNode) => (
+    <View style={[styles.field, wide && styles.fieldWide]}>
+      {!wide && <Text style={styles.fieldLabel}>{label}</Text>}
+      {input}
     </View>
-    <View testID={`annual-actions-${row.user_id}`} style={[styles.row, wide && styles.rowWide, wide && styles.actionsWide]}><Pressable testID={`annual-auto-${row.user_id}`} style={[styles.button, wide && styles.buttonWide]} onPress={() => setHoliday("")}><Text style={styles.buttonText}>{wide ? "Auto" : "Mode automatique"}</Text></Pressable><Pressable testID={`annual-save-${row.user_id}`} disabled={busy} style={[styles.button, styles.primaryButton, wide && styles.buttonWide, busy && styles.disabled]} onPress={() => void save(!!row.year_active)}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable>{!row.year_active && <Pressable testID={`annual-activate-${row.user_id}`} disabled={busy} style={[styles.button, wide && styles.buttonWide]} onPress={() => void save(true)}><Text style={styles.buttonText}>{wide ? "Activer" : "Activer l’année"}</Text></Pressable>}</View>
-  </View>;
+  );
+  return (
+    <View testID={`annual-member-${row.user_id}`} style={[styles.member, wide && styles.memberWide, !first && styles.memberBorder, dirty && styles.memberDirty]}>
+      <View testID={`annual-identity-${row.user_id}`} style={[styles.identity, wide && styles.identityWide]}>
+        <Avatar label={row.display_name} size={32} round />
+        <View style={styles.identityText}>
+          <View style={styles.nameLine}>
+            <Text style={styles.memberName} numberOfLines={1}>{row.display_name}</Text>
+            {status}
+          </View>
+          <View style={styles.metaLine}>
+            {row.plan_id ? <Text style={styles.memberMeta}>Pris : {show(row.taken)}</Text> : <Text style={styles.memberMeta}>Aucun droit pour {year}</Text>}
+            {row.plan_id && row.remaining !== null && <Text style={styles.memberMeta}>·</Text>}
+            {row.plan_id && row.remaining !== null && <Text testID={`annual-remaining-${row.user_id}`} style={[styles.memberMeta, styles.remaining, negative ? styles.negative : styles.positive]}>Restant : {show(row.remaining)}</Text>}
+          </View>
+        </View>
+      </View>
+      {error ? <Text testID={`annual-row-error-${row.user_id}`} style={[styles.rowError, wide && styles.rowErrorWide]}>{error}</Text> : null}
+      <View testID={`annual-fields-${row.user_id}`} style={[styles.fields, wide && styles.fieldsWide]}>
+        {field("initial", "Solde initial", <AmountInput wide={wide} testID={`annual-initial-${row.user_id}`} label={`Solde initial de ${row.display_name}`} value={initial} onChange={setInitial} />)}
+        {field("carried", `Reportés${row.plan_id ? "" : " (proposition)"}`, <AmountInput wide={wide} testID={`annual-carried-${row.user_id}`} label={`Reportés de ${row.display_name}`} value={carried} onChange={setCarried} />)}
+        {field("csupp", "CSupp", <AmountInput wide={wide} testID={`annual-csupp-${row.user_id}`} label={`CSupp de ${row.display_name}`} value={csupp} onChange={setCsupp} />)}
+        {field("holiday", `Fériés ${holiday === "" ? `auto (${show(row.automatic_holidays)})` : "manuel"}`, (
+          <View style={styles.holidayWrap}>
+            <View style={styles.holidayInput}>
+              <AmountInput wide={wide} muted={holiday === ""} testID={`annual-holiday-${row.user_id}`} label={`Fériés de ${row.display_name}`} value={holiday} onChange={setHoliday} placeholder={show(row.automatic_holidays)} />
+            </View>
+            <Button testID={`annual-auto-${row.user_id}`} size="sm" variant="ghost" icon="reset" accessibilityLabel={`Fériés automatiques pour ${row.display_name}`} onPress={() => setHoliday("")} disabled={holiday === ""} />
+          </View>
+        ))}
+      </View>
+      <View testID={`annual-actions-${row.user_id}`} style={[styles.actions, wide && styles.actionsWide]}>
+        <Button testID={`annual-save-${row.user_id}`} size={wide ? "sm" : "md"} variant={dirty ? "primary" : "secondary"} disabled={busy} label="Enregistrer" onPress={() => void save(!!row.year_active)} style={wide && styles.saveWide} />
+        {!row.year_active && <Button testID={`annual-activate-${row.user_id}`} size={wide ? "sm" : "md"} disabled={busy} label="Activer" onPress={() => void save(true)} />}
+      </View>
+    </View>
+  );
 }
 
 export function AnnualEntitlements({ demo, query }: Props) {
@@ -73,50 +138,122 @@ export function AnnualEntitlements({ demo, query }: Props) {
   };
   const normalizedQuery = query.trim().toLowerCase();
   const visibleRows = rows?.filter(row => `${row.display_name} ${row.email}`.toLowerCase().includes(normalizedQuery));
-  if (demo) return <Text style={styles.note}>La gestion des droits est disponible en mode connecté.</Text>;
+  if (demo) return <View style={styles.note}><Icon name="info" size={16} color={colors.textSecondary} /><Text style={styles.noteText}>La gestion des droits est disponible en mode connecté.</Text></View>;
+  const activeYears = catalog?.filter(item => item.has_active) ?? [];
+  const stats = rows ? {
+    members: rows.length,
+    active: rows.filter(row => row.year_active).length,
+    pending: rows.filter(row => !row.year_active).length,
+    negative: rows.filter(row => row.remaining !== null && Number(row.remaining) < 0).length,
+  } : null;
   return <View testID="annual-entitlements" style={styles.box}>
-    <View style={styles.heading}><Text style={styles.title}>Droits annuels</Text><Pressable testID="annual-create-button" accessibilityRole="button" style={styles.button} onPress={() => setCreating(current => !current)}><Text style={styles.buttonText}>+ Créer une année</Text></Pressable></View>
-    {creating && <View style={styles.row}><TextInput testID="annual-year" accessibilityLabel="Nouvelle année" value={newYear} onChangeText={setNewYear} keyboardType="number-pad" maxLength={4} placeholder="Année" placeholderTextColor={colors.textSecondary} style={styles.input} /><Pressable testID="annual-load" style={styles.button} onPress={create}><Text style={styles.buttonText}>Créer</Text></Pressable></View>}
-    {error ? <View testID="annual-error" style={styles.errorBox}><Text style={styles.error}>{error}</Text>{retryTarget && <Pressable testID="annual-retry" onPress={() => { if (retryTarget === "catalog") void loadCatalog(); else void loadRows(); }} style={styles.button}><Text style={styles.buttonText}>Réessayer</Text></Pressable>}</View> : null}
-    {notice ? <Text testID="annual-notice" style={styles.notice}>{notice}</Text> : null}
-    {catalog === null && !error ? <LoadingSkeleton /> : catalog && <View testID="annual-year-menu" style={styles.row}>{catalog.filter(item => item.has_active).map(item => <Pressable key={item.year} testID={`annual-year-${item.year}`} accessibilityRole="button" accessibilityState={{ selected: item.year === year }} onPress={() => { selectYear(item.year); setNotice(""); }} style={[styles.button, styles.chip, item.year === year && styles.chipSelected]}><Text style={[styles.buttonText, item.year === year && styles.chipTextSelected]}>{item.year}{item.year === year ? " ✓" : ""}</Text></Pressable>)}</View>}
+    <View style={styles.toolbar}>
+      {catalog === null && !error ? <View style={styles.catalogLoading}><LoadingSkeleton /></View> : catalog && activeYears.length > 0 && (
+        <View testID="annual-year-menu">
+          <Segmented scrollable value={year || null} onChange={next => { selectYear(next); setNotice(""); }} options={activeYears.map(item => ({ key: item.year, label: item.year, testID: `annual-year-${item.year}` }))} />
+        </View>
+      )}
+      {catalog && year && !activeYears.some(item => item.year === year) ? <Badge tone="warn" dot label={`${year} · brouillon`} /> : null}
+      <Button testID="annual-create-button" icon="plus" label="Nouvelle année" onPress={() => setCreating(current => !current)} />
+    </View>
+    {creating && (
+      <Card style={styles.createCard}>
+        <Text style={styles.createLabel}>Nouvelle année</Text>
+        <View style={styles.createRow}>
+          <TextInput testID="annual-year" accessibilityLabel="Nouvelle année" value={newYear} onChangeText={setNewYear} keyboardType="number-pad" maxLength={4} placeholder="AAAA" placeholderTextColor={colors.textFaint} style={[styles.input, styles.yearInput]} />
+          <Button testID="annual-load" variant="primary" label="Créer" onPress={create} />
+          <Button label="Annuler" variant="ghost" onPress={() => setCreating(false)} />
+        </View>
+      </Card>
+    )}
+    {error ? <View testID="annual-error" style={[styles.banner, styles.bannerError]}><Icon name="alert" size={16} color={colors.danger} /><Text style={[styles.bannerText, { color: colors.danger }]}>{error}</Text>{retryTarget && <Button testID="annual-retry" size="sm" label="Réessayer" onPress={() => { if (retryTarget === "catalog") void loadCatalog(); else void loadRows(); }} />}</View> : null}
+    {notice ? <View style={[styles.banner, styles.bannerOk]}><Icon name="check" size={16} color={colors.positive} /><Text testID="annual-notice" style={[styles.bannerText, { color: colors.positive }]}>{notice}</Text></View> : null}
     {catalog && !year && <Text testID="annual-empty" style={styles.empty}>Aucune année active. Créez une année pour commencer.</Text>}
-    {year ? <><Text style={styles.title}>Année {year}</Text>{rows === null && !error ? <LoadingSkeleton /> : rows?.length === 0 ? <Text testID="annual-members-empty" style={styles.empty}>Aucun membre.</Text> : visibleRows?.length ? visibleRows.map(row => <EntitlementRow key={`${year}-${row.user_id}`} row={row} year={year} wide={wide} onSaved={async message => { if (selectedYear.current === year) { setNotice(message); await loadRows(true); } await loadCatalog(); }} />) : <Text testID="annual-members-empty" style={styles.empty}>Aucun membre trouvé.</Text>}</> : null}
+    {year && stats && wide ? (
+      <View style={styles.stats}>
+        <Card style={styles.stat}><Text style={styles.statLabel}>Membres</Text><Text style={styles.statValue}>{stats.members}</Text></Card>
+        <Card style={styles.stat}><Text style={styles.statLabel}>Années actives</Text><Text style={styles.statValue}>{stats.active}</Text></Card>
+        <Card style={styles.stat}><Text style={styles.statLabel}>Brouillons / à créer</Text><Text style={[styles.statValue, stats.pending > 0 && { color: colors.warning }]}>{stats.pending}</Text></Card>
+        <Card style={styles.stat}><Text style={styles.statLabel}>Soldes négatifs</Text><Text style={[styles.statValue, stats.negative > 0 && { color: colors.danger }]}>{stats.negative}</Text></Card>
+      </View>
+    ) : null}
+    {year ? (
+      <Card style={styles.table}>
+        <View style={styles.tableTitle}><Text style={styles.title}>Année {year}</Text>{visibleRows ? <Text style={styles.tableHint}>{visibleRows.length} membre{visibleRows.length > 1 ? "s" : ""}</Text> : null}</View>
+        {wide && rows?.length ? (
+          <View style={styles.headRow}>
+            <Text style={[styles.th, styles.thIdentity]}>Membre</Text>
+            <View style={styles.thFields}>
+              {["Solde initial", "Reportés", "CSupp", "Fériés"].map(label => <Text key={label} style={[styles.th, styles.thField]}>{label}</Text>)}
+            </View>
+            <View style={styles.thActions} />
+          </View>
+        ) : null}
+        {rows === null && !error ? <View style={styles.tablePad}><LoadingSkeleton /></View> : rows?.length === 0 ? <Text testID="annual-members-empty" style={[styles.empty, styles.tableEmpty]}>Aucun membre.</Text> : visibleRows?.length ? visibleRows.map((row, index) => <EntitlementRow key={`${year}-${row.user_id}`} row={row} year={year} wide={wide} first={index === 0} onSaved={async message => { if (selectedYear.current === year) { setNotice(message); await loadRows(true); } await loadCatalog(); }} />) : <Text testID="annual-members-empty" style={[styles.empty, styles.tableEmpty]}>Aucun membre trouvé.</Text>}
+      </Card>
+    ) : null}
   </View>;
 }
+
 const styles = StyleSheet.create({
-  box: { gap: spacing.md, paddingBottom: spacing.lg, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  title: { fontFamily: fonts.base, fontSize: 18, fontWeight: "700", color: colors.textPrimary },
-  heading: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
-  rowWide: { flexWrap: "nowrap", flexShrink: 0, gap: spacing.xs },
-  actionsWide: { width: 212 },
-  buttonWide: { minHeight: 40, paddingHorizontal: 8, paddingVertical: 8 },
-  fields: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.lg, columnGap: 20 },
-  fieldsWide: { flex: 1, minWidth: 0, flexWrap: "nowrap", columnGap: spacing.sm },
-  field: { flexGrow: 1, minWidth: 120, gap: 8 },
-  fieldWide: { flex: 1, minWidth: 0 },
-  fieldLabel: { fontFamily: fonts.base, fontSize: 13, fontWeight: "600", color: colors.textSecondary },
-  member: { gap: spacing.md, padding: 16, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, backgroundColor: colors.panel },
-  memberWide: { flexDirection: "row", alignItems: "center", flexWrap: "nowrap", gap: spacing.md },
-  identity: { width: 280, flexShrink: 0, gap: 4 },
-  memberName: { fontFamily: fonts.base, fontSize: 16, fontWeight: "700", color: colors.textPrimary },
-  memberMeta: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
+  box: { gap: 14 },
+  toolbar: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
+  catalogLoading: { flex: 1, minWidth: 200 },
+  createCard: { padding: 16, gap: 8 },
+  createLabel: { fontFamily: fonts.base, fontSize: 12.5, fontWeight: "600", color: colors.textSecondary },
+  createRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  yearInput: { width: 120, flexGrow: 0 },
+  banner: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderRadius: shape.row, borderWidth: 1 },
+  bannerError: { backgroundColor: colors.dangerSoft, borderColor: colors.dangerBorder },
+  bannerOk: { backgroundColor: colors.positiveSoft, borderColor: colors.positiveBorder },
+  bannerText: { flex: 1, minWidth: 160, fontFamily: fonts.base, fontSize: 13.5, fontWeight: "600" },
+  stats: { flexDirection: "row", gap: 14 },
+  stat: { flex: 1, paddingHorizontal: 16, paddingVertical: 12 },
+  statLabel: { fontFamily: fonts.base, fontSize: 12, fontWeight: "600", color: colors.textSecondary },
+  statValue: { fontFamily: fonts.base, fontSize: 22, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.4, ...tabular },
+  table: { overflow: "hidden" },
+  tableTitle: { flexDirection: "row", alignItems: "baseline", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  tableHint: { fontFamily: fonts.base, fontSize: 12.5, color: colors.textSecondary },
+  tablePad: { padding: 16 },
+  title: { fontFamily: fonts.base, fontSize: 15, fontWeight: "700", color: colors.textPrimary },
+  headRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: colors.canvas, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border },
+  th: { fontFamily: fonts.base, fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: colors.textSecondary },
+  thIdentity: { width: 300 },
+  thFields: { flex: 1, flexDirection: "row", gap: spacing.sm },
+  thField: { flex: 1 },
+  thActions: { width: 200 },
+  member: { gap: spacing.md, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.panel },
+  memberBorder: { borderTopWidth: 1, borderTopColor: colors.divider },
+  memberWide: { flexDirection: "row", alignItems: "center", flexWrap: "nowrap", paddingVertical: 10 },
+  memberDirty: { backgroundColor: "#FFFBF8", borderLeftWidth: 3, borderLeftColor: colors.cta, paddingLeft: 13 },
+  identity: { flexDirection: "row", alignItems: "center", gap: 10 },
+  identityWide: { width: 300, flexShrink: 0 },
+  identityText: { flex: 1, minWidth: 0, gap: 2 },
+  nameLine: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
+  metaLine: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+  memberName: { flexShrink: 1, fontFamily: fonts.base, fontSize: 14.5, fontWeight: "600", color: colors.textPrimary },
+  memberMeta: { fontFamily: fonts.base, fontSize: 12.5, color: colors.textSecondary, ...tabular },
+  remaining: { fontWeight: "700" },
   negative: { color: colors.danger },
   positive: { color: colors.primary },
-  input: { fontFamily: fonts.base, fontSize: 16, minHeight: 46, minWidth: 100, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: colors.panel, color: colors.textPrimary },
-  inputWide: { minWidth: 0, paddingHorizontal: 8 },
-  button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, alignSelf: "flex-start", justifyContent: "center" },
-  buttonText: { fontFamily: fonts.base, fontSize: 14, color: colors.textPrimary },
-  primaryButton: { backgroundColor: colors.cta, borderColor: colors.cta },
-  primaryButtonText: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.textOnBrand },
-  disabled: { opacity: 0.5 },
-  chip: { borderRadius: shape.pill },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipTextSelected: { color: colors.textOnBrand, fontWeight: "600" },
-  note: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary, backgroundColor: colors.panelSubtle, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, padding: 14, overflow: "hidden" },
-  notice: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.positive, backgroundColor: colors.positiveSoft, borderRadius: shape.row, paddingHorizontal: 16, paddingVertical: 12, overflow: "hidden" },
+  rowError: { fontFamily: fonts.base, fontSize: 13, fontWeight: "600", color: colors.danger, backgroundColor: colors.dangerSoft, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, overflow: "hidden" },
+  rowErrorWide: { position: "absolute", left: 16, bottom: 2, fontSize: 11.5, paddingVertical: 1, zIndex: 2 },
+  fields: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.md, columnGap: spacing.md },
+  fieldsWide: { flex: 1, minWidth: 0, flexWrap: "nowrap", columnGap: spacing.sm },
+  field: { flexGrow: 1, flexBasis: "40%", minWidth: 120, gap: 6 },
+  fieldWide: { flex: 1, flexBasis: 0, minWidth: 0 },
+  fieldLabel: { fontFamily: fonts.base, fontSize: 12.5, fontWeight: "600", color: colors.textSecondary },
+  holidayWrap: { flexDirection: "row", alignItems: "center", gap: 2 },
+  holidayInput: { flex: 1, minWidth: 0 },
+  input: { fontFamily: fonts.base, fontSize: 15, minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: shape.control, paddingHorizontal: 12, backgroundColor: colors.panel, color: colors.textPrimary, ...tabular },
+  inputWide: { minHeight: 38, fontSize: 14, fontWeight: "600", textAlign: "right", paddingHorizontal: 10, minWidth: 0 },
+  inputMuted: { backgroundColor: colors.canvas, borderStyle: "dashed" },
+  inputFocused: { borderColor: colors.primary },
+  actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.sm },
+  actionsWide: { width: 200, flexWrap: "nowrap", flexShrink: 0, gap: 6 },
+  saveWide: { width: 108 },
+  note: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, padding: 14 },
+  noteText: { flex: 1, fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
   empty: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary, textAlign: "center", paddingVertical: 20, borderWidth: 1, borderStyle: "dashed", borderColor: colors.borderDashed, borderRadius: shape.row },
-  errorBox: { gap: spacing.sm, backgroundColor: colors.dangerSoft, borderWidth: 1, borderColor: "#F5C2C2", borderRadius: shape.row, padding: 14 },
-  error: { fontFamily: fonts.base, fontSize: 14, fontWeight: "600", color: colors.danger },
+  tableEmpty: { marginHorizontal: 16, marginBottom: 16 },
 });

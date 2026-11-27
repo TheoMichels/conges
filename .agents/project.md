@@ -31,8 +31,8 @@
 | Team | `teams`, `team_members` (RLS, fonctions admin, archives) | `src/storage/teamRepository.ts` |
 
 ## Design
-- Tokens §2 `src/theme/colors.ts` · refonte ITS4U : fond blanc, bordure `#E6E8EE`, texte `#1B2B3A`, bleu `#1F4E79` (sélection, dégradé avatar `brandGradient`), orange `#EE6A24` (CTA, lien actif `cta`) · cartes rayon 18, lignes 14 (`shape`) · clair forcé sur web (`color-scheme: only light`).
-- Composants types : `Header` (barre pleine largeur, nav desktop, logo `home-boat-logo.png`), `Avatar` (initiales en dégradé), `AuthScreen`, `LoadingScreen`, `KpiCards`. Mockup : `.agents/handoff/visual-refresh/mockup.html`.
+- Tokens §2 `src/theme/colors.ts` · refonte v2 : fond de page perle `canvas #F8F9FB`, cartes blanches bordure `#E6E8EE` + `cardShadow`, texte `#1B2B3A`, bleu `#1F4E79` (sélection, données), orange `#EE6A24` (CTA unique, soulignement de l'onglet actif) · cartes rayon 18, contrôles 10 (`shape.control`) · `focusRing`, `tabular`, `webOnly` · clair forcé sur web.
+- Primitives `src/components/ui/` : `Button` (primary/secondary/ghost/danger, md 44 / sm 36), `Icon` (SVG à trait, plus d'Unicode), `Badge` (statuts), `Segmented`, `Card`. Shell `AppShell` (App.tsx) : `Header` persistant + `TabBar` mobile · admin à onglets (`admin-tab-*`, sessionStorage) · mockup `.agents/handoff/visual-refresh-v2/`.
 
 ## Déploiement & Sécurité
 - Logo officiel : masters 1024 px, fond perle `#F5F5EE` ; `scripts/generate-logo-icons.py --input <RGBA>` (Pillow).

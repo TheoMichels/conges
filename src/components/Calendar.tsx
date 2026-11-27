@@ -4,11 +4,16 @@ import { MONTH_LABELS } from "../types/yearPlan";
 import { colors, fonts } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, parseISODate, toISODate } from "../utils/leaveDays";
+import { publicHolidayMap } from "../utils/leaveStats";
+import { Icon } from "./ui/Icon";
 
 type Props = {
   startDate: string;
   endDate: string;
   onSelectRange: (startDate: string, endDate: string) => void;
+  // Jours déjà posés (autres congés), soulignés dans la grille.
+  takenDates?: Set<string>;
+  cellSize?: number;
 };
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -26,7 +31,7 @@ function mondayFirstOffset(date: Date): number {
   return (date.getDay() + 6) % 7;
 }
 
-export function Calendar({ startDate, endDate, onSelectRange }: Props) {
+export function Calendar({ startDate, endDate, onSelectRange, takenDates, cellSize = CELL_SIZE }: Props) {
   const parsedStart = parseISODate(startDate);
   const [viewDate, setViewDate] = useState(() => parsedStart ?? new Date());
 
@@ -49,6 +54,8 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const leadingBlanks = mondayFirstOffset(new Date(year, month, 1));
   const today = new Date();
+  const holidays = publicHolidayMap(year);
+  const cellStyle = { width: cellSize, height: cellSize };
 
   const cells: (number | null)[] = [
     ...Array(leadingBlanks).fill(null),
@@ -94,7 +101,7 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { width: cellSize * 7 }]}>
       {/* Range Status Bar */}
       <View style={styles.rangeBar}>
         <Pressable
@@ -109,7 +116,7 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
           <Text style={styles.rangeChipDate}>{formatDateFr(startDate)}</Text>
         </Pressable>
 
-        <Text style={styles.rangeSeparator}>→</Text>
+        <Icon name="arrow" size={14} color={colors.textFaint} />
 
         <Pressable
           style={[
@@ -126,21 +133,21 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
 
       {/* Month Navigation */}
       <View style={styles.header}>
-        <Pressable style={cursorPointer} onPress={() => goToMonth(-1)} hitSlop={8}>
-          <Text style={styles.nav}>‹</Text>
+        <Pressable style={[styles.nav, cursorPointer]} accessibilityRole="button" accessibilityLabel="Mois précédent" onPress={() => goToMonth(-1)} hitSlop={4}>
+          <Icon name="left" size={18} />
         </Pressable>
         <Text style={styles.monthLabel}>
           {MONTH_LABELS[month]} {year}
         </Text>
-        <Pressable style={cursorPointer} onPress={() => goToMonth(1)} hitSlop={8}>
-          <Text style={styles.nav}>›</Text>
+        <Pressable style={[styles.nav, cursorPointer]} accessibilityRole="button" accessibilityLabel="Mois suivant" onPress={() => goToMonth(1)} hitSlop={4}>
+          <Icon name="right" size={18} />
         </Pressable>
       </View>
 
       {/* Weekday Row */}
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label, i) => (
-          <Text key={i} style={styles.weekdayLabel}>
+          <Text key={i} style={[styles.weekdayLabel, { width: cellSize }]}>
             {label}
           </Text>
         ))}
@@ -149,7 +156,7 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
       {/* Calendar Grid with Connecting Path */}
       <View style={styles.grid}>
         {cells.map((day, i) => {
-          if (day === null) return <View key={i} style={styles.cell} />;
+          if (day === null) return <View key={i} style={[styles.cell, cellStyle]} />;
 
           const cellDate = new Date(year, month, day);
           const cellIso = toISODate(cellDate);
@@ -163,14 +170,16 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
           const isEnd = cellIso === endDate;
           const isInRange = cellIso >= startDate && cellIso <= endDate;
           const isSingleDay = startDate === endDate;
+          const holidayName = holidays.get(cellIso);
+          const isTaken = !!takenDates?.has(cellIso) && !isInRange;
 
           return (
             <Pressable
               key={i}
               testID={`calendar-day-${cellIso}`}
               accessibilityRole="button"
-              accessibilityLabel={formatDateFr(cellIso)}
-              style={[styles.cell, cursorPointer]}
+              accessibilityLabel={holidayName ? `${formatDateFr(cellIso)} — ${holidayName}` : formatDateFr(cellIso)}
+              style={[styles.cell, cellStyle, cursorPointer]}
               onPress={() => handleDateClick(cellIso)}
             >
               {/* Connected track bar (le chemin) */}
@@ -178,8 +187,8 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
                 <View
                   style={[
                     styles.rangeTrack,
-                    isStart && styles.rangeTrackStart,
-                    isEnd && styles.rangeTrackEnd,
+                    isStart && { left: cellSize / 2, borderTopLeftRadius: cellSize / 2, borderBottomLeftRadius: cellSize / 2 },
+                    isEnd && { right: cellSize / 2, borderTopRightRadius: cellSize / 2, borderBottomRightRadius: cellSize / 2 },
                     isRowStart && !isStart && styles.rangeTrackRowStart,
                     isRowEnd && !isEnd && styles.rangeTrackRowEnd,
                   ]}
@@ -190,6 +199,7 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
               <View
                 style={[
                   styles.dayBadge,
+                  { width: cellSize - 6, height: cellSize - 6, borderRadius: (cellSize - 6) / 2 },
                   (isStart || isEnd) && styles.dayBadgeSelected,
                   !isStart && !isEnd && isToday && styles.dayBadgeToday,
                 ]}
@@ -205,9 +215,16 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
                   {day}
                 </Text>
               </View>
+              {isTaken && <View style={styles.takenMark} />}
+              {holidayName && !isStart && !isEnd && <View style={styles.holidayDot} />}
             </Pressable>
           );
         })}
+      </View>
+      <View style={styles.legend}>
+        <View style={styles.legendItem}><View style={styles.legendSelected} /><Text style={styles.legendText}>Sélection</Text></View>
+        {takenDates && takenDates.size > 0 ? <View style={styles.legendItem}><View style={styles.legendTaken} /><Text style={styles.legendText}>Déjà posé</Text></View> : null}
+        <View style={styles.legendItem}><View style={styles.legendHoliday} /><Text style={styles.legendText}>Férié</Text></View>
       </View>
     </View>
   );
@@ -216,156 +233,35 @@ export function Calendar({ startDate, endDate, onSelectRange }: Props) {
 const CELL_SIZE = 44;
 
 const styles = StyleSheet.create({
-  container: {
-    width: CELL_SIZE * 7,
-  },
-  rangeBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.panelSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 6,
-    marginBottom: 12,
-  },
-  rangeChip: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  rangeChipActive: {
-    borderColor: colors.cta,
-    backgroundColor: colors.ctaSoft,
-  },
-  rangeChipPrefix: {
-    fontFamily: fonts.base,
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.textSecondary,
-    textTransform: "uppercase",
-  },
-  rangeChipDate: {
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textPrimary,
-  },
-  rangeSeparator: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  nav: {
-    fontFamily: fonts.base,
-    fontSize: 20,
-    color: colors.textSecondary,
-    paddingHorizontal: 16,
-    minHeight: 44,
-    minWidth: 44,
-    textAlign: "center",
-  },
-  monthLabel: {
-    fontFamily: fonts.base,
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  weekdayRow: {
-    flexDirection: "row",
-    marginBottom: 6,
-  },
-  weekdayLabel: {
-    fontFamily: fonts.base,
-    width: CELL_SIZE,
-    textAlign: "center",
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 3,
-    position: "relative",
-  },
-  rangeTrack: {
-    position: "absolute",
-    top: 3,
-    bottom: 3,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.primarySoft,
-  },
-  rangeTrackStart: {
-    left: CELL_SIZE / 2,
-    borderTopLeftRadius: CELL_SIZE / 2,
-    borderBottomLeftRadius: CELL_SIZE / 2,
-  },
-  rangeTrackEnd: {
-    right: CELL_SIZE / 2,
-    borderTopRightRadius: CELL_SIZE / 2,
-    borderBottomRightRadius: CELL_SIZE / 2,
-  },
-  rangeTrackRowStart: {
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
-  },
-  rangeTrackRowEnd: {
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  dayBadge: {
-    width: CELL_SIZE - 6,
-    height: CELL_SIZE - 6,
-    borderRadius: (CELL_SIZE - 6) / 2,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  dayBadgeSelected: {
-    backgroundColor: colors.primary,
-  },
-  dayBadgeToday: {
-    borderWidth: 1.5,
-    borderColor: colors.cta,
-  },
-  dayText: {
-    fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: "500",
-    color: colors.textPrimary,
-  },
-  dayTextWeekend: {
-    color: "#B5BAC5",
-  },
-  dayTextInRange: {
-    color: colors.primary,
-    fontWeight: "600",
-  },
-  dayTextSelected: {
-    color: colors.textOnBrand,
-    fontWeight: "700",
-  },
+  container: {},
+  rangeBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 12 },
+  rangeChip: { flex: 1, minHeight: 44, justifyContent: "center", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border },
+  rangeChipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  rangeChipPrefix: { fontFamily: fonts.base, fontSize: 10.5, fontWeight: "700", letterSpacing: 0.5, color: colors.textSecondary, textTransform: "uppercase" },
+  rangeChipDate: { fontFamily: fonts.base, fontSize: 13, fontWeight: "700", color: colors.textPrimary },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
+  nav: { minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center", borderRadius: 10 },
+  monthLabel: { fontFamily: fonts.base, fontSize: 14.5, fontWeight: "700", color: colors.textPrimary },
+  weekdayRow: { flexDirection: "row", marginBottom: 4 },
+  weekdayLabel: { fontFamily: fonts.base, textAlign: "center", fontSize: 11, fontWeight: "700", color: colors.textFaint },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  cell: { alignItems: "center", justifyContent: "center", marginBottom: 2, position: "relative" },
+  rangeTrack: { position: "absolute", top: 3, bottom: 3, left: 0, right: 0, backgroundColor: colors.primarySoft },
+  rangeTrackRowStart: { borderTopLeftRadius: 8, borderBottomLeftRadius: 8 },
+  rangeTrackRowEnd: { borderTopRightRadius: 8, borderBottomRightRadius: 8 },
+  dayBadge: { alignItems: "center", justifyContent: "center", zIndex: 1 },
+  dayBadgeSelected: { backgroundColor: colors.primary },
+  dayBadgeToday: { borderWidth: 1.5, borderColor: colors.cta },
+  dayText: { fontFamily: fonts.base, fontSize: 13, fontWeight: "600", color: colors.textPrimary },
+  dayTextWeekend: { color: colors.textFaint, fontWeight: "500" },
+  dayTextInRange: { color: colors.primary, fontWeight: "700" },
+  dayTextSelected: { color: colors.textOnBrand, fontWeight: "700" },
+  takenMark: { position: "absolute", bottom: 5, width: 14, height: 2, borderRadius: 2, backgroundColor: colors.primaryLight, zIndex: 2 },
+  holidayDot: { position: "absolute", bottom: 4, width: 4, height: 4, borderRadius: 2, backgroundColor: colors.cta, zIndex: 2 },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.divider },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendText: { fontFamily: fonts.base, fontSize: 12, color: colors.textSecondary },
+  legendSelected: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  legendTaken: { width: 12, height: 2, borderRadius: 2, backgroundColor: colors.primaryLight },
+  legendHoliday: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.cta },
 });

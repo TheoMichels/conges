@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Holy — mockup refonte visuelle v2</title>
+<style>
+:root{
+  /* Tokens existants (src/theme/colors.ts) — inchangés */
+  --brand:#1B2B3A; --text:#1B2B3A; --text-2:#6B7280; --text-body:#374151; --text-3:#9AA1AD;
+  --primary:#1F4E79; --primary-2:#2F80C0; --primary-soft:#EAF1F8; --primary-border:#BFD3E6;
+  --cta:#EE6A24; --cta-soft:#FEF0E7; --cta-text:#C2541A;
+  --panel:#FFFFFF; --canvas:#F8F9FB; --border:#E6E8EE; --border-strong:#D5D9E2; --divider:#EEF0F4; --dashed:#C9CDD8;
+  --warning:#A16207; --warning-soft:#FEF5E2; --danger:#DC2626; --danger-soft:#FDECEC; --positive:#15803D; --positive-soft:#E9F9EF;
+  --grad:linear-gradient(135deg,#1F4E79 0%,#2F80C0 100%);
+  /* Nouveaux tokens proposés (dérivés, pas de nouvelle couleur) */
+  --shadow-xs:0 1px 2px rgba(20,30,60,.04);
+  --shadow-sm:0 1px 3px rgba(20,30,60,.05),0 1px 2px rgba(20,30,60,.03);
+  --shadow-pop:0 12px 32px rgba(20,30,60,.12),0 2px 6px rgba(20,30,60,.06);
+  --ring:0 0 0 3px rgba(31,78,121,.16);
+  --r-card:18px; --r-ctl:10px; --r-row:12px;
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font);color:var(--text);background:#E9EBF0;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.45}
+.num{font-variant-numeric:tabular-nums}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+svg.i.sm{width:14px;height:14px} svg.i.lg{width:18px;height:18px}
+
+/* ---------- Document chrome (hors app) ---------- */
+.doc-nav{position:sticky;top:0;z-index:50;display:flex;gap:6px;align-items:center;padding:12px 32px;background:rgba(233,235,240,.92);backdrop-filter:blur(8px);border-bottom:1px solid #DDE0E7}
+.doc-nav b{margin-right:14px;font-size:14px}
+.doc-nav a{color:var(--text-body);text-decoration:none;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px}
+.doc-nav a:hover{background:#fff}
+.sec{padding:28px 32px 8px}
+.sec h2{margin:0 0 4px;font-size:20px;letter-spacing:-.2px}
+.sec .lead{margin:0 0 14px;color:var(--text-2);max-width:980px}
+.changes{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;margin:0 0 16px;max-width:1440px}
+.change{background:#fff;border:1px solid #DDE0E7;border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--text-body)}
+.change b{display:block;color:var(--text);font-size:13px;margin-bottom:2px}
+.change .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
+.tag.opt{background:var(--warning-soft);color:var(--warning)}
+.tag.vis{background:var(--primary-soft);color:var(--primary)}
+.frame{width:1440px;background:var(--canvas);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(20,30,60,.10);margin-bottom:26px;position:relative}
+.frame-label{font:600 11.5px/1 var(--font);color:var(--text-2);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px}
+
+/* ---------- App shell ---------- */
+.topbar{height:64px;display:flex;align-items:center;gap:28px;padding:0 32px;background:#fff;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.3px;margin-right:12px}
+.brand img{width:28px;height:28px}
+.nav{display:flex;align-items:stretch;gap:4px;height:100%}
+.nav a{display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--text-2);text-decoration:none;font-weight:600;font-size:14px;position:relative}
+.nav a:hover{color:var(--text)}
+.nav a.active{color:var(--text)}
+.nav a.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;border-radius:2px;background:var(--cta)}
+.nav a .count{font-size:11px;background:var(--divider);color:var(--text-2);border-radius:999px;padding:1px 7px}
+.spacer{flex:1}
+.mode-pill{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-2);padding:6px 10px;border:1px solid var(--border);border-radius:999px}
+.mode-pill i{width:7px;height:7px;border-radius:50%;background:var(--positive)}
+.usermenu{display:flex;align-items:center;gap:10px;padding:5px 8px 5px 5px;border-radius:12px;border:1px solid transparent;cursor:pointer}
+.usermenu:hover{border-color:var(--border)}
+.usermenu .n{font-weight:600;font-size:13.5px;line-height:1.2}
+.usermenu .m{font-size:12px;color:var(--text-2);line-height:1.2}
+.av{width:32px;height:32px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none;letter-spacing:.02em}
+.av.sm{width:24px;height:24px;font-size:10px}
+.av.xs{width:20px;height:20px;font-size:9px}
+.av.lg{width:40px;height:40px;font-size:14px}
+
+.page{padding:28px 32px 40px}
+.page-head{display:flex;align-items:flex-end;gap:16px;margin-bottom:22px}
+.page-head h1{margin:0;font-size:26px;letter-spacing:-.4px;line-height:1.15}
+.page-head .sub{color:var(--text-2);margin-top:4px;font-size:14px}
+.chip-year{display:inline-flex;align-items:center;font-size:13px;font-weight:700;color:var(--cta-text);background:var(--cta-soft);padding:3px 10px;border-radius:999px;margin-left:10px;vertical-align:4px}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow-xs)}
+.card-h{display:flex;align-items:center;gap:12px;padding:18px 20px 0}
+.card-h h3{margin:0;font-size:15px;font-weight:700}
+.card-h .hint{color:var(--text-2);font-size:12.5px}
+.card-b{padding:16px 20px 20px}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-2)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 14px;border-radius:var(--r-ctl);font:600 13.5px/1 var(--font);border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--border-strong);background:#FCFCFD}
+.btn.primary{background:var(--cta);border-color:var(--cta);color:#fff;box-shadow:0 1px 2px rgba(238,106,36,.25)}
+.btn.primary:hover{background:#E05F1B}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--text-2)}
+.btn.ghost:hover{background:var(--canvas);color:var(--text)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{background:var(--danger-soft);border-color:#F5C2C2}
+.btn.sm{height:32px;padding:0 10px;font-size:12.5px;border-radius:8px}
+.btn.icon{width:32px;padding:0}
+.btn[disabled]{opacity:.45;cursor:default}
+
+/* Segmented */
+.seg{display:inline-flex;padding:3px;background:var(--divider);border-radius:11px;gap:2px}
+.seg button{border:0;background:transparent;height:32px;padding:0 12px;border-radius:8px;font:600 13px/1 var(--font);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg button.on{background:#fff;color:var(--text);box-shadow:var(--shadow-sm)}
+.seg button .dot{width:6px;height:6px;border-radius:50%;background:var(--warning)}
+
+/* Inputs */
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.input{height:40px;width:100%;border:1px solid var(--border);border-radius:var(--r-ctl);padding:0 12px;font:400 14px var(--font);color:var(--text);background:#fff;display:flex;align-items:center}
+.input.focus{border-color:var(--primary);box-shadow:var(--ring)}
+.input.ph{color:var(--text-3)}
+.search{display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--border);border-radius:var(--r-ctl);padding:0 12px;background:#fff;color:var(--text-3);font-size:13.5px;width:300px}
+.search kbd{margin-left:auto;font:600 11px var(--font);color:var(--text-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;background:var(--canvas)}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;line-height:18px}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-ok{background:var(--positive-soft);color:var(--positive)}
+.b-warn{background:var(--warning-soft);color:var(--warning)}
+.b-neutral{background:var(--divider);color:var(--text-2)}
+.b-blue{background:var(--primary-soft);color:var(--primary)}
+.b-danger{background:var(--danger-soft);color:var(--danger)}
+.b-cta{background:var(--cta-soft);color:var(--cta-text)}
+.b-outline{border:1px solid var(--primary-border);color:var(--primary);background:#fff;padding:1px 7px}
+
+.banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r-row);font-size:13px}
+.banner.warn{background:var(--warning-soft);color:var(--warning);border:1px solid #F3E0B5}
+.banner.info{background:var(--cta-soft);color:var(--cta-text);border:1px solid #F8D5BF}
+.banner.ok{background:var(--positive-soft);color:var(--positive);border:1px solid #BFE8CD}
+/* ---------- Mes congés ---------- */
+.layout{display:grid;grid-template-columns:220px 1fr;gap:32px}
+.years .eyebrow{margin:6px 10px 10px}
+.year{display:flex;align-items:center;gap:8px;height:44px;padding:0 10px 0 12px;border-radius:10px;font-weight:600;color:var(--text-body);position:relative;cursor:pointer}
+.year:hover{background:#fff}
+.year .y{font-size:15px;font-weight:700;color:var(--text)}
+.year .r{margin-left:auto;font-size:12.5px;color:var(--text-2)}
+.year.sel{background:#fff;box-shadow:var(--shadow-sm);border:1px solid var(--border)}
+.year.sel::before{content:"";position:absolute;left:-1px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--cta)}
+.year .acts{display:none;gap:2px;margin-left:auto}
+.year.sel .acts{display:flex}
+.year.sel .r{display:none}
+.year .acts .btn{width:28px;height:28px;color:var(--text-2)}
+.add-year{margin-top:8px;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;color:var(--text-2);font-weight:600;font-size:13px;border:1px dashed var(--dashed);cursor:pointer}
+.years .foot{margin:22px 10px 0;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2)}
+
+.overview{display:grid;grid-template-columns:1.35fr 1fr;gap:20px;margin-bottom:20px;align-items:start}
+.hero{padding:22px 24px}
+.hero-top{display:flex;align-items:flex-start;gap:12px}
+.big{font-size:52px;font-weight:700;letter-spacing:-1.6px;line-height:1;margin-top:10px}
+.big small{font-size:18px;font-weight:600;color:var(--text-2);letter-spacing:0;margin-left:6px}
+.hero .of{color:var(--text-2);margin-top:8px;font-size:13.5px}
+.bar{display:flex;height:10px;border-radius:999px;background:var(--divider);overflow:hidden;margin:22px 0 12px;gap:2px}
+.bar span{display:block;height:100%}
+.bar .used{background:var(--primary)} .bar .plan{background:var(--primary-2)} .bar .left{background:repeating-linear-gradient(135deg,#E3E7EE 0 6px,#EEF0F4 6px 12px)}
+.legend{display:flex;gap:22px;flex-wrap:wrap}
+.lg{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2)}
+.lg i{width:10px;height:10px;border-radius:3px}
+.lg b{color:var(--text);font-size:13.5px;margin-left:2px}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;margin-top:22px;padding-top:18px;border-top:1px solid var(--divider)}
+.mo{display:flex;flex-direction:column;align-items:center;gap:6px}
+.mo .col{width:100%;height:44px;display:flex;align-items:flex-end;background:var(--canvas);border-radius:6px;overflow:hidden;position:relative}
+.mo .col span{width:100%;background:var(--primary);border-radius:6px 6px 0 0}
+.mo .col span.p{background:var(--primary-2)}
+.mo .l{font-size:11px;color:var(--text-2);font-weight:600}
+.mo.now .l{color:var(--cta-text)}
+.mo.now .col{box-shadow:inset 0 0 0 1.5px var(--cta)}
+.mo .v{font-size:10.5px;color:var(--text-2);height:14px}
+
+.compo .row{display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid var(--divider)}
+.compo .row:last-child{border-bottom:0}
+.compo .k{flex:1;color:var(--text-body);display:flex;align-items:center;gap:8px}
+.compo .op{width:14px;color:var(--text-3);font-weight:700;text-align:center}
+.compo .val{width:84px;height:34px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding:0 10px;font-weight:600;background:#fff}
+.compo .val.ro{border-color:transparent;background:transparent;padding-right:11px}
+.compo .row.total{height:50px;border-top:1px solid var(--border);border-bottom:0;margin-top:2px}
+.compo .row.total .k{font-weight:700;color:var(--text)}
+.compo .row.total .val{font-size:16px}
+.info-btn{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:var(--primary);background:var(--primary-soft)}
+
+.list-h{display:flex;align-items:center;gap:12px;padding:18px 20px 6px}
+.list-h h3{margin:0;font-size:15px}
+.group{padding:6px 12px 4px}
+.group-t{display:flex;align-items:center;gap:8px;padding:10px 8px 8px;font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.06em;text-transform:uppercase}
+.group-t .n{font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-3)}
+.entry{display:flex;align-items:center;gap:16px;padding:10px 8px;border-radius:12px}
+.entry:hover{background:var(--canvas)}
+.entry + .entry{border-top:1px solid var(--divider)}
+.entry:hover + .entry{border-top-color:transparent}
+.datebox{width:48px;height:52px;border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;background:#fff}
+.datebox .m{font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--cta-text);letter-spacing:.05em}
+.datebox .d{font-size:19px;font-weight:700;line-height:1.1}
+.entry.past .datebox .m{color:var(--text-2)}
+.entry .main{flex:1;min-width:0}
+.entry .t{font-weight:700;font-size:14.5px}
+.entry .s{color:var(--text-2);font-size:13px;display:flex;align-items:center;gap:8px;margin-top:2px}
+.entry .s .half{font-size:11.5px;font-weight:600;color:var(--primary);background:var(--primary-soft);border-radius:5px;padding:0 6px}
+.dur{font-weight:700;font-size:14px;min-width:70px;text-align:right}
+.dur small{color:var(--text-2);font-weight:600;font-size:12px;margin-left:3px}
+.entry .acts{display:flex;gap:2px;opacity:.55}
+.entry:hover .acts{opacity:1}
+.entry .acts .btn{color:var(--text-2)}
+
+/* Formulaire */
+.form{margin:6px 20px 16px;border:1px solid var(--primary-border);border-radius:14px;background:#fff;box-shadow:0 0 0 4px rgba(31,78,121,.05)}
+.form-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--divider)}
+.form-h b{font-size:14.5px}
+.form-g{display:grid;grid-template-columns:340px 1fr;gap:0}
+.cal{padding:16px 18px;border-right:1px solid var(--divider)}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-h b{font-size:14px}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:4px;text-align:center}
+.cal-g .w{font-size:11px;font-weight:700;color:var(--text-3);padding:4px 0}
+.cal-g .d{height:36px;display:grid;place-items:center;font-size:13px;font-weight:600;position:relative;color:var(--text)}
+.cal-g .d.we{color:var(--text-3);font-weight:500}
+.cal-g .d.out{color:transparent}
+.cal-g .d.in{background:var(--primary-soft)}
+.cal-g .d.s{background:linear-gradient(90deg,transparent 50%,var(--primary-soft) 50%)}
+.cal-g .d.e{background:linear-gradient(90deg,var(--primary-soft) 50%,transparent 50%)}
+.cal-g .d.s span,.cal-g .d.e span{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center}
+.cal-g .d.today span{box-shadow:inset 0 0 0 1.5px var(--cta);border-radius:50%;width:34px;height:34px;display:grid;place-items:center}
+.cal-g .d.hol::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--cta)}
+.cal-g .d.in.we{background:linear-gradient(var(--primary-soft),var(--primary-soft))}
+.form-r{padding:16px 20px;display:flex;flex-direction:column;gap:16px}
+.range{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.range .box{border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.range .box small{display:block;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.range .box b{font-size:14px}
+.halfs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.halfs .field .seg{width:100%}
+.halfs .field .seg button{flex:1;justify-content:center}
+.recap{display:flex;align-items:center;gap:18px;padding:12px 14px;background:var(--canvas);border-radius:12px;border:1px solid var(--border)}
+.recap .it small{display:block;font-size:11.5px;color:var(--text-2);font-weight:600}
+.recap .it b{font-size:17px}
+.recap .sep{width:1px;height:32px;background:var(--border)}
+.form-f{display:flex;gap:10px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--divider);background:#FCFCFD;border-radius:0 0 14px 14px}
+
+/* ---------- Congés d'équipe ---------- */
+.team-layout{display:grid;grid-template-columns:1fr 290px;gap:20px}
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.monthnav{display:flex;align-items:center;gap:4px}
+.monthnav b{font-size:17px;min-width:150px;text-align:center;text-transform:capitalize}
+.cgrid{display:grid;grid-template-columns:repeat(5,1fr) .5fr .5fr}
+.cgrid .wd{padding:10px 10px 8px;font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.cgrid .wd.we{color:var(--text-3)}
+.week{display:grid;grid-template-columns:repeat(5,1fr) .5fr .5fr;grid-template-rows:38px;grid-auto-rows:min-content;padding-bottom:6px;position:relative;border-bottom:1px solid var(--divider);min-height:112px}
+.week:last-child{border-bottom:0}
+.week .cell{grid-row:1 / span 8;margin-bottom:-6px;border-right:1px solid var(--divider);padding:8px 10px;min-height:112px}
+.week .cell:nth-child(7){border-right:0}
+.week .cell.we{background:repeating-linear-gradient(135deg,#FAFBFC 0 7px,#F4F5F8 7px 14px)}
+.week .cell.out .dn{color:var(--text-3)}
+.week .cell.out{background:#FCFCFD}
+.dn{font-size:12.5px;font-weight:700;color:var(--text-body);display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:50%}
+.cell.today .dn{background:var(--cta);color:#fff}
+.hol-l{display:block;font-size:10.5px;font-weight:600;color:var(--cta-text);margin-top:2px}
+.ev{grid-row:auto;margin:0 4px 4px;height:26px;border-radius:7px;display:flex;align-items:center;gap:6px;padding:0 6px 0 4px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;position:relative;z-index:1}
+.ev .av{width:18px;height:18px;font-size:8.5px}
+.ev .h{margin-left:auto;font-size:10.5px;font-weight:700;opacity:.85;padding:0 5px;border-radius:4px;background:rgba(255,255,255,.65)}
+.ev.half{background-image:linear-gradient(90deg,transparent 0,transparent 100%)}
+.ev.cont-l{border-top-left-radius:2px;border-bottom-left-radius:2px}
+.ev.cont-r{border-top-right-radius:2px;border-bottom-right-radius:2px}
+.ev-row{display:contents}
+.more{grid-row:auto;margin:0 6px 4px;font-size:11.5px;font-weight:600;color:var(--text-2);z-index:1}
+.side .card + .card{margin-top:16px}
+.who{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--divider)}
+.who:first-child{border-top:0}
+.who .n{font-weight:600;font-size:13.5px}
+.who .d{font-size:12px;color:var(--text-2)}
+.who .badge{margin-left:auto}
+.leg{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.leg div{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leg i{width:10px;height:10px;border-radius:3px;flex:none}
+.keys{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--divider);font-size:12.5px;color:var(--text-2)}
+.keys div{display:flex;align-items:center;gap:8px}
+.keys .sw{width:22px;height:12px;border-radius:3px}
+
+/* ---------- Administration ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tabs a{display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:600;color:var(--text-2);text-decoration:none;position:relative;font-size:14px}
+.tabs a.on{color:var(--text)}
+.tabs a.on::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--cta);border-radius:2px}
+.tabs a .count{font-size:11px;background:var(--divider);color:var(--text-2);border-radius:999px;padding:1px 7px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.stat{padding:14px 16px}
+.stat small{display:block;font-size:12px;color:var(--text-2);font-weight:600}
+.stat b{font-size:22px;letter-spacing:-.4px}
+.stat .badge{float:right;margin-top:2px}
+table.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 12px;background:var(--canvas);border-bottom:1px solid var(--border);white-space:nowrap}
+.t th:first-child{border-top-left-radius:var(--r-card)} .t th:last-child{border-top-right-radius:var(--r-card)}
+.t th.r,.t td.r{text-align:right}
+.t td{padding:10px 12px;border-bottom:1px solid var(--divider);vertical-align:middle}
+.t tr:last-child td{border-bottom:0}
+.t tr:hover td{background:#FCFCFD}
+.t tr.dirty td{background:#FFFBF8}
+.t tr.dirty td:first-child{box-shadow:inset 3px 0 0 var(--cta)}
+.person{display:flex;align-items:center;gap:10px}
+.person .n{font-weight:600}
+.person .e{font-size:12px;color:var(--text-2)}
+.cin{width:74px;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 9px;display:flex;align-items:center;justify-content:flex-end;font-weight:600;font-variant-numeric:tabular-nums;background:#fff;margin-left:auto}
+.cin.ch{border-color:var(--cta);background:#fff}
+.cin.auto{color:var(--text-2);font-weight:500;background:var(--canvas);border-style:dashed}
+.cin-w{display:flex;align-items:center;gap:4px;justify-content:flex-end}
+.cin-w .tg{font-size:10.5px;font-weight:700;color:var(--text-2);text-transform:uppercase}
+.cin-w .tg.man{color:var(--cta-text)}
+.t .acts{display:flex;gap:6px;justify-content:flex-end}
+.row-err td{background:var(--danger-soft)!important;color:var(--danger);font-size:12.5px;font-weight:600;padding:8px 12px}
+.pos{color:var(--positive);font-weight:700} .neg{color:var(--danger);font-weight:700}
+.team-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--primary-soft);color:var(--primary)}
+.tchip.add{background:transparent;border:1px dashed var(--dashed);color:var(--text-2)}
+.popover{position:absolute;z-index:10;width:260px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-pop);padding:6px}
+.popover .ph{padding:8px 10px 6px;font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13.5px;font-weight:500}
+.opt:hover{background:var(--canvas)}
+.cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-strong);display:grid;place-items:center;flex:none}
+.cb.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.opt .cnt{margin-left:auto;font-size:12px;color:var(--text-3)}
+.admin-2{display:grid;grid-template-columns:1fr 360px;gap:20px}
+.team-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--divider)}
+.team-row:first-child{border-top:0}
+.team-row .n{font-weight:700}
+.team-row .m{font-size:12px;color:var(--text-2)}
+.stack{display:flex}
+.stack .av{border:2px solid #fff;margin-left:-6px}
+.stack .av:first-child{margin-left:0}
+.collapse{display:flex;align-items:center;gap:8px;padding:12px 0 0;margin-top:6px;border-top:1px solid var(--border);color:var(--text-2);font-weight:600;font-size:13px}
+
+/* ---------- Mobile ---------- */
+.phones{display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:390px;height:844px;background:var(--canvas);border-radius:44px;box-shadow:0 0 0 10px #1B2B3A,0 24px 60px rgba(20,30,60,.25);overflow:hidden;position:relative;display:flex;flex-direction:column;margin:10px}
+.p-status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:700;background:#fff}
+.p-top{display:flex;align-items:center;gap:10px;padding:8px 16px 12px;background:#fff;border-bottom:1px solid var(--border)}
+.p-top b{font-size:18px}
+.p-body{flex:1;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.p-years{display:flex;gap:8px}
+.p-years span{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;font-weight:700;font-size:13.5px}
+.p-years span.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.p-years span.add{border-style:dashed;color:var(--text-2);font-weight:600}
+.tabbar{height:82px;background:#fff;border-top:1px solid var(--border);display:flex;padding:8px 8px 24px}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text-2);text-decoration:none}
+.tabbar a.on{color:var(--cta)}
+.fab{position:absolute;right:16px;bottom:98px;height:50px;padding:0 18px;border-radius:16px;background:var(--cta);color:#fff;display:flex;align-items:center;gap:8px;font-weight:700;box-shadow:0 8px 20px rgba(238,106,36,.35)}
+.agenda-day{display:flex;gap:12px}
+.agenda-day .dd{width:44px;text-align:center;flex:none}
+.agenda-day .dd small{display:block;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase}
+.agenda-day .dd b{font-size:20px}
+.agenda-day.today .dd b{color:var(--cta)}
+.agenda-day .evs{flex:1;display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--divider)}
+.agenda-ev{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;font-weight:600;font-size:13px}
+.agenda-ev .h{margin-left:auto;font-size:11px;font-weight:700;opacity:.8}
+.weekstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:8px}
+.weekstrip div{text-align:center;padding:6px 0;border-radius:10px}
+.weekstrip small{display:block;font-size:10.5px;color:var(--text-2);font-weight:700}
+.weekstrip b{font-size:15px}
+.weekstrip .on{background:var(--cta);color:#fff}
+.weekstrip .on small{color:#fff}
+.weekstrip i{display:block;width:4px;height:4px;border-radius:50%;background:var(--primary);margin:3px auto 0}
+.weekstrip .we{color:var(--text-3)}
+.cal-g .d.tk{color:var(--primary-2)}
+.cal-g .d.tk::before{content:"";position:absolute;bottom:5px;width:14px;height:2px;border-radius:2px;background:var(--primary-2)}
+.compo .row .k .badge{font-size:11px}
+code{font-size:11.5px;background:#F1F3F6;border-radius:4px;padding:0 4px}
+.cin-w .cin{margin-left:0}
+.cin-w{gap:6px}
+.stack .av{width:24px;height:24px;font-size:9px;margin-left:-5px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+ <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></symbol>
+ <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.2 2.4 3.5 5.2"/></symbol>
+ <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8 4.5 5.6v6c0 4.7 3.2 8.2 7.5 9.6 4.3-1.4 7.5-4.9 7.5-9.6v-6z"/><path d="m9 12 2 2 4-4"/></symbol>
+ <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11h13V9"/></symbol>
+ <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></symbol>
+ <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+ <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+ <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+ <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+ <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 3.5v5h5"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+ <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/></symbol>
+ <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+ <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v11h14V9M10 13h4"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+ <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
+ <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+ <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 10z"/></symbol>
+</svg>
+<img id="logo-src" src="data:image/png;base64,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" style="display:none" alt="">
+
+<nav class="doc-nav">
+ <b>Holy · refonte visuelle v2</b>
+ <a href="#conges">1 · Mes congés</a>
+ <a href="#saisie">1b · Saisie d’un congé</a>
+ <a href="#equipe">2 · Congés d’équipe</a>
+ <a href="#admin">3 · Administration</a>
+ <a href="#admin-membres">3b · Membres &amp; équipes</a>
+ <a href="#mobile">4 · Mobile</a>
+</nav>
+<section class="sec" id="conges">
+ <h2>1 · Mes congés</h2>
+ <p class="lead">Une seule lecture du solde au lieu de trois cartes + un bloc qui répète les mêmes chiffres. Les droits deviennent une addition lisible, et la liste distingue ce qui arrive de ce qui est passé.</p>
+ <div class="changes">
+  <div class="change"><b>Navigation persistante <span class="tag vis">visuel</span></b>Même barre sur toutes les pages, onglet actif souligné en orange, Profil et déconnexion regroupés dans le menu utilisateur.</div>
+  <div class="change"><b>Solde « héros » + jauge <span class="tag vis">visuel</span></b>Les 3 KPI à initiales (SR/CP/DT) laissent place à un chiffre principal et une barre pris / planifié / restant.</div>
+  <div class="change"><b>Droits en addition <span class="tag vis">visuel</span></b>Initial + Reportés + Csupp + Fériés = Total. Pris et Restant ne sont plus affichés deux fois. En mode local, les montants restent éditables à la même place.</div>
+  <div class="change"><b>Liste groupée À venir / Passés <span class="tag vis">visuel</span></b>Bloc date, demi-journées explicites, durée neutre : la couleur ne varie plus au hasard selon l’index.</div>
+  <div class="change"><b>Aperçu annuel <span class="tag opt">option</span></b>12 mini-colonnes calculées à partir des congés saisis, pour repérer les mois chargés.</div>
+ </div>
+ <div class="frame-label">Desktop 1440 · mode connecté</div>
+ <div class="frame">
+ <header class="topbar">
+  <div class="brand"><img class="logo" alt="">Holy</div>
+  <nav class="nav">
+   <a class="active" href="#"><svg class="i"><use href="#i-home"/></svg>Mes congés</a>
+   <a class="" href="#"><svg class="i"><use href="#i-users"/></svg>Congés d’équipe</a>
+   <a class="" href="#"><svg class="i"><use href="#i-shield"/></svg>Administration</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="mode-pill"><i></i>Synchronisé</span>
+  <div class="usermenu"><span class="av">TM</span><div><div class="n">Théo Michels</div><div class="m">ITS4U</div></div><svg class="i sm" style="color:#9AA1AD"><use href="#i-down"/></svg></div>
+ </header>
+  <div class="page">
+   <div class="layout">
+    <aside class="years">
+     <div class="eyebrow">Années</div>
+     <div class="year"><span class="y">2025</span><span class="r num">16 j restants</span></div>
+     <div class="year sel"><span class="y">2026</span><span class="badge b-outline">En cours</span><span class="r num">11 j</span></div>
+     <div class="year"><span class="y">2027</span><span class="r num">31 j restants</span></div>
+     <div class="foot">Les années et les droits sont gérés par l’administration.</div>
+    </aside>
+
+    <main>
+     <div class="page-head">
+      <div><h1>Mes congés <span class="chip-year">2026</span></h1><div class="sub">Dernière synchronisation il y a 2 min</div></div>
+      <div class="spacer"></div>
+      <button class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Ajouter un congé</button>
+     </div>
+
+     <div class="overview">
+      <div class="card hero">
+       <div class="hero-top">
+        <div>
+         <div class="eyebrow">Solde restant</div>
+         <div class="big num">11<small>jours</small></div>
+         <div class="of num">sur 36,5 jours de droits en 2026</div>
+        </div>
+        <div class="spacer"></div>
+        <span class="badge b-ok"><i></i>Dans le budget</span>
+       </div>
+       <div class="bar"><span class="used" style="width:58.9%"></span><span class="plan" style="width:11%"></span><span class="left" style="width:30.1%"></span></div>
+       <div class="legend">
+        <div class="lg"><i style="background:var(--primary)"></i>Pris <b class="num">21,5 j</b></div>
+        <div class="lg"><i style="background:var(--primary-2)"></i>Planifiés <b class="num">4 j</b></div>
+        <div class="lg"><i style="background:#E3E7EE"></i>Restants <b class="num">11 j</b></div>
+       </div>
+       <div class="months">
+        <div class="mo"><div class="v"></div><div class="col"></div><div class="l">J</div></div>
+        <div class="mo"><div class="v num">5</div><div class="col"><span style="height:50%"></span></div><div class="l">F</div></div>
+        <div class="mo"><div class="v"></div><div class="col"></div><div class="l">M</div></div>
+        <div class="mo"><div class="v"></div><div class="col"></div><div class="l">A</div></div>
+        <div class="mo"><div class="v num">1</div><div class="col"><span style="height:10%"></span></div><div class="l">M</div></div>
+        <div class="mo"><div class="v"></div><div class="col"></div><div class="l">J</div></div>
+        <div class="mo"><div class="v num">5</div><div class="col"><span style="height:50%"></span></div><div class="l">J</div></div>
+        <div class="mo"><div class="v num">10</div><div class="col"><span style="height:100%"></span></div><div class="l">A</div></div>
+        <div class="mo"><div class="v"></div><div class="col"></div><div class="l">S</div></div>
+        <div class="mo"><div class="v num">0,5</div><div class="col"><span style="height:6%"></span></div><div class="l">O</div></div>
+        <div class="mo now"><div class="v"></div><div class="col"></div><div class="l">N</div></div>
+        <div class="mo"><div class="v num">4</div><div class="col"><span class="p" style="height:40%"></span></div><div class="l">D</div></div>
+       </div>
+      </div>
+
+      <div class="card compo">
+       <div class="card-h"><h3>Composition des droits</h3><div class="spacer"></div><span class="hint">Défini par l’administration</span></div>
+       <div class="card-b" style="padding-top:8px">
+        <div class="row"><span class="op"></span><span class="k">Congés initiaux</span><span class="val ro num">26</span></div>
+        <div class="row"><span class="op">+</span><span class="k">Reportés <span class="badge b-neutral">de 2025</span></span><span class="val ro num">4,5</span></div>
+        <div class="row"><span class="op">+</span><span class="k">Congés supplémentaires (Csupp)</span><span class="val ro num">2</span></div>
+        <div class="row"><span class="op">+</span><span class="k">Fériés récupérables <span class="badge b-neutral">auto</span><span class="info-btn"><svg class="i sm"><use href="#i-info"/></svg></span></span><span class="val ro num">4</span></div>
+        <div class="row total"><span class="op">=</span><span class="k">Total des droits</span><span class="val ro num">36,5 j</span></div>
+       </div>
+      </div>
+     </div>
+
+     <div class="card">
+      <div class="list-h"><h3>Congés saisis</h3><span class="badge b-neutral num">5</span><div class="spacer"></div><span class="hint" style="color:var(--text-2);font-size:12.5px">25,5 jours ouvrés au total</span></div>
+      <div class="group">
+       <div class="group-t">À venir <span class="n">· 1</span></div>
+       <div class="entry">
+        <div class="datebox"><span class="m">déc.</span><span class="d">21</span></div>
+        <div class="main"><div class="t">Noël</div><div class="s">21 déc. → 24 déc. 2026 <span class="badge b-cta" style="font-size:11px;padding:0 7px">dans 24 jours</span></div></div>
+        <div class="dur num">4<small>j</small></div>
+        <div class="acts"><button class="btn ghost icon sm" title="Modifier"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm" title="Supprimer"><svg class="i"><use href="#i-trash"/></svg></button></div>
+       </div>
+      </div>
+      <div class="group" style="padding-bottom:12px">
+       <div class="group-t">Passés <span class="n">· 4</span></div>
+       <div class="entry past">
+        <div class="datebox"><span class="m">oct.</span><span class="d">9</span></div>
+        <div class="main"><div class="t">RDV</div><div class="s">Vendredi 9 oct. 2026 <span class="half">Après-midi</span></div></div>
+        <div class="dur num">0,5<small>j</small></div>
+        <div class="acts"><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-trash"/></svg></button></div>
+       </div>
+       <div class="entry past">
+        <div class="datebox"><span class="m">juil.</span><span class="d">27</span></div>
+        <div class="main"><div class="t">Vacances été</div><div class="s">27 juil. → 14 août 2026</div></div>
+        <div class="dur num">15<small>j</small></div>
+        <div class="acts"><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-trash"/></svg></button></div>
+       </div>
+       <div class="entry past">
+        <div class="datebox"><span class="m">mai</span><span class="d">15</span></div>
+        <div class="main"><div class="t">Pont Ascension</div><div class="s">Vendredi 15 mai 2026</div></div>
+        <div class="dur num">1<small>j</small></div>
+        <div class="acts"><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-trash"/></svg></button></div>
+       </div>
+       <div class="entry past">
+        <div class="datebox"><span class="m">févr.</span><span class="d">16</span></div>
+        <div class="main"><div class="t">Ski</div><div class="s">16 févr. → 20 févr. 2026</div></div>
+        <div class="dur num">5<small>j</small></div>
+        <div class="acts"><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-trash"/></svg></button></div>
+       </div>
+      </div>
+     </div>
+    </main>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="sec" id="saisie">
+ <h2>1b · Saisie d’un congé</h2>
+ <p class="lead">Le formulaire garde ses champs actuels (justificatif, plage de dates, demi-journées), mais sur deux colonnes : le calendrier n’occupe plus un tiers de la largeur avec du vide à droite, et le récapitulatif montre l’effet sur le solde avant de valider.</p>
+ <div class="changes">
+  <div class="change"><b>Deux colonnes <span class="tag vis">visuel</span></b>Calendrier à gauche ; dates, demi-journées et récapitulatif à droite.</div>
+  <div class="change"><b>Plage lisible <span class="tag vis">visuel</span></b>Début et fin pleins, jours intermédiaires teintés, week-ends atténués, fériés pointés en orange, jours déjà posés soulignés.</div>
+  <div class="change"><b>Focus de marque <span class="tag vis">visuel</span></b>Halo bleu ITS4U à la place du contour noir de 2 px du navigateur ; police normale à la place du monospace dans « Du / Au ».</div>
+  <div class="change"><b>Solde après saisie <span class="tag opt">option</span></b>Restant − durée, calculé côté client : on voit tout de suite si on dépasse.</div>
+ </div>
+ <div class="frame-label">Desktop 1440 · formulaire ouvert</div>
+ <div class="frame">
+ <header class="topbar">
+  <div class="brand"><img class="logo" alt="">Holy</div>
+  <nav class="nav">
+   <a class="active" href="#"><svg class="i"><use href="#i-home"/></svg>Mes congés</a>
+   <a class="" href="#"><svg class="i"><use href="#i-users"/></svg>Congés d’équipe</a>
+   <a class="" href="#"><svg class="i"><use href="#i-shield"/></svg>Administration</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="mode-pill"><i></i>Synchronisé</span>
+  <div class="usermenu"><span class="av">TM</span><div><div class="n">Théo Michels</div><div class="m">ITS4U</div></div><svg class="i sm" style="color:#9AA1AD"><use href="#i-down"/></svg></div>
+ </header>
+  <div class="page">
+   <div class="layout">
+    <aside class="years">
+     <div class="eyebrow">Années</div>
+     <div class="year"><span class="y">2025</span><span class="r num">16 j restants</span></div>
+     <div class="year sel"><span class="y">2026</span><span class="badge b-outline">En cours</span><span class="r num">11 j</span></div>
+     <div class="year"><span class="y">2027</span><span class="r num">31 j restants</span></div>
+    </aside>
+    <main>
+     <div class="card">
+      <div class="list-h"><h3>Congés saisis</h3><span class="badge b-neutral num">5</span></div>
+      <div class="form">
+       <div class="form-h"><svg class="i" style="color:var(--primary)"><use href="#i-cal"/></svg><b>Nouveau congé</b><div class="spacer"></div><button class="btn ghost icon sm"><svg class="i"><use href="#i-x"/></svg></button></div>
+       <div class="form-g">
+        <div class="cal">
+         <div class="cal-h"><button class="btn ghost icon sm"><svg class="i"><use href="#i-left"/></svg></button><b>Décembre 2026</b><button class="btn ghost icon sm"><svg class="i"><use href="#i-right"/></svg></button></div>
+         <div class="cal-g">
+          <div class="w">L</div><div class="w">M</div><div class="w">M</div><div class="w">J</div><div class="w">V</div><div class="w">S</div><div class="w">D</div>
+          <div class="d out">30</div><div class="d">1</div><div class="d">2</div><div class="d">3</div><div class="d">4</div><div class="d we">5</div><div class="d we">6</div>
+          <div class="d">7</div><div class="d">8</div><div class="d">9</div><div class="d">10</div><div class="d">11</div><div class="d we">12</div><div class="d we">13</div>
+          <div class="d">14</div><div class="d">15</div><div class="d">16</div><div class="d">17</div><div class="d">18</div><div class="d we">19</div><div class="d we">20</div>
+          <div class="d tk">21</div><div class="d tk">22</div><div class="d tk">23</div><div class="d tk">24</div><div class="d hol">25</div><div class="d we hol">26</div><div class="d we">27</div>
+          <div class="d s"><span>28</span></div><div class="d in">29</div><div class="d in">30</div><div class="d e"><span>31</span></div><div class="d out">1</div><div class="d out">2</div><div class="d out">3</div>
+         </div>
+         <div class="keys" style="flex-direction:row;gap:16px;margin-top:12px">
+          <div><span style="width:8px;height:8px;border-radius:50%;background:var(--primary);display:inline-block"></span>Sélection</div>
+          <div><span style="width:12px;border-bottom:2px solid var(--primary-2);display:inline-block"></span>Déjà posé</div>
+          <div><span style="width:5px;height:5px;border-radius:50%;background:var(--cta);display:inline-block"></span>Férié</div>
+         </div>
+        </div>
+        <div class="form-r">
+         <div class="field"><label>Justificatif</label><div class="input focus">Fin d’année<span style="width:1px;height:18px;background:var(--text);margin-left:1px"></span></div></div>
+         <div class="range">
+          <div class="box"><small>Du</small><b>Lundi 28 déc. 2026</b></div>
+          <svg class="i" style="color:var(--text-3)"><use href="#i-arrow"/></svg>
+          <div class="box"><small>Au</small><b>Jeudi 31 déc. 2026</b></div>
+         </div>
+         <div class="halfs">
+          <div class="field"><label>Premier jour · lun. 28 déc.</label><div class="seg"><button class="on">Toute la journée</button><button>Dès l’après-midi</button></div></div>
+          <div class="field"><label>Dernier jour · jeu. 31 déc.</label><div class="seg"><button>Toute la journée</button><button class="on">Jusqu’à midi</button></div></div>
+         </div>
+         <div class="recap">
+          <div class="it"><small>Durée</small><b class="num">3,5 j ouvrés</b></div>
+          <div class="sep"></div>
+          <div class="it"><small>Solde actuel</small><b class="num">11 j</b></div>
+          <div class="sep"></div>
+          <div class="it"><small>Solde après</small><b class="num" style="color:var(--positive)">7,5 j</b></div>
+         </div>
+        </div>
+       </div>
+       <div class="form-f"><button class="btn">Annuler</button><button class="btn primary"><svg class="i"><use href="#i-check"/></svg>Ajouter le congé</button></div>
+      </div>
+      <div class="group" style="padding-bottom:12px">
+       <div class="group-t">À venir <span class="n">· 1</span></div>
+       <div class="entry">
+        <div class="datebox"><span class="m">déc.</span><span class="d">21</span></div>
+        <div class="main"><div class="t">Noël</div><div class="s">21 déc. → 24 déc. 2026</div></div>
+        <div class="dur num">4<small>j</small></div>
+        <div class="acts"><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-trash"/></svg></button></div>
+       </div>
+      </div>
+     </div>
+    </main>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="sec" id="equipe">
+ <h2>2 · Congés d’équipe</h2>
+ <p class="lead">L’écran garde ses fonctions (mois précédent/suivant, filtre par équipe, détail journée/matin/après-midi) mais retrouve la navigation globale. Le calendrier donne moins de place aux week-ends et affiche les absences de plusieurs jours en barres continues, comme les outils RH actuels (Lucca, Factorial, Google Agenda).</p>
+ <div class="changes">
+  <div class="change"><b>Barre de navigation conservée <span class="tag vis">visuel</span></b>Fini le bouton « ← Retour » qui faisait disparaître l’en-tête.</div>
+  <div class="change"><b>Week-ends compressés <span class="tag vis">visuel</span></b>Colonnes Sam./Dim. à 50 % et hachurées, puisqu’aucun congé ne s’y affiche : les jours ouvrés gagnent environ 15 % de largeur.</div>
+  <div class="change"><b>Barres continues <span class="tag vis">visuel</span></b>Une absence du lundi au vendredi = une seule barre (initiales + nom), plus 5 badges en 10 px. Demi-journée signalée par une étiquette.</div>
+  <div class="change"><b>Légende par personne <span class="tag vis">visuel</span></b>La légende unique « Congé » est remplacée par la couleur attribuée à chaque membre (même algorithme qu’aujourd’hui).</div>
+  <div class="change"><b>Aujourd’hui + fériés <span class="tag opt">option</span></b>Jour courant marqué ; fériés luxembourgeois issus de <code>luxembourgHolidays.ts</code> ; panneau « Absents aujourd’hui » ; bouton « Aujourd’hui ».</div>
+ </div>
+ <div class="frame-label">Desktop 1440 · novembre 2026, toutes mes équipes</div>
+ <div class="frame">
+ <header class="topbar">
+  <div class="brand"><img class="logo" alt="">Holy</div>
+  <nav class="nav">
+   <a class="" href="#"><svg class="i"><use href="#i-home"/></svg>Mes congés</a>
+   <a class="active" href="#"><svg class="i"><use href="#i-users"/></svg>Congés d’équipe</a>
+   <a class="" href="#"><svg class="i"><use href="#i-shield"/></svg>Administration</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="mode-pill"><i></i>Synchronisé</span>
+  <div class="usermenu"><span class="av">TM</span><div><div class="n">Théo Michels</div><div class="m">ITS4U</div></div><svg class="i sm" style="color:#9AA1AD"><use href="#i-down"/></svg></div>
+ </header>
+  <div class="page">
+   <div class="page-head">
+    <div><h1>Congés d’équipe</h1><div class="sub">Absences des membres de vos équipes</div></div>
+    <div class="spacer"></div>
+    <div class="toolbar">
+     <button class="btn">Aujourd’hui</button>
+     <div class="monthnav"><button class="btn icon" style="width:38px"><svg class="i"><use href="#i-left"/></svg></button><b>novembre 2026</b><button class="btn icon" style="width:38px"><svg class="i"><use href="#i-right"/></svg></button></div>
+    </div>
+   </div>
+   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <div class="seg"><button class="on">Toutes mes équipes</button><button>Delivery Banque</button><button>Data &amp; IA</button><button>PMO</button></div>
+    <div class="spacer"></div>
+    <div class="banner warn" style="padding:7px 12px"><svg class="i"><use href="#i-alert"/></svg>Congés mensuels impossibles à répartir : Bob Durand (déc.)</div>
+   </div>
+   <div class="team-layout">
+    <div class="card" style="overflow:hidden">
+     <div class="cgrid"><div class="wd">Lun.</div><div class="wd">Mar.</div><div class="wd">Mer.</div><div class="wd">Jeu.</div><div class="wd">Ven.</div><div class="wd we">Sam.</div><div class="wd we">Dim.</div></div>
+<div class="week">
+<div style="grid-column:1" class="cell out"><span class="dn">26</span></div>
+<div style="grid-column:2" class="cell out"><span class="dn">27</span></div>
+<div style="grid-column:3" class="cell out"><span class="dn">28</span></div>
+<div style="grid-column:4" class="cell out"><span class="dn">29</span></div>
+<div style="grid-column:5" class="cell out"><span class="dn">30</span></div>
+<div style="grid-column:6" class="cell out we"><span class="dn">31</span></div>
+<div style="grid-column:7" class="cell we"><span class="dn">1</span><span class="hol-l">Toussaint</span></div>
+
+</div>
+<div class="week">
+<div style="grid-column:1" class="cell "><span class="dn">2</span></div>
+<div style="grid-column:2" class="cell "><span class="dn">3</span></div>
+<div style="grid-column:3" class="cell "><span class="dn">4</span></div>
+<div style="grid-column:4" class="cell "><span class="dn">5</span></div>
+<div style="grid-column:5" class="cell "><span class="dn">6</span></div>
+<div style="grid-column:6" class="cell we"><span class="dn">7</span></div>
+<div style="grid-column:7" class="cell we"><span class="dn">8</span></div>
+
+<div class="ev" style="grid-column:1/6;grid-row:2;background:#EAF1F8;color:#1F4E79;box-shadow:inset 3px 0 0 #1F4E79"><span class="av" style="background:#1F4E79">AM</span>Alice Martin</div>
+<div class="ev" style="grid-column:3/4;grid-row:3;background:#FEF0E7;color:#A34E16;box-shadow:inset 3px 0 0 #A34E16"><span class="av" style="background:#A34E16">BD</span>Bob D.<span class="h" style="color:#A34E16">Ap.-midi</span></div>
+</div>
+<div class="week">
+<div style="grid-column:1" class="cell "><span class="dn">9</span></div>
+<div style="grid-column:2" class="cell "><span class="dn">10</span></div>
+<div style="grid-column:3" class="cell "><span class="dn">11</span></div>
+<div style="grid-column:4" class="cell "><span class="dn">12</span></div>
+<div style="grid-column:5" class="cell "><span class="dn">13</span></div>
+<div style="grid-column:6" class="cell we"><span class="dn">14</span></div>
+<div style="grid-column:7" class="cell we"><span class="dn">15</span></div>
+
+<div class="ev" style="grid-column:1/2;grid-row:2;background:#F2EAFB;color:#7041A6;box-shadow:inset 3px 0 0 #7041A6"><span class="av" style="background:#7041A6">DK</span>David K.<span class="h" style="color:#7041A6">Matin</span></div>
+<div class="ev" style="grid-column:2/6;grid-row:3;background:#E9F9EF;color:#12613A;box-shadow:inset 3px 0 0 #12613A"><span class="av" style="background:#12613A">CR</span>Camille Roux</div>
+</div>
+<div class="week">
+<div style="grid-column:1" class="cell "><span class="dn">16</span></div>
+<div style="grid-column:2" class="cell "><span class="dn">17</span></div>
+<div style="grid-column:3" class="cell "><span class="dn">18</span></div>
+<div style="grid-column:4" class="cell "><span class="dn">19</span></div>
+<div style="grid-column:5" class="cell "><span class="dn">20</span></div>
+<div style="grid-column:6" class="cell we"><span class="dn">21</span></div>
+<div style="grid-column:7" class="cell we"><span class="dn">22</span></div>
+
+<div class="ev" style="grid-column:1/6;grid-row:2;background:#F2EAFB;color:#7041A6;box-shadow:inset 3px 0 0 #7041A6"><span class="av" style="background:#7041A6">DK</span>David Klein</div>
+<div class="ev" style="grid-column:3/4;grid-row:3;background:#FDECEC;color:#A32942;box-shadow:inset 3px 0 0 #A32942"><span class="av" style="background:#A32942">EW</span>Emma W.<span class="h" style="color:#A32942">Matin</span></div>
+<div class="ev" style="grid-column:4/6;grid-row:3;background:#FEF0E7;color:#A34E16;box-shadow:inset 3px 0 0 #A34E16"><span class="av" style="background:#A34E16">BD</span>Bob Durand</div>
+</div>
+<div class="week">
+<div style="grid-column:1" class="cell "><span class="dn">23</span></div>
+<div style="grid-column:2" class="cell "><span class="dn">24</span></div>
+<div style="grid-column:3" class="cell "><span class="dn">25</span></div>
+<div style="grid-column:4" class="cell "><span class="dn">26</span></div>
+<div style="grid-column:5" class="cell today"><span class="dn">27</span></div>
+<div style="grid-column:6" class="cell we"><span class="dn">28</span></div>
+<div style="grid-column:7" class="cell we"><span class="dn">29</span></div>
+
+<div class="ev" style="grid-column:1/6;grid-row:2;background:#E5F4F3;color:#286A70;box-shadow:inset 3px 0 0 #286A70"><span class="av" style="background:#286A70">LS</span>Lucas Schmit</div>
+<div class="ev" style="grid-column:3/4;grid-row:3;background:#FDECEC;color:#A32942;box-shadow:inset 3px 0 0 #A32942"><span class="av" style="background:#A32942">EW</span>Emma W.</div>
+<div class="ev" style="grid-column:5/6;grid-row:3;background:#FFF6D6;color:#5D4B00;box-shadow:inset 3px 0 0 #5D4B00"><span class="av" style="background:#5D4B00">SM</span>Sarah M.<span class="h" style="color:#5D4B00">Ap.-midi</span></div>
+<div class="more" style="grid-column:5/6;grid-row:4">+1 autre</div>
+</div>
+<div class="week">
+<div style="grid-column:1" class="cell "><span class="dn">30</span></div>
+<div style="grid-column:2" class="cell out"><span class="dn">1</span></div>
+<div style="grid-column:3" class="cell out"><span class="dn">2</span></div>
+<div style="grid-column:4" class="cell out"><span class="dn">3</span></div>
+<div style="grid-column:5" class="cell out"><span class="dn">4</span></div>
+<div style="grid-column:6" class="cell out we"><span class="dn">5</span></div>
+<div style="grid-column:7" class="cell out we"><span class="dn">6</span></div>
+
+<div class="ev cont-r" style="grid-column:1/2;grid-row:2;background:#EAF1F8;color:#1F4E79;box-shadow:inset 3px 0 0 #1F4E79"><span class="av" style="background:#1F4E79">AM</span>Alice M.</div>
+</div>
+    </div>
+    <aside class="side">
+     <div class="card">
+      <div class="card-h"><h3>Absents aujourd’hui</h3><div class="spacer"></div><span class="hint">ven. 27 nov.</span></div>
+      <div class="card-b" style="padding-top:8px">
+       <div class="who"><span class="av sm" style="background:#286A70">LS</span><div><div class="n">Lucas Schmit</div><div class="d">Retour lundi 30 nov.</div></div><span class="badge b-neutral">Journée</span></div>
+       <div class="who"><span class="av sm" style="background:#12613A">CR</span><div><div class="n">Camille Roux</div><div class="d">Retour lundi 30 nov.</div></div><span class="badge b-neutral">Journée</span></div>
+       <div class="who"><span class="av sm" style="background:#5D4B00">SM</span><div><div class="n">Sarah Muller</div><div class="d">Présente le matin</div></div><span class="badge b-blue">Ap.-midi</span></div>
+      </div>
+     </div>
+     <div class="card">
+      <div class="card-h"><h3>Légende</h3></div>
+      <div class="card-b">
+       <div class="leg">
+        <div><i style="background:#1F4E79"></i>Alice Martin</div><div><i style="background:#A34E16"></i>Bob Durand</div>
+        <div><i style="background:#12613A"></i>Camille Roux</div><div><i style="background:#7041A6"></i>David Klein</div>
+        <div><i style="background:#A32942"></i>Emma Weber</div><div><i style="background:#286A70"></i>Lucas Schmit</div>
+        <div><i style="background:#5D4B00"></i>Sarah Muller</div><div><i style="background:#334E9A"></i>Théo Michels</div>
+       </div>
+       <div class="keys">
+        <div><span class="sw" style="background:var(--primary-soft);box-shadow:inset 3px 0 0 var(--primary)"></span>Journée entière</div>
+        <div><span class="badge b-blue" style="font-size:10.5px;padding:0 6px">Matin</span>Demi-journée</div>
+        <div><span class="sw" style="background:repeating-linear-gradient(135deg,#FAFBFC 0 4px,#E9ECF1 4px 8px)"></span>Week-end</div>
+        <div><span style="color:var(--cta-text);font-weight:700;font-size:11px;width:22px">Fér.</span>Jour férié (Lux.)</div>
+       </div>
+      </div>
+     </div>
+    </aside>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="sec" id="admin">
+ <h2>3 · Administration — Droits annuels</h2>
+ <p class="lead">Aujourd’hui, l’écran empile recherche, droits, membres, équipes et archives dans une seule carte, avec trois boutons (dont un orange) répétés sur chaque ligne. La proposition : des onglets, un tableau dense et éditable sur place, et un enregistrement mis en avant uniquement sur la ligne modifiée.</p>
+ <div class="changes">
+  <div class="change"><b>Onglets <span class="tag vis">visuel</span></b>« Droits annuels » et « Membres &amp; équipes ». La recherche, en haut à droite, filtre les deux onglets comme aujourd’hui.</div>
+  <div class="change"><b>Tableau éditable <span class="tag vis">visuel</span></b>Une ligne par membre, en-têtes de colonnes communs : les libellés ne sont plus répétés sur chaque ligne, et Pris / Restant sont alignés et comparables.</div>
+  <div class="change"><b>Un seul CTA visible <span class="tag vis">visuel</span></b>« Enregistrer » passe en orange uniquement sur une ligne modifiée (liseré orange) ; il reste discret ailleurs. « Auto » devient une icône de réinitialisation dans la cellule Fériés.</div>
+  <div class="change"><b>Statuts en badges <span class="tag vis">visuel</span></b>Active / Brouillon / À créer en couleur, « Activer » visible seulement pour les brouillons et les années à créer.</div>
+  <div class="change"><b>Sélecteur d’année segmenté <span class="tag vis">visuel</span></b>Remplace les pastilles avec « ✓ » en texte ; « Nouvelle année » reste un bouton secondaire.</div>
+  <div class="change"><b>Compteurs <span class="tag opt">option</span></b>Membres, actifs, brouillons, soldes négatifs, calculés sur les lignes déjà chargées.</div>
+ </div>
+ <div class="frame-label">Desktop 1440 · onglet Droits annuels, ligne de Lucas en cours de modification</div>
+ <div class="frame">
+ <header class="topbar">
+  <div class="brand"><img class="logo" alt="">Holy</div>
+  <nav class="nav">
+   <a class="" href="#"><svg class="i"><use href="#i-home"/></svg>Mes congés</a>
+   <a class="" href="#"><svg class="i"><use href="#i-users"/></svg>Congés d’équipe</a>
+   <a class="active" href="#"><svg class="i"><use href="#i-shield"/></svg>Administration</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="mode-pill"><i></i>Synchronisé</span>
+  <div class="usermenu"><span class="av">TM</span><div><div class="n">Théo Michels</div><div class="m">ITS4U</div></div><svg class="i sm" style="color:#9AA1AD"><use href="#i-down"/></svg></div>
+ </header>
+  <div class="page">
+   <div class="page-head">
+    <div><h1>Administration</h1><div class="sub">Droits annuels, membres et équipes de l’organisation</div></div>
+    <div class="spacer"></div>
+    <div class="search"><svg class="i"><use href="#i-search"/></svg>Rechercher par nom ou e-mail<kbd>/</kbd></div>
+   </div>
+   <div class="tabs"><a class="on" href="#">Droits annuels</a><a href="#">Membres &amp; équipes <span class="count">8</span></a></div>
+
+   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <div class="seg"><button>2025</button><button class="on">2026</button><button>2027 <span class="dot"></span></button></div>
+    <button class="btn"><svg class="i"><use href="#i-plus"/></svg>Nouvelle année</button>
+    <div class="spacer"></div>
+    <div class="banner ok" style="padding:7px 12px"><svg class="i"><use href="#i-check"/></svg>Droits enregistrés pour Alice Martin.</div>
+   </div>
+
+   <div class="stats">
+    <div class="card stat"><small>Membres</small><b class="num">8</b></div>
+    <div class="card stat"><span class="badge b-ok"><i></i>Active</span><small>Années actives</small><b class="num">6</b></div>
+    <div class="card stat"><span class="badge b-warn"><i></i>À traiter</span><small>Brouillons / à créer</small><b class="num">2</b></div>
+    <div class="card stat"><span class="badge b-danger"><i></i>Alerte</span><small>Soldes négatifs</small><b class="num">1</b></div>
+   </div>
+
+   <div class="card" style="overflow:visible">
+    <table class="t">
+     <thead><tr>
+      <th style="width:250px">Membre</th><th>Statut</th><th class="r">Solde initial</th><th class="r">Reportés</th><th class="r">CSupp</th><th class="r">Fériés</th><th class="r">Pris</th><th class="r">Restant</th><th class="r" style="width:200px"></th>
+     </tr></thead>
+     <tbody>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:#1F4E79">AM</span><div><div class="n">Alice Martin</div><div class="e">alice.martin@example.com</div></div></div></td>
+       <td><span class="badge b-ok"><i></i>Active</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num">3</div></td>
+       <td class="r"><div class="cin num">0</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled title="Mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">22</td>
+       <td class="r num"><span class="pos">11</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button></div></td>
+      </tr>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:#A34E16">BD</span><div><div class="n">Bob Durand</div><div class="e">bob.durand@example.com</div></div></div></td>
+       <td><span class="badge b-ok"><i></i>Active</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num">0,5</div></td>
+       <td class="r"><div class="cin num">2</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled title="Mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">30</td>
+       <td class="r num"><span class="pos">2,5</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button></div></td>
+      </tr>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:#12613A">CR</span><div><div class="n">Camille Roux</div><div class="e">camille.roux@example.com</div></div></div></td>
+       <td><span class="badge b-warn"><i></i>Brouillon</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num">5</div></td>
+       <td class="r"><div class="cin num">0</div></td>
+       <td class="r"><div class="cin-w"><span class="tg man">manuel</span><div class="cin num">3</div><button class="btn ghost icon sm" title="Revenir au mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">0</td>
+       <td class="r num"><span class="pos">34</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button> <button class="btn sm">Activer</button></div></td>
+      </tr>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:#7041A6">DK</span><div><div class="n">David Klein</div><div class="e">david.klein@example.com</div></div></div></td>
+       <td><span class="badge b-ok"><i></i>Active</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num">1</div></td>
+       <td class="r"><div class="cin num">0</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled title="Mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">33</td>
+       <td class="r num"><span class="neg">−2</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button></div></td>
+      </tr>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:#A32942">EW</span><div><div class="n">Emma Weber</div><div class="e">emma.weber@example.com</div></div></div></td>
+       <td><span class="badge b-neutral"><i></i>À créer</span></td>
+       <td class="r"><div class="cin num"><span style="color:var(--text-3)">0</span></div></td>
+       <td class="r"><div class="cin num">2 <span style="font-size:10px;color:var(--text-2);margin-left:4px">prop.</span></div></td>
+       <td class="r"><div class="cin num">0</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled title="Mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">—</td>
+       <td class="r num"><span class="">—</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button> <button class="btn sm">Activer</button></div></td>
+      </tr>
+      <tr class="dirty">
+       <td><div class="person"><span class="av sm" style="background:#286A70">LS</span><div><div class="n">Lucas Schmit</div><div class="e">lucas.schmit@example.com</div></div></div></td>
+       <td><span class="badge b-ok"><i></i>Active</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num ch input focus" style="width:74px;height:34px;justify-content:flex-end">4,5</div></td>
+       <td class="r"><div class="cin num">0</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">18</td>
+       <td class="r num"><span class="pos">16,5</span></td>
+       <td class="r"><div class="acts"><button class="btn sm primary">Enregistrer</button></div></td>
+      </tr>
+      <tr class="row-err"><td colspan="9"><svg class="i sm" style="vertical-align:-2px;margin-right:6px"><use href="#i-alert"/></svg>Exemple d’erreur de ligne : saisissez des montants valides avec au plus deux décimales.</td></tr>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:#5D4B00">SM</span><div><div class="n">Sarah Muller</div><div class="e">sarah.muller@example.com</div></div></div></td>
+       <td><span class="badge b-ok"><i></i>Active</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num">2</div></td>
+       <td class="r"><div class="cin num">0</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled title="Mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">20,5</td>
+       <td class="r num"><span class="pos">11,5</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button></div></td>
+      </tr>
+      <tr class="">
+       <td><div class="person"><span class="av sm" style="background:linear-gradient(135deg,#1F4E79,#2F80C0)">TM</span><div><div class="n">Théo Michels</div><div class="e">vous</div></div></div></td>
+       <td><span class="badge b-ok"><i></i>Active</span></td>
+       <td class="r"><div class="cin num">26</div></td>
+       <td class="r"><div class="cin num">4,5</div></td>
+       <td class="r"><div class="cin num">2</div></td>
+       <td class="r"><div class="cin-w"><span class="tg">auto</span><div class="cin auto num">4</div><button class="btn ghost icon sm" disabled title="Mode automatique"><svg class="i sm"><use href="#i-reset"/></svg></button></div></td>
+       <td class="r num">25,5</td>
+       <td class="r num"><span class="pos">11</span></td>
+       <td class="r"><div class="acts"><button class="btn sm" disabled>Enregistrer</button></div></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="sec" id="admin-membres">
+ <h2>3b · Administration — Membres &amp; équipes</h2>
+ <p class="lead">Les membres et les équipes s’affichent côte à côte, puisque l’on affecte l’un à l’autre. Le sélecteur actuel (texte « ⌄ » puis cases « ☑ / ☐ » en caractères Unicode) devient un menu déroulant avec de vraies cases à cocher.</p>
+ <div class="changes">
+  <div class="change"><b>Équipes en étiquettes <span class="tag vis">visuel</span></b>Les affectations se lisent d’un coup d’œil ; clic sur « + » ou sur une étiquette pour ouvrir le menu (même action <code>setTeamMember</code>).</div>
+  <div class="change"><b>Statut + action destructive <span class="tag vis">visuel</span></b>Badge Actif / Désactivé ; « Désactiver » en rouge discret, « Réactiver » en bouton neutre.</div>
+  <div class="change"><b>Libellé « Archiver » <span class="tag vis">libellé</span></b>Le bouton s’appelle aujourd’hui « Supprimer » alors qu’il archive l’équipe : le libellé est aligné sur le comportement réel.</div>
+  <div class="change"><b>Cohérence typo <span class="tag vis">visuel</span></b><code>Teams.tsx</code> n’applique pas <code>fonts.base</code> sur plusieurs <code>&lt;Text&gt;</code> : textes des boutons et noms d’équipes à unifier.</div>
+ </div>
+ <div class="frame-label">Desktop 1440 · menu d’affectation ouvert sur Bob Durand</div>
+ <div class="frame">
+ <header class="topbar">
+  <div class="brand"><img class="logo" alt="">Holy</div>
+  <nav class="nav">
+   <a class="" href="#"><svg class="i"><use href="#i-home"/></svg>Mes congés</a>
+   <a class="" href="#"><svg class="i"><use href="#i-users"/></svg>Congés d’équipe</a>
+   <a class="active" href="#"><svg class="i"><use href="#i-shield"/></svg>Administration</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="mode-pill"><i></i>Synchronisé</span>
+  <div class="usermenu"><span class="av">TM</span><div><div class="n">Théo Michels</div><div class="m">ITS4U</div></div><svg class="i sm" style="color:#9AA1AD"><use href="#i-down"/></svg></div>
+ </header>
+  <div class="page">
+   <div class="page-head">
+    <div><h1>Administration</h1><div class="sub">Droits annuels, membres et équipes de l’organisation</div></div>
+    <div class="spacer"></div>
+    <div class="search"><svg class="i"><use href="#i-search"/></svg>Rechercher par nom ou e-mail<kbd>/</kbd></div>
+   </div>
+   <div class="tabs"><a href="#">Droits annuels</a><a class="on" href="#">Membres &amp; équipes <span class="count">8</span></a></div>
+   <div class="admin-2">
+    <div class="card" style="overflow:visible;position:relative">
+     <div class="card-h" style="padding-bottom:14px"><h3>Membres</h3><span class="badge b-neutral num">8</span><div class="spacer"></div><span class="hint">7 actifs · 1 désactivé</span></div>
+     <table class="t">
+      <thead><tr><th>Membre</th><th>Équipes</th><th>Statut</th><th class="r"></th></tr></thead>
+      <tbody>
+       <tr><td><div class="person"><span class="av sm" style="background:#1F4E79">AM</span><div><div class="n">Alice Martin</div><div class="e">alice.martin@example.com</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip">Delivery Banque</span><span class="tchip add"><svg class="i sm"><use href="#i-plus"/></svg></span></div></td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><button class="btn sm ghost danger">Désactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:#A34E16">BD</span><div><div class="n">Bob Durand</div><div class="e">bob.durand@example.com</div></div></div></td>
+       <td style="position:relative"><div class="team-chips"><span class="tchip">Delivery Banque</span><span class="tchip">Data &amp; IA</span><span class="tchip add" style="border-color:var(--primary);color:var(--primary);background:var(--primary-soft)"><svg class="i sm"><use href="#i-plus"/></svg></span></div>
+        <div class="popover" style="top:40px;left:8px">
+         <div class="ph">Équipes de Bob</div>
+         <div class="opt"><span class="cb on"><svg class="i sm" style="width:12px;height:12px;stroke-width:3"><use href="#i-check"/></svg></span>Delivery Banque<span class="cnt">4</span></div>
+         <div class="opt"><span class="cb on"><svg class="i sm" style="width:12px;height:12px;stroke-width:3"><use href="#i-check"/></svg></span>Data &amp; IA<span class="cnt">3</span></div>
+         <div class="opt"><span class="cb"></span>PMO<span class="cnt">2</span></div>
+        </div>
+       </td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><button class="btn sm ghost danger">Désactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:#12613A">CR</span><div><div class="n">Camille Roux</div><div class="e">camille.roux@example.com</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip">Data &amp; IA</span><span class="tchip add"><svg class="i sm"><use href="#i-plus"/></svg></span></div></td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><button class="btn sm ghost danger">Désactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:#7041A6">DK</span><div><div class="n">David Klein</div><div class="e">david.klein@example.com</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip">Delivery Banque</span><span class="tchip">PMO</span><span class="tchip add"><svg class="i sm"><use href="#i-plus"/></svg></span></div></td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><button class="btn sm ghost danger">Désactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:#A32942">EW</span><div><div class="n">Emma Weber</div><div class="e">emma.weber@example.com</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip add" style="padding:3px 10px">Choisir une équipe</span></div></td><td><span class="badge b-neutral"><i></i>Désactivé</span></td><td class="r"><button class="btn sm">Réactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:#286A70">LS</span><div><div class="n">Lucas Schmit</div><div class="e">lucas.schmit@example.com</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip">Delivery Banque</span><span class="tchip add"><svg class="i sm"><use href="#i-plus"/></svg></span></div></td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><button class="btn sm ghost danger">Désactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:#5D4B00">SM</span><div><div class="n">Sarah Muller</div><div class="e">sarah.muller@example.com</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip">Data &amp; IA</span><span class="tchip add"><svg class="i sm"><use href="#i-plus"/></svg></span></div></td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><button class="btn sm ghost danger">Désactiver</button></td></tr>
+       <tr><td><div class="person"><span class="av sm" style="background:linear-gradient(135deg,#1F4E79,#2F80C0)">TM</span><div><div class="n">Théo Michels</div><div class="e">Vous</div></div></div></td>
+       <td><div class="team-chips"><span class="tchip">PMO</span><span class="tchip add"><svg class="i sm"><use href="#i-plus"/></svg></span></div></td><td><span class="badge b-ok"><i></i>Actif</span></td><td class="r"><span style="font-size:12px;color:var(--text-3)">—</span></td></tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="card">
+     <div class="card-h"><h3>Équipes</h3><span class="badge b-neutral num">3</span></div>
+     <div class="card-b">
+      <div style="display:flex;gap:8px;margin-bottom:10px"><div class="input ph">Nom de la nouvelle équipe</div><button class="btn primary">Créer</button></div>
+      <div class="team-row"><div style="flex:1"><div class="n">Delivery Banque</div><div class="m">4 membres</div></div><div class="stack"><span class="av xs" style="background:#1F4E79">AM</span><span class="av xs" style="background:#A34E16">BD</span><span class="av xs" style="background:#7041A6">DK</span><span class="av xs" style="background:#286A70">LS</span></div><button class="btn ghost icon sm" title="Renommer"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm" title="Archiver"><svg class="i"><use href="#i-archive"/></svg></button></div>
+      <div class="team-row"><div style="flex:1"><div class="n">Data &amp; IA</div><div class="m">3 membres</div></div><div class="stack"><span class="av xs" style="background:#A34E16">BD</span><span class="av xs" style="background:#12613A">CR</span><span class="av xs" style="background:#5D4B00">SM</span></div><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-archive"/></svg></button></div>
+      <div class="team-row"><div style="flex:1"><div class="n">PMO</div><div class="m">2 membres</div></div><div class="stack"><span class="av xs" style="background:#7041A6">DK</span><span class="av xs">TM</span></div><button class="btn ghost icon sm"><svg class="i"><use href="#i-edit"/></svg></button><button class="btn ghost icon sm"><svg class="i"><use href="#i-archive"/></svg></button></div>
+      <div class="collapse"><svg class="i sm"><use href="#i-down"/></svg>Archives<span class="badge b-neutral num" style="margin-left:4px">1</span></div>
+      <div class="team-row" style="opacity:.7;border-top:0;padding-left:22px"><div style="flex:1"><div class="n" style="font-weight:600">Projet Bâle III</div><div class="m">Alice Martin, Camille Roux</div></div><span class="badge b-neutral">Archivée</span></div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="sec" id="mobile" style="padding-bottom:40px">
+ <h2>4 · Mobile (390 px)</h2>
+ <p class="lead">Sur mobile, l’en-tête actuel cumule logo, badge de stockage, « Administration », « Profil » et « Quitter », et passe sur deux lignes. La proposition : une barre d’onglets en bas (standard iOS/Android), un bouton d’ajout flottant, un agenda à la place de la grille 7 colonnes illisible à cette largeur, et des cartes empilées pour l’administration.</p>
+ <div class="changes">
+  <div class="change"><b>Barre d’onglets <span class="tag vis">visuel</span></b>Mes congés · Équipe · Admin (si administrateur) · Profil. La déconnexion passe dans Profil.</div>
+  <div class="change"><b>Bouton d’ajout flottant <span class="tag vis">visuel</span></b>« Ajouter » toujours à portée du pouce, au-dessus de la barre d’onglets.</div>
+  <div class="change"><b>Agenda d’équipe <span class="tag vis">visuel</span></b>Bandeau semaine + liste des absences par jour ; mêmes données que la grille mensuelle.</div>
+  <div class="change"><b>Droits en cartes <span class="tag vis">visuel</span></b>Une carte par membre, champs sur deux colonnes, enregistrement par carte.</div>
+ </div>
+ <div class="phones">
+  <div class="phone">
+   <div class="p-status"><span>9:41</span><span style="display:flex;gap:6px;align-items:center"><svg class="i sm"><use href="#i-cloud"/></svg>100 %</span></div>
+   <div class="p-top"><img class="logo" style="width:24px;height:24px" alt=""><b>Mes congés</b><div class="spacer"></div><span class="av sm">TM</span></div>
+   <div class="p-body">
+    <div class="p-years"><span>2025</span><span class="on">2026</span><span>2027</span></div>
+    <div class="card" style="padding:16px">
+     <div style="display:flex;align-items:center"><span class="eyebrow">Solde restant</span><div class="spacer"></div><span class="badge b-ok"><i></i>OK</span></div>
+     <div class="big num" style="font-size:42px;margin-top:6px">11<small>jours</small></div>
+     <div class="bar" style="margin:14px 0 10px;height:8px"><span class="used" style="width:58.9%"></span><span class="plan" style="width:11%"></span><span class="left" style="width:30.1%"></span></div>
+     <div class="legend" style="gap:14px"><div class="lg"><i style="background:var(--primary)"></i>Pris <b>21,5</b></div><div class="lg"><i style="background:var(--primary-2)"></i>Planifiés <b>4</b></div><div class="lg"><i style="background:#E3E7EE"></i>Total <b>36,5</b></div></div>
+    </div>
+    <div class="card" style="padding:0 14px;display:flex;align-items:center;height:48px"><span style="font-weight:600">Composition des droits</span><div class="spacer"></div><span class="num" style="font-weight:700;margin-right:6px">36,5 j</span><svg class="i" style="color:var(--text-3)"><use href="#i-down"/></svg></div>
+    <div class="card" style="padding:4px 6px 6px">
+     <div class="group-t" style="padding:10px 8px 4px">À venir</div>
+     <div class="entry"><div class="datebox" style="width:42px;height:46px"><span class="m">déc.</span><span class="d" style="font-size:17px">21</span></div><div class="main"><div class="t">Noël</div><div class="s">21 → 24 déc.</div></div><div class="dur num" style="min-width:0">4<small>j</small></div></div>
+     <div class="group-t" style="padding:10px 8px 4px">Passés</div>
+     <div class="entry past"><div class="datebox" style="width:42px;height:46px"><span class="m">oct.</span><span class="d" style="font-size:17px">9</span></div><div class="main"><div class="t">RDV</div><div class="s">9 oct. <span class="half">Ap.-midi</span></div></div><div class="dur num" style="min-width:0">0,5<small>j</small></div></div>
+     <div class="entry past"><div class="datebox" style="width:42px;height:46px"><span class="m">juil.</span><span class="d" style="font-size:17px">27</span></div><div class="main"><div class="t">Vacances été</div><div class="s">27 juil. → 14 août</div></div><div class="dur num" style="min-width:0">15<small>j</small></div></div>
+    </div>
+   </div>
+   <div class="fab"><svg class="i lg" style="stroke-width:2.2"><use href="#i-plus"/></svg>Ajouter</div>
+   <div class="tabbar"><a class="on"><svg class="i lg"><use href="#i-home"/></svg>Mes congés</a><a class=""><svg class="i lg"><use href="#i-users"/></svg>Équipe</a><a class=""><svg class="i lg"><use href="#i-shield"/></svg>Admin</a><a class=""><svg class="i lg"><use href="#i-user"/></svg>Profil</a></div>
+  </div>
+  <div class="phone">
+   <div class="p-status"><span>9:41</span><span style="display:flex;gap:6px;align-items:center"><svg class="i sm"><use href="#i-cloud"/></svg>100 %</span></div>
+   <div class="p-top"><img class="logo" style="width:24px;height:24px" alt=""><b>Congés d’équipe</b><div class="spacer"></div><span class="av sm">TM</span></div>
+   <div class="p-body">
+    <div style="display:flex;align-items:center;justify-content:space-between"><button class="btn icon"><svg class="i"><use href="#i-left"/></svg></button><b style="font-size:16px">novembre 2026</b><button class="btn icon"><svg class="i"><use href="#i-right"/></svg></button></div>
+    <div style="display:flex;gap:8px;overflow:hidden"><span class="tchip" style="background:var(--primary);color:#fff;padding:6px 12px">Toutes</span><span class="tchip" style="background:#fff;border:1px solid var(--border);color:var(--text-body);padding:6px 12px">Delivery Banque</span><span class="tchip" style="background:#fff;border:1px solid var(--border);color:var(--text-body);padding:6px 12px">Data &amp; IA</span></div>
+    <div class="weekstrip">
+     <div><small>L</small><b>23</b><i></i></div><div><small>M</small><b>24</b><i></i></div><div><small>M</small><b>25</b><i></i></div><div><small>J</small><b>26</b><i></i></div><div class="on"><small>V</small><b>27</b><i style="background:#fff"></i></div><div class="we"><small>S</small><b>28</b></div><div class="we"><small>D</small><b>29</b></div>
+    </div>
+    <div class="agenda-day today"><div class="dd"><small>ven.</small><b>27</b></div><div class="evs">
+     <div class="agenda-ev" style="background:#E5F4F3;color:#286A70;box-shadow:inset 3px 0 0 #286A70"><span class="av xs" style="background:#286A70">LS</span>Lucas Schmit</div> <div class="agenda-ev" style="background:#E9F9EF;color:#12613A;box-shadow:inset 3px 0 0 #12613A"><span class="av xs" style="background:#12613A">CR</span>Camille Roux</div> <div class="agenda-ev" style="background:#FFF6D6;color:#5D4B00;box-shadow:inset 3px 0 0 #5D4B00"><span class="av xs" style="background:#5D4B00">SM</span>Sarah Muller<span class="h">Ap.-midi</span></div>
+    </div></div>
+    <div class="agenda-day"><div class="dd"><small>lun.</small><b>30</b></div><div class="evs"><div class="agenda-ev" style="background:#EAF1F8;color:#1F4E79;box-shadow:inset 3px 0 0 #1F4E79"><span class="av xs" style="background:#1F4E79">AM</span>Alice Martin<span class="h">→ 4 déc.</span></div></div></div></div>
+   </div>
+   <div class="tabbar"><a class=""><svg class="i lg"><use href="#i-home"/></svg>Mes congés</a><a class="on"><svg class="i lg"><use href="#i-users"/></svg>Équipe</a><a class=""><svg class="i lg"><use href="#i-shield"/></svg>Admin</a><a class=""><svg class="i lg"><use href="#i-user"/></svg>Profil</a></div>
+  </div>
+  <div class="phone">
+   <div class="p-status"><span>9:41</span><span style="display:flex;gap:6px;align-items:center"><svg class="i sm"><use href="#i-cloud"/></svg>100 %</span></div>
+   <div class="p-top"><img class="logo" style="width:24px;height:24px" alt=""><b>Administration</b><div class="spacer"></div><span class="av sm">TM</span></div>
+   <div class="p-body" style="gap:10px">
+    <div class="tabs" style="margin:0"><a class="on" href="#">Droits</a><a href="#">Membres &amp; équipes</a></div>
+    <div style="display:flex;gap:8px"><div class="search" style="width:auto;flex:1"><svg class="i"><use href="#i-search"/></svg>Rechercher</div><div class="seg"><button>2025</button><button class="on">2026</button></div></div>
+    <div class="card" style="padding:14px;box-shadow:inset 3px 0 0 var(--cta)">
+     <div class="person"><span class="av sm" style="background:#286A70">LS</span><div style="flex:1"><div class="n">Lucas Schmit</div><div class="e">Pris 18 · <span class="pos">Restant 16,5</span></div></div><span class="badge b-ok"><i></i>Active</span></div>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0">
+      <div class="field"><label>Solde initial</label><div class="input num">26</div></div>
+      <div class="field"><label>Reportés</label><div class="input focus num">4,5</div></div>
+      <div class="field"><label>CSupp</label><div class="input num">0</div></div>
+      <div class="field"><label>Fériés · auto</label><div class="input num" style="background:var(--canvas);color:var(--text-2)">4</div></div>
+     </div>
+     <button class="btn primary" style="width:100%">Enregistrer</button>
+    </div>
+    <div class="card" style="padding:14px">
+     <div class="person"><span class="av sm" style="background:#12613A">CR</span><div style="flex:1"><div class="n">Camille Roux</div><div class="e">Pris 0 · Restant 34</div></div><span class="badge b-warn"><i></i>Brouillon</span></div>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0">
+      <div class="field"><label>Solde initial</label><div class="input num">26</div></div>
+      <div class="field"><label>Reportés</label><div class="input num">5</div></div>
+     </div>
+    </div>
+   </div>
+   <div class="tabbar"><a class=""><svg class="i lg"><use href="#i-home"/></svg>Mes congés</a><a class=""><svg class="i lg"><use href="#i-users"/></svg>Équipe</a><a class="on"><svg class="i lg"><use href="#i-shield"/></svg>Admin</a><a class=""><svg class="i lg"><use href="#i-user"/></svg>Profil</a></div>
+  </div>
+ </div>
+</section>
+<script>
+ const src=document.getElementById('logo-src').src;
+ document.querySelectorAll('img.logo').forEach(i=>i.src=src);
+</script>
+</body>
+</html>

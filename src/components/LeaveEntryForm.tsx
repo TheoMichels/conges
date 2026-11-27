@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { HalfDay, LeaveEntryDraft } from "../types/yearPlan";
-import { colors, fonts, shape } from "../theme/colors";
+import { colors, focusRing, fonts, shape, tabular, webOnly } from "../theme/colors";
 import { cursorPointer } from "../theme/webCursor";
 import { formatDateFr, toISODate, workingDaysCount } from "../utils/leaveDays";
-import { formatDays } from "../utils/format";
+import { formatDayNumber, formatDays } from "../utils/format";
 import { Calendar } from "./Calendar";
+import { Button } from "./ui/Button";
+import { Icon } from "./ui/Icon";
+import { Segmented } from "./ui/Segmented";
 
 type Props = {
   year: string;
   initial?: LeaveEntryDraft;
   submitLabel?: string;
+  // Solde restant actuel et durée du congé modifié : affichent le « solde après ».
+  remaining?: number;
+  initialDays?: number;
+  takenDates?: Set<string>;
   onSubmit: (draft: LeaveEntryDraft) => void;
   onCancel: () => void;
 };
@@ -22,27 +29,23 @@ function defaultDate(year: string): string {
   return toISODate(new Date(parsed, 0, 1));
 }
 
-export function LeaveEntryForm({
-  year,
-  initial,
-  submitLabel = "Ajouter",
-  onSubmit,
-  onCancel,
-}: Props) {
-  const isMobile = useWindowDimensions().width < 768;
+type SingleMode = "full" | "morning" | "afternoon";
+const SINGLE_MODES: Record<SingleMode, { label: string; start: HalfDay; end: HalfDay }> = {
+  full: { label: "Journée entière (1 j)", start: "morning", end: "afternoon" },
+  morning: { label: "Matin (0,5 j)", start: "morning", end: "morning" },
+  afternoon: { label: "Après-midi (0,5 j)", start: "afternoon", end: "afternoon" },
+};
+
+export function LeaveEntryForm({ year, initial, submitLabel = "Ajouter", remaining, initialDays = 0, takenDates, onSubmit, onCancel }: Props) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+  const isWide = width >= 1100;
   const [label, setLabel] = useState(initial?.label ?? "");
-  const [startDate, setStartDate] = useState(() =>
-    initial?.kind === "dates" ? initial.startDate : defaultDate(year)
-  );
-  const [endDate, setEndDate] = useState(() =>
-    initial?.kind === "dates" ? initial.endDate : defaultDate(year)
-  );
-  const [startHalf, setStartHalf] = useState<HalfDay>(() =>
-    initial?.kind === "dates" ? (initial.startHalf ?? "morning") : "morning"
-  );
-  const [endHalf, setEndHalf] = useState<HalfDay>(() =>
-    initial?.kind === "dates" ? (initial.endHalf ?? "afternoon") : "afternoon"
-  );
+  const [labelFocused, setLabelFocused] = useState(true);
+  const [startDate, setStartDate] = useState(() => (initial?.kind === "dates" ? initial.startDate : defaultDate(year)));
+  const [endDate, setEndDate] = useState(() => (initial?.kind === "dates" ? initial.endDate : defaultDate(year)));
+  const [startHalf, setStartHalf] = useState<HalfDay>(() => (initial?.kind === "dates" ? (initial.startHalf ?? "morning") : "morning"));
+  const [endHalf, setEndHalf] = useState<HalfDay>(() => (initial?.kind === "dates" ? (initial.endHalf ?? "afternoon") : "afternoon"));
 
   const handleSelectRange = (start: string, end: string) => {
     setStartDate(start);
@@ -54,9 +57,9 @@ export function LeaveEntryForm({
   };
 
   const isSingleDay = startDate === endDate;
-
-  const dateDays = workingDaysCount(startDate, endDate, startHalf, endHalf);
-  const total = dateDays;
+  const total = workingDaysCount(startDate, endDate, startHalf, endHalf);
+  const balanceAfter = remaining === undefined ? undefined : Math.round((remaining + initialDays - total) * 100) / 100;
+  const singleMode = (Object.keys(SINGLE_MODES) as SingleMode[]).find((key) => SINGLE_MODES[key].start === startHalf && SINGLE_MODES[key].end === endHalf) ?? null;
 
   const submit = () => {
     if (total <= 0) return;
@@ -64,366 +67,138 @@ export function LeaveEntryForm({
     onSubmit({ kind: "dates", label: trimmed, startDate, endDate, startHalf, endHalf });
   };
 
+  const labelField = (
+      <View>
+        <Text style={styles.fieldLabel}>Justificatif</Text>
+        <TextInput
+          style={[styles.input, labelFocused && styles.inputFocused, labelFocused && focusRing]}
+          value={label}
+          onChangeText={setLabel}
+          onFocus={() => setLabelFocused(true)}
+          onBlur={() => setLabelFocused(false)}
+          placeholder="Motif des congés"
+          placeholderTextColor={colors.textFaint}
+          autoFocus
+        />
+      </View>
+  );
+
+  const details = (
+    <View style={styles.details}>
+      {isWide && labelField}
+      <View style={styles.halfDaySection}>
+        <Text style={styles.fieldLabel}>Durée de l&apos;absence</Text>
+        {isSingleDay ? (
+          <Segmented
+            size="lg"
+            stretch
+            value={singleMode}
+            onChange={(key) => { setStartHalf(SINGLE_MODES[key].start); setEndHalf(SINGLE_MODES[key].end); }}
+            options={(Object.keys(SINGLE_MODES) as SingleMode[]).map((key) => ({ key, label: SINGLE_MODES[key].label }))}
+          />
+        ) : (
+          <View style={[styles.multiDayHalfRow, isMobile && styles.multiDayHalfRowMobile]}>
+            <View style={styles.halfDayCol}>
+              <Text style={styles.subFieldLabel}>Premier jour · {formatDateFr(startDate)}</Text>
+              <Segmented
+                size="lg"
+                stretch
+                value={startHalf}
+                onChange={setStartHalf}
+                options={[{ key: "morning", label: "Toute la journée" }, { key: "afternoon", label: "Dès l'après-midi (-0,5 j)" }]}
+              />
+            </View>
+            <View style={styles.halfDayCol}>
+              <Text style={styles.subFieldLabel}>Dernier jour · {formatDateFr(endDate)}</Text>
+              <Segmented
+                size="lg"
+                stretch
+                value={endHalf}
+                onChange={setEndHalf}
+                options={[{ key: "afternoon", label: "Toute la journée" }, { key: "morning", label: "Jusqu'au midi (-0,5 j)" }]}
+              />
+            </View>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.recap}>
+        <View style={styles.recapItem}>
+          <Text style={styles.recapLabel}>Durée</Text>
+          <Text testID="leave-day-total" style={[styles.recapValue, total <= 0 && styles.recapDanger]}>
+            {formatDays(total)}
+            {total > 1 ? " ouvrés" : " ouvré"}
+          </Text>
+        </View>
+        {balanceAfter !== undefined && (
+          <>
+            <View style={styles.recapSep} />
+            <View style={styles.recapItem}>
+              <Text style={styles.recapLabel}>Solde après</Text>
+              <Text style={[styles.recapValue, balanceAfter < 0 ? styles.recapDanger : styles.recapOk]}>{formatDayNumber(balanceAfter)} j</Text>
+            </View>
+          </>
+        )}
+      </View>
+    </View>
+  );
+
   return (
-    <View style={[styles.form, isMobile && styles.formMobile]}>
-      <Text style={styles.fieldLabel}>Justificatif</Text>
-      <TextInput
-        style={styles.input}
-        value={label}
-        onChangeText={setLabel}
-        placeholder="Motif des congés"
-        placeholderTextColor={colors.textMuted}
-        autoFocus
-      />
+    <View style={[styles.form, isMobile && styles.formMobile, webOnly({ boxShadow: "0 0 0 4px rgba(31, 78, 121, 0.05)" })]}>
+      <View style={styles.formHeader}>
+        <Icon name="calendar" size={17} color={colors.primary} />
+        <Text style={styles.formTitle}>{initial ? "Modifier le congé" : "Nouveau congé"}</Text>
+        <View style={styles.spacer} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Fermer le formulaire" onPress={onCancel} style={[styles.close, cursorPointer]}>
+          <Icon name="x" size={16} />
+        </Pressable>
+      </View>
 
-          <View style={[styles.calendarContainer, isMobile && styles.calendarContainerMobile]}>
-            <Calendar
-              startDate={startDate}
-              endDate={endDate}
-              onSelectRange={handleSelectRange}
-            />
-          </View>
-
-          {/* Half-day selection */}
-          <View style={styles.halfDaySection}>
-            <Text style={styles.fieldLabel}>Durée de l&apos;absence</Text>
-            {isSingleDay ? (
-              <View style={styles.halfDayRow}>
-                {[
-                  {
-                    id: "full",
-                    label: "Journée entière (1 j)",
-                    start: "morning" as HalfDay,
-                    end: "afternoon" as HalfDay,
-                  },
-                  {
-                    id: "morning",
-                    label: "Matin (0,5 j)",
-                    start: "morning" as HalfDay,
-                    end: "morning" as HalfDay,
-                  },
-                  {
-                    id: "afternoon",
-                    label: "Après-midi (0,5 j)",
-                    start: "afternoon" as HalfDay,
-                    end: "afternoon" as HalfDay,
-                  },
-                ].map((opt) => {
-                  const active =
-                    startHalf === opt.start && endHalf === opt.end;
-                  return (
-                    <Pressable
-                      key={opt.id}
-                      style={[
-                        styles.halfDayButton,
-                        active && styles.halfDayButtonActive,
-                        cursorPointer,
-                      ]}
-                      onPress={() => {
-                        setStartHalf(opt.start);
-                        setEndHalf(opt.end);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.halfDayText,
-                          active && styles.halfDayTextActive,
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : (
-              <View style={styles.multiDayHalfRow}>
-                <View style={styles.halfDayCol}>
-                  <Text style={styles.subFieldLabel}>
-                    Premier jour ({formatDateFr(startDate)})
-                  </Text>
-                  <View style={styles.halfDayGroup}>
-                    <Pressable
-                      style={[
-                        styles.halfDayOption,
-                        startHalf === "morning" && styles.halfDayOptionActive,
-                        cursorPointer,
-                      ]}
-                      onPress={() => setStartHalf("morning")}
-                    >
-                      <Text
-                        style={[
-                          styles.halfDayOptionText,
-                          startHalf === "morning" && styles.halfDayOptionTextActive,
-                        ]}
-                      >
-                        Toute la journée
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.halfDayOption,
-                        startHalf === "afternoon" && styles.halfDayOptionActive,
-                        cursorPointer,
-                      ]}
-                      onPress={() => setStartHalf("afternoon")}
-                    >
-                      <Text
-                        style={[
-                          styles.halfDayOptionText,
-                          startHalf === "afternoon" && styles.halfDayOptionTextActive,
-                        ]}
-                      >
-                        Dès l&apos;après-midi (-0,5 j)
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-
-                <View style={styles.halfDayCol}>
-                  <Text style={styles.subFieldLabel}>
-                    Dernier jour ({formatDateFr(endDate)})
-                  </Text>
-                  <View style={styles.halfDayGroup}>
-                    <Pressable
-                      style={[
-                        styles.halfDayOption,
-                        endHalf === "morning" && styles.halfDayOptionActive,
-                        cursorPointer,
-                      ]}
-                      onPress={() => setEndHalf("morning")}
-                    >
-                      <Text
-                        style={[
-                          styles.halfDayOptionText,
-                          endHalf === "morning" && styles.halfDayOptionTextActive,
-                        ]}
-                      >
-                        Jusqu&apos;au midi (-0,5 j)
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.halfDayOption,
-                        endHalf === "afternoon" && styles.halfDayOptionActive,
-                        cursorPointer,
-                      ]}
-                      onPress={() => setEndHalf("afternoon")}
-                    >
-                      <Text
-                        style={[
-                          styles.halfDayOptionText,
-                          endHalf === "afternoon" && styles.halfDayOptionTextActive,
-                        ]}
-                      >
-                        Toute la journée
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            )}
-          </View>
+      {!isWide && <View style={styles.labelTop}>{labelField}</View>}
+      <View style={[styles.body, isWide && styles.bodyWide]}>
+        <View style={[styles.calendarCol, isWide && styles.calendarColWide]}>
+          <Calendar startDate={startDate} endDate={endDate} onSelectRange={handleSelectRange} takenDates={takenDates} cellSize={isMobile ? 40 : 44} />
+        </View>
+        <View style={[styles.detailsCol, isWide && styles.detailsColWide]}>{details}</View>
+      </View>
 
       <View style={styles.footer}>
-        <Text testID="leave-day-total" style={styles.total}>
-          {formatDays(total)}
-          {total > 1 ? " ouvrés" : " ouvré"}
-        </Text>
-
-        <View style={styles.actions}>
-          <Pressable style={[styles.cancelButton, cursorPointer]} onPress={onCancel}>
-            <Text style={styles.cancelText}>Annuler</Text>
-          </Pressable>
-          <Pressable
-            testID="submit-leave-button"
-            style={[styles.submitButton, total <= 0 && styles.submitDisabled, cursorPointer]}
-            onPress={submit}
-            disabled={total <= 0}
-          >
-            <Text style={styles.submitText}>{submitLabel}</Text>
-          </Pressable>
-        </View>
+        <Button label="Annuler" onPress={onCancel} />
+        <Button testID="submit-leave-button" variant="primary" icon="check" label={submitLabel} onPress={submit} disabled={total <= 0} />
       </View>
     </View>
   );
 }
 
-const OPTION = {
-  minHeight: 44,
-  justifyContent: "center" as const,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.panel,
-};
-const OPTION_ACTIVE = {
-  borderColor: colors.primaryBorder,
-  backgroundColor: colors.primarySoft,
-};
-const OPTION_TEXT = {
-  fontFamily: fonts.base,
-  fontSize: 13,
-  fontWeight: "600" as const,
-  color: colors.textSecondary,
-};
-const OPTION_TEXT_ACTIVE = { color: colors.primary };
-
 const styles = StyleSheet.create({
-  form: {
-    borderRadius: shape.row,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panelSubtle,
-    padding: 20,
-    marginBottom: 16,
-  },
-  formMobile: { padding: 4, borderWidth: 0, backgroundColor: "transparent" },
-  fieldLabel: {
-    fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  subFieldLabel: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    minHeight: 46,
-    justifyContent: "center",
-    fontFamily: fonts.base,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: colors.textPrimary,
-    marginBottom: 16,
-  },
-  daysInput: {
-    width: 120,
-  },
-  modeRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  modeButton: { ...OPTION, paddingHorizontal: 16, paddingVertical: 8 },
-  modeButtonActive: OPTION_ACTIVE,
-  modeText: OPTION_TEXT,
-  modeTextActive: OPTION_TEXT_ACTIVE,
-  calendarContainer: {
-    alignSelf: "flex-start",
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: shape.row,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-  },
-  calendarContainerMobile: { padding: 0, borderWidth: 0, backgroundColor: "transparent" },
-  halfDaySection: {
-    marginBottom: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  halfDayRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  halfDayButton: { ...OPTION, paddingHorizontal: 14, paddingVertical: 8 },
-  halfDayButtonActive: OPTION_ACTIVE,
-  halfDayText: OPTION_TEXT,
-  halfDayTextActive: OPTION_TEXT_ACTIVE,
-  multiDayHalfRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 20,
-  },
-  halfDayCol: {
-    flex: 1,
-    minWidth: 200,
-  },
-  halfDayGroup: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  halfDayOption: { ...OPTION, flex: 1, paddingHorizontal: 10, paddingVertical: 7, alignItems: "center" },
-  halfDayOptionActive: OPTION_ACTIVE,
-  halfDayOptionText: { ...OPTION_TEXT, fontSize: 12, textAlign: "center" },
-  halfDayOptionTextActive: OPTION_TEXT_ACTIVE,
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: { ...OPTION, borderRadius: shape.pill, paddingHorizontal: 14, paddingVertical: 6 },
-  chipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
-  chipText: OPTION_TEXT,
-  chipTextActive: { color: colors.textOnBrand },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 12,
-    marginTop: 8,
-  },
-  total: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.cta,
-    backgroundColor: colors.ctaSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: shape.pill,
-    overflow: "hidden",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  cancelButton: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-  },
-  cancelText: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  submitButton: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 12,
-    backgroundColor: colors.cta,
-  },
-  submitDisabled: {
-    opacity: 0.4,
-  },
-  submitText: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.textOnBrand,
-  },
+  form: { marginHorizontal: 20, marginTop: 4, marginBottom: 16, borderWidth: 1, borderColor: colors.primaryBorder, borderRadius: 14, backgroundColor: colors.panel },
+  formMobile: { marginHorizontal: 0 },
+  formHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 18, paddingRight: 6, minHeight: 52, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  formTitle: { fontFamily: fonts.base, fontSize: 14.5, fontWeight: "700", color: colors.textPrimary },
+  spacer: { flex: 1 },
+  close: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10 },
+  body: { flexDirection: "column" },
+  bodyWide: { flexDirection: "row" },
+  calendarCol: { padding: 16, alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.divider },
+  calendarColWide: { borderBottomWidth: 0, borderRightWidth: 1, borderRightColor: colors.divider, paddingHorizontal: 18 },
+  detailsCol: { padding: 16 },
+  detailsColWide: { flex: 1, minWidth: 0, paddingHorizontal: 20 },
+  details: { gap: 18 },
+  labelTop: { paddingHorizontal: 16, paddingTop: 14 },
+  fieldLabel: { fontFamily: fonts.base, fontSize: 12.5, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 },
+  subFieldLabel: { fontFamily: fonts.base, fontSize: 12, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 },
+  input: { fontFamily: fonts.base, fontSize: 15, color: colors.textPrimary, minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: shape.control, paddingHorizontal: 12, backgroundColor: colors.panel },
+  inputFocused: { borderColor: colors.primary },
+  halfDaySection: {},
+  multiDayHalfRow: { flexDirection: "row", gap: 14 },
+  multiDayHalfRowMobile: { flexDirection: "column" },
+  halfDayCol: { flex: 1, minWidth: 0 },
+  recap: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 18, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.canvas },
+  recapItem: { gap: 2 },
+  recapLabel: { fontFamily: fonts.base, fontSize: 11.5, fontWeight: "600", color: colors.textSecondary },
+  recapValue: { fontFamily: fonts.base, fontSize: 17, fontWeight: "700", color: colors.textPrimary, ...tabular },
+  recapOk: { color: colors.positive },
+  recapDanger: { color: colors.danger },
+  recapSep: { width: 1, height: 32, backgroundColor: colors.border },
+  footer: { flexDirection: "row", justifyContent: "flex-end", gap: 10, paddingHorizontal: 18, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.divider, backgroundColor: "#FCFCFD", borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
 });
