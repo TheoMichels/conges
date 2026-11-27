@@ -9,18 +9,42 @@ import { LoadingSkeleton } from "./LoadingScreen";
 type DayEntry = { key: string; name: string; part: string; color: string; background: string };
 type CalendarDay = { key: string; number: number; entries: DayEntry[] };
 const leaveColors = [
- { color: "#1F4E79", background: "#EAF1F8" },
- { color: "#A34E16", background: "#FEF0E7" },
- { color: "#12613A", background: "#E9F9EF" },
- { color: "#7041A6", background: "#F2EAFB" },
- { color: "#A32942", background: "#FDECEC" },
- { color: "#286A70", background: "#E5F4F3" },
+ { color: "#1F4E79", background: "#EAF1F8" }, { color: "#A34E16", background: "#FEF0E7" },
+ { color: "#12613A", background: "#E9F9EF" }, { color: "#7041A6", background: "#F2EAFB" },
+ { color: "#A32942", background: "#FDECEC" }, { color: "#286A70", background: "#E5F4F3" },
+ { color: "#5D4B00", background: "#FFF6D6" }, { color: "#334E9A", background: "#E9EDFC" },
+ { color: "#8A3D73", background: "#F8E9F3" }, { color: "#356B2D", background: "#EDF7E8" },
+ { color: "#9A4E00", background: "#FFF0DC" }, { color: "#24608A", background: "#E7F3FA" },
 ];
-function colorForName(name: string) {
- const hash = [...name].reduce((value, char) => value + char.charCodeAt(0), 0);
- return leaveColors[hash % leaveColors.length];
+function colorsForMembers(entries: CalendarEntry[]) {
+ const names = new Map(entries.map(entry => [entry.member_key, entry.display_name]));
+ const memberKeys = [...names.keys()].sort();
+ const assigned = new Map<string, { color: string; background: string }>();
+ if (memberKeys.length > leaveColors.length) {
+  memberKeys.forEach((memberKey, index) => {
+   const hue = index * 360 / memberKeys.length;
+   assigned.set(memberKey, { color: `hsl(${hue}, 65%, 30%)`, background: `hsl(${hue}, 65%, 94%)` });
+  });
+  return assigned;
+ }
+ const used = new Set<number>();
+ memberKeys.forEach((memberKey, index) => {
+  const name = names.get(memberKey) ?? "";
+  const preferred = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 6;
+  let colorIndex = 0;
+  while (colorIndex < leaveColors.length && used.has((preferred + colorIndex) % leaveColors.length)) colorIndex += 1;
+  if (colorIndex < leaveColors.length) {
+   const paletteIndex = (preferred + colorIndex) % leaveColors.length;
+   used.add(paletteIndex);
+   assigned.set(memberKey, leaveColors[paletteIndex]);
+   return;
+  }
+   assigned.set(memberKey, leaveColors[index] ?? leaveColors[0]);
+ });
+ return assigned;
 }
 function calendarDays(entries: CalendarEntry[], month: Date): CalendarDay[] {
+ const memberColors = colorsForMembers(entries);
  const days: CalendarDay[] = [];
  for (let number = 1; number <= new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate(); number += 1) {
   const date = new Date(month.getFullYear(), month.getMonth(), number);
@@ -29,7 +53,7 @@ function calendarDays(entries: CalendarEntry[], month: Date): CalendarDay[] {
    if (key < entry.start_date || key > entry.end_date || workingDaysCount(key, key) === 0) return [];
    const morningOnly = key === entry.end_date && entry.end_half === "morning";
    const afternoonOnly = key === entry.start_date && entry.start_half === "afternoon";
-   const palette = colorForName(entry.display_name);
+   const palette = memberColors.get(entry.member_key) ?? leaveColors[0];
    return [{ key: `${entry.id}-${key}`, name: entry.display_name, part: morningOnly ? "Matin" : afternoonOnly ? "Après-midi" : "Journée", ...palette }];
   }).sort((a, b) => a.name.localeCompare(b.name));
   days.push({ key, number, entries: dayEntries });

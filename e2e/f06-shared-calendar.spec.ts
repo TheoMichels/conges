@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
 const team = '00000000-0000-4000-8000-000000000011';
-async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loading" | "monthly" | "collision" = "normal") {
+async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loading" | "monthly" | "collision" | "colors" = "normal") {
  let failed = false;
  const user = { id: '00000000-0000-4000-8000-000000000001', aud: 'authenticated', role: 'authenticated', email: 'user@example.com' };
  await page.route('https://holidays.example/**', async route => { const url = new URL(route.request().url()); await route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:4174${url.pathname}${url.search}` }) }); });
@@ -15,8 +15,18 @@ async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loadi
   if (url.includes('/rpc/my_calendar_teams')) body = state === 'no-teams' ? [] : [{ id:team, name:'Alpha' }];
   if (url.includes('/rpc/shared_calendar') && state === 'error' && !failed) { failed = true; await route.fulfill({ status:200, contentType:'application/json', body:'{}' }); return; }
   if (url.includes('/rpc/shared_calendar')) { const p = route.request().postDataJSON() as { month_start:string }; body = p.month_start === '2026-03-01' || p.month_start === '2026-02-01' ? [{ id:'entry', display_name:'Camille', start_date:'2026-02-27', end_date:'2026-03-03', start_half:'afternoon', end_half:'morning' }] : p.month_start === '2026-04-01' ? [{ id:'future-entry', display_name:'Camille', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' }] : []; }
+  if (state === 'colors') body = [];
   if (url.includes('/rpc/shared_calendar') && Array.isArray(body)) {
    const rows = body.map(entry => ({ ...entry, member_key:'camille', kind:'dates', month:null, days:null, reserved_ids:[], created_at:'2026-01-01T00:00:00Z' }));
+   if (state === 'colors') {
+    const monthStart = (route.request().postDataJSON() as { month_start:string }).month_start;
+    if (monthStart === '2026-03-01') rows.push(
+     { id:'homonym-1', display_name:'Camille', member_key:'homo-1', kind:'dates', month:null, days:null, reserved_ids:[], created_at:'2026-01-02T00:00:00Z', start_date:'2026-03-05', end_date:'2026-03-05', start_half:'morning', end_half:'afternoon' },
+     { id:'homonym-2', display_name:'Camille', member_key:'homo-2', kind:'dates', month:null, days:null, reserved_ids:[], created_at:'2026-01-03T00:00:00Z', start_date:'2026-03-05', end_date:'2026-03-05', start_half:'morning', end_half:'afternoon' });
+    if (monthStart === '2026-04-01') rows.push(
+     { id:'homonym-apr-1', display_name:'Camille', member_key:'homo-1', kind:'dates', month:null, days:null, reserved_ids:[], created_at:'2026-01-02T00:00:00Z', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' },
+     { id:'homonym-apr-2', display_name:'Camille', member_key:'homo-2', kind:'dates', month:null, days:null, reserved_ids:[], created_at:'2026-01-03T00:00:00Z', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' });
+   }
    if ((state === 'monthly' || state === 'collision') && (route.request().postDataJSON() as { month_start:string }).month_start === '2026-03-01') rows.push(
     { id:'monthly', display_name:'Camille', member_key:'camille', kind:'month', month:2, days:1.5, reserved_ids:[], created_at:'2026-01-02T00:00:00Z', start_date:null, end_date:null, start_half:null, end_half:null },
     { id:'impossible', display_name:'Alex', member_key:'alex', kind:'month', month:2, days:40, reserved_ids:[], created_at:'2026-01-02T00:00:00Z', start_date:null, end_date:null, start_half:null, end_half:null });
@@ -93,4 +103,26 @@ test('collision avec un identifiant hors mois conserve le congé non réparti', 
  await setup(page, 'collision'); await page.clock.setFixedTime(new Date('2026-03-15T12:00:00Z')); await page.goto('https://holidays.example/'); await page.getByTestId('shared-calendar-button').click();
  await expect(page.getByTestId('calendar-unplaced')).toContainText('Camille');
  await expect(page.getByTestId('calendar-day-2026-03-03')).not.toContainText('Après-midi');
+});
+
+test('couleurs distinctes pour des homonymes et stables après rechargement', async ({page}) => {
+ await setup(page, 'colors'); await page.clock.setFixedTime(new Date('2026-03-15T12:00:00Z')); await page.goto('https://holidays.example/'); await page.getByTestId('shared-calendar-button').click();
+ const badges = page.getByTestId('calendar-day-2026-03-05').getByTestId('calendar-entry');
+ await expect(badges).toHaveCount(2);
+ const first = badges.nth(0);
+ const second = badges.nth(1);
+ await expect(first).toContainText('Camille'); await expect(second).toContainText('Camille');
+ const firstColor = await first.evaluate(element => getComputedStyle(element).backgroundColor);
+ const secondColor = await second.evaluate(element => getComputedStyle(element).backgroundColor);
+ expect(firstColor).not.toBe(secondColor);
+ await page.getByTestId('calendar-next').click();
+ const aprilBadges = page.getByTestId('calendar-day-2026-04-07').getByTestId('calendar-entry');
+ await expect(aprilBadges).toHaveCount(2);
+ await expect(aprilBadges.nth(0)).toHaveCSS('background-color', firstColor);
+ await expect(aprilBadges.nth(1)).toHaveCSS('background-color', secondColor);
+ await page.reload(); await page.getByTestId('shared-calendar-button').click();
+ const reloadedBadges = page.getByTestId('calendar-day-2026-03-05').getByTestId('calendar-entry');
+ await expect(reloadedBadges).toHaveCount(2);
+ await expect(reloadedBadges.nth(0)).toHaveCSS('background-color', firstColor);
+ await expect(reloadedBadges.nth(1)).toHaveCSS('background-color', secondColor);
 });
