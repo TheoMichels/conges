@@ -18,7 +18,7 @@ async function setup(page: Page, failRefresh = false) {
   const payload = route.request().postDataJSON() as Record<string, string | boolean | null> | null;
   if (url.includes("/auth/v1/user")) body = user;
   if (url.includes("/rpc/register_member")) body = [{ active: true, is_admin: true, display_name: "admin" }];
-  if (url.includes("/rpc/admin_members")) body = [{ user_id: memberId, email: "member@example.com", display_name: "Alex", active: true }];
+  if (url.includes("/rpc/admin_members")) body = [{ user_id: memberId, email: "member@example.com", display_name: "Alex", active: true }, { user_id: adminId, email: "admin@example.com", display_name: "Administrateur", active: true }];
   if (url.includes("/rpc/admin_year_catalog")) body = [];
   if (url.includes("/rpc/admin_teams") && failRefresh && saved && !refreshFailed) { refreshFailed = true; await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ invalid: true }) }); return; }
   if (url.includes("/rpc/admin_teams")) body = teams;
@@ -38,7 +38,7 @@ test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ 
  await expect(page.getByTestId("teams-empty")).toBeVisible();
  await page.getByTestId("team-name").fill("Alpha"); await page.getByTestId("team-save").click();
  await expect(page.getByTestId(`team-${alpha}`)).toBeVisible();
- await page.getByTestId("team-name").fill("Beta"); await page.getByTestId("team-save").click();
+ await page.getByTestId("team-name").fill("Équipe des opérations internationales et du support"); await page.getByTestId("team-save").click();
  await expect(page.getByTestId(`team-${beta}`)).toBeVisible();
  for (const id of ["team-name", "team-save", `team-rename-${alpha}`, `team-archive-${alpha}`, `toggle-member-${memberId}`, `team-member-open-${memberId}`]) {
   const bounds = await page.getByTestId(id).boundingBox();
@@ -49,6 +49,11 @@ test("AC-13 et AC-14 : équipes, affectations et archives persistent", async ({ 
  }
  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
  await expect(page.getByTestId(`member-${memberId}`).getByTestId(`toggle-member-${memberId}`)).toBeVisible();
+ const memberSelect = await page.getByTestId(`team-member-open-${memberId}`).boundingBox();
+ const adminSelect = await page.getByTestId(`team-member-open-${adminId}`).boundingBox();
+ expect(memberSelect).not.toBeNull(); expect(adminSelect).not.toBeNull();
+ expect(Math.abs(memberSelect!.x - adminSelect!.x)).toBeLessThanOrEqual(1);
+ expect(await page.getByTestId(`member-toggle-space-${adminId}`).boundingBox()).not.toBeNull();
  await page.getByTestId(`member-${memberId}`).getByTestId(`team-member-open-${memberId}`).click();
  await expect(page.getByTestId(`team-assignment-${memberId}-${alpha}`)).toBeVisible();
  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
