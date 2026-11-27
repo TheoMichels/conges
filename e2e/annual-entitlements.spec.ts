@@ -79,10 +79,16 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId("member-search").fill("");
   await admin.setViewportSize({ width: 1600, height: 1000 });
   const wideRow = admin.getByTestId(`annual-member-${memberId}`);
-  const rowPositions = await Promise.all(["identity", "fields", "actions"].map(group => admin.getByTestId(`annual-${group}-${memberId}`).evaluate(element => {
+  const getRowPositions = () => Promise.all(["identity", "fields", "actions"].map(group => admin.getByTestId(`annual-${group}-${memberId}`).evaluate(element => {
     const bounds = element.getBoundingClientRect();
     return { center: bounds.y + bounds.height / 2, left: bounds.left, right: bounds.right };
   })));
+  await expect.poll(async () => {
+    const positions = await getRowPositions();
+    const centers = positions.map(position => position.center);
+    return Math.max(...centers) - Math.min(...centers);
+  }).toBeLessThan(2);
+  const rowPositions = await getRowPositions();
   const centers = rowPositions.map(position => position.center);
   expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
   expect(rowPositions[0].right).toBeLessThanOrEqual(rowPositions[1].left);
