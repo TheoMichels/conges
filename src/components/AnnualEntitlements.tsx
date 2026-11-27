@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
   rowWide: { flexWrap: "nowrap", flexShrink: 0, gap: spacing.xs },
   buttonWide: { minHeight: 40, paddingHorizontal: 8, paddingVertical: 8 },
-  reservedAction: { opacity: 0 },
+  reservedAction: { width: 67, opacity: 0 },
   fields: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.lg, columnGap: 20 },
   fieldsWide: { flex: 1, minWidth: 0, flexWrap: "nowrap", columnGap: spacing.sm },
   field: { flexGrow: 1, minWidth: 120, gap: 8 },
