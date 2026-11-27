@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { SHORT_MONTH_LABELS } from "../types/yearPlan";
 import { colors, fonts, tabular, webOnly } from "../theme/colors";
 import { formatDayNumber } from "../utils/format";
 import { Badge } from "./ui/Badge";
+import { CumulativeChart } from "./CumulativeChart";
 import { Card, Eyebrow } from "./ui/Card";
 
 type Props = {
@@ -11,7 +11,7 @@ type Props = {
   total: number;
   // Part des congés posés qui reste à venir.
   upcoming?: number;
-  // Jours posés par mois (aperçu annuel, desktop).
+  // Jours posés par mois : alimente la courbe de cumul.
   months?: number[];
   currentMonth?: number;
 };
@@ -26,7 +26,6 @@ export function KpiCards({ remaining, taken, total, upcoming = 0, months, curren
   const scale = Math.max(total, taken, 0.0001);
   const past = Math.max(0, taken - upcoming);
   const pct = (value: number) => `${Math.max(0, Math.min(100, (value / scale) * 100))}%` as const;
-  const maxMonth = Math.max(1, ...(months ?? [0]));
 
   return (
     <Card testID="kpi-cards" style={[styles.card, isMobile && styles.cardMobile]}>
@@ -76,23 +75,7 @@ export function KpiCards({ remaining, taken, total, upcoming = 0, months, curren
         </View>
       </View>
 
-      {months && (
-        <View style={styles.months} accessibilityLabel="Jours posés par mois">
-          {months.map((days, index) => {
-            const isNow = index === currentMonth;
-            const isFuture = currentMonth !== undefined && index > currentMonth;
-            return (
-              <View key={index} style={styles.month}>
-                <Text style={styles.monthValue}>{days > 0 ? formatDayNumber(days) : ""}</Text>
-                <View style={[styles.monthCol, isNow && styles.monthColNow]}>
-                  {days > 0 && <View style={[styles.monthFill, isFuture && styles.monthFillFuture, { height: `${Math.max(8, (days / maxMonth) * 100)}%` }]} />}
-                </View>
-                <Text style={[styles.monthLabel, isNow && styles.monthLabelNow]}>{SHORT_MONTH_LABELS[index].charAt(0).toUpperCase()}</Text>
-              </View>
-            );
-          })}
-        </View>
-      )}
+      {months && <CumulativeChart months={months} total={total} currentMonth={currentMonth} />}
     </Card>
   );
 }
@@ -123,13 +106,4 @@ const styles = StyleSheet.create({
   legendLabel: { fontFamily: fonts.base, fontSize: 12.5, color: colors.textSecondary },
   legendValue: { fontFamily: fonts.base, fontSize: 13.5, fontWeight: "700", color: colors.textPrimary, marginLeft: 2, ...tabular },
   legendUnit: { fontFamily: fonts.base, fontSize: 12.5, color: colors.textSecondary, marginLeft: -3 },
-  months: { flexDirection: "row", gap: 6, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.divider },
-  month: { flex: 1, alignItems: "center", gap: 5 },
-  monthValue: { fontFamily: fonts.base, fontSize: 10.5, color: colors.textSecondary, height: 14, ...tabular },
-  monthCol: { width: "100%", height: 44, borderRadius: 6, backgroundColor: colors.canvas, justifyContent: "flex-end", overflow: "hidden" },
-  monthColNow: { borderWidth: 1.5, borderColor: colors.cta },
-  monthFill: { width: "100%", backgroundColor: colors.primary, borderTopLeftRadius: 5, borderTopRightRadius: 5 },
-  monthFillFuture: { backgroundColor: colors.primaryLight },
-  monthLabel: { fontFamily: fonts.base, fontSize: 11, fontWeight: "600", color: colors.textSecondary },
-  monthLabelNow: { color: colors.ctaText },
 });

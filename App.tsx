@@ -273,7 +273,7 @@ function MainApp() {
                         taken={totalPlanned}
                         total={totalEntitlement}
                         upcoming={upcoming}
-                        months={isMobile ? undefined : monthlyDays(selectedPlan.entries, selectedPlan.year)}
+                        months={monthlyDays(selectedPlan.entries, selectedPlan.year)}
                         currentMonth={isCurrentYear ? new Date().getMonth() : undefined}
                       />
                     </View>
