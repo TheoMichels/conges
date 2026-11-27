@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontFamily: fonts.base, fontSize: 13, fontWeight: "600", color: colors.textSecondary },
   member: { gap: spacing.md, padding: 16, borderWidth: 1, borderColor: colors.border, borderRadius: shape.row, backgroundColor: colors.panel },
   memberWide: { flexDirection: "row", alignItems: "center", flexWrap: "nowrap", gap: spacing.md },
-  identity: { flexShrink: 1, flexBasis: 280, minWidth: 180, maxWidth: 300, gap: 4 },
+  identity: { width: 280, flexShrink: 0, gap: 4 },
   memberName: { fontFamily: fonts.base, fontSize: 16, fontWeight: "700", color: colors.textPrimary },
   memberMeta: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary },
   negative: { color: colors.danger },
