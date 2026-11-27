@@ -98,6 +98,14 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId(`annual-initial-${memberId}`).fill("26");
   await admin.getByTestId(`annual-save-${memberId}`).click();
   await expect(admin.getByTestId("annual-notice")).toContainText("enregistrés");
+  for (const testId of ["fields", "auto", "save"]) {
+    const memberBounds = await admin.getByTestId(`annual-${testId}-${memberId}`).boundingBox();
+    const activeBounds = await admin.getByTestId(`annual-${testId}-${otherMemberId}`).boundingBox();
+    expect(memberBounds).not.toBeNull();
+    expect(activeBounds).not.toBeNull();
+    expect(Math.abs(memberBounds!.x - activeBounds!.x)).toBeLessThan(2);
+    expect(Math.abs(memberBounds!.width - activeBounds!.width)).toBeLessThan(2);
+  }
   await page.reload();
   await expect(page.getByTestId("empty-state")).toBeVisible();
   await admin.reload();
