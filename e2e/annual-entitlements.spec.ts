@@ -83,6 +83,7 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
     const bounds = element.getBoundingClientRect();
     return { center: bounds.y + bounds.height / 2, left: bounds.left, right: bounds.right };
   })));
+  console.log("annual row group bounds", rowPositions);
   const centers = rowPositions.map(position => position.center);
   expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
   expect(rowPositions[0].right).toBeLessThanOrEqual(rowPositions[1].left);
