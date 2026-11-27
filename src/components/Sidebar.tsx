@@ -9,7 +9,9 @@ import {
 } from "react-native";
 import { ActionIcon } from "./ActionIcon";
 import { YearPlan } from "../types/yearPlan";
-import { colors, fonts, selectedInset, shape } from "../theme/colors";
+import { colors, focusRing, fonts, raisedShadow, tabular } from "../theme/colors";
+import { Badge } from "./ui/Badge";
+import { Icon } from "./ui/Icon";
 import { cursorPointer } from "../theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -79,10 +81,7 @@ export function Sidebar({
 
   return (
     <View testID="year-sidebar" style={styles.sidebar}>
-      <View style={styles.headerRow}>
-        <Text style={styles.brand}>Années</Text>
-      </View>
-
+      <Text style={styles.eyebrow}>Années</Text>
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
         {sortedPlans.map((plan) => {
           const selected = plan.id === selectedId;
@@ -96,7 +95,7 @@ export function Sidebar({
                 key={plan.id}
                 testID="section-name-input"
                 accessibilityLabel="Nom de la section"
-                style={styles.editInput}
+                style={[styles.editInput, focusRing]}
                 value={editDraft}
                 onChangeText={setEditDraft}
                 keyboardType="number-pad"
@@ -115,67 +114,52 @@ export function Sidebar({
                   Supprimer {plan.year} ?
                 </Text>
                 <Pressable
-                  style={cursorPointer}
+                  style={[styles.confirmButton, cursorPointer]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Confirmer la suppression de ${plan.year}`}
                   onPress={() => {
                     onDelete(plan.id);
                     setConfirmDeleteId(null);
                   }}
                   hitSlop={8}
                 >
-                  <Text style={styles.confirmYes}>✓</Text>
+                  <Icon name="check" size={16} color={colors.danger} strokeWidth={2.2} />
                 </Pressable>
                 <Pressable
-                  style={cursorPointer}
+                  style={[styles.confirmButton, cursorPointer]}
                   accessibilityRole="button"
                   accessibilityLabel="Annuler la suppression"
                   onPress={() => setConfirmDeleteId(null)}
                   hitSlop={8}
                 >
-                  <Text style={styles.confirmNo}>✕</Text>
+                  <Icon name="x" size={16} color={colors.textSecondary} />
                 </Pressable>
               </View>
             );
           }
 
+          const showActions = selected && !readOnly;
           return (
             <View
               key={plan.id}
-              style={[styles.item, selected && styles.itemSelected, selected && selectedInset]}
+              style={[styles.item, selected && styles.itemSelected, selected && raisedShadow]}
             >
+              {selected ? <View style={styles.selectedBar} /> : null}
               <Pressable
                 style={[styles.itemPressable, cursorPointer]}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
                 onPress={() => onSelect(plan.id)}
               >
-                <View style={styles.itemContent}>
-                  <View style={styles.yearRow}>
-                    <Text
-                      style={[styles.itemText, selected && styles.itemTextSelected]}
-                      numberOfLines={1}
-                    >
-                      {plan.year}
-                    </Text>
-                    {isCurrentYear && (
-                      <View
-                        style={[
-                          styles.currentBadge,
-                          selected && styles.currentBadgeSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.currentBadgeText,
-                            selected && styles.currentBadgeTextSelected,
-                          ]}
-                        >
-                          En cours
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
+                <Text style={styles.itemText} numberOfLines={1}>{plan.year}</Text>
+                {isCurrentYear && <Badge label="En cours" tone="outline" />}
+                {!showActions && (
+                  <Text style={[styles.remaining, remaining < 0 && styles.remainingNegative]} numberOfLines={1}>
+                    {formatDayNumber(remaining)} j{selected ? "" : " restants"}
+                  </Text>
+                )}
               </Pressable>
-
-              {selected && !readOnly ? (
+              {showActions && (
                 <View style={styles.actionButtons}>
                   <Pressable
                     testID={`edit-section-${plan.id}`}
@@ -186,7 +170,7 @@ export function Sidebar({
                       e.stopPropagation();
                       startEditing(plan);
                     }}
-                    hitSlop={8}
+                    hitSlop={4}
                   >
                     <ActionIcon name="edit" />
                   </Pressable>
@@ -199,34 +183,10 @@ export function Sidebar({
                       e.stopPropagation();
                       setConfirmDeleteId(plan.id);
                     }}
-                    hitSlop={8}
+                    hitSlop={4}
                   >
                     <ActionIcon name="delete" />
                   </Pressable>
-                </View>
-              ) : (
-                <View
-                  style={[
-                    styles.remainingBadge,
-                    remaining < 0
-                      ? styles.remainingBadgeNegative
-                      : styles.remainingBadgePositive,
-                    selected && styles.remainingBadgeSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.remainingBadgeText,
-                      remaining < 0
-                        ? styles.remainingBadgeTextNegative
-                        : styles.remainingBadgeTextPositive,
-                      selected && styles.remainingBadgeTextSelected,
-                    ]}
-                  >
-                    {remaining > 0
-                      ? `+${formatDayNumber(remaining)} j`
-                      : `${formatDayNumber(remaining)} j`}
-                  </Text>
                 </View>
               )}
             </View>
@@ -236,11 +196,11 @@ export function Sidebar({
 
       {!readOnly && (isAdding ? (
         <TextInput
-          style={styles.addInput}
+          style={[styles.addInput, focusRing]}
           value={draft}
           onChangeText={setDraft}
           placeholder="AAAA"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.textFaint}
           keyboardType="number-pad"
           maxLength={4}
           onSubmitEditing={commitAdd}
@@ -248,217 +208,36 @@ export function Sidebar({
           autoFocus
         />
       ) : (
-        <Pressable
-          style={[styles.addButton, cursorPointer]}
-          onPress={startAdding}
-        >
+        <Pressable style={[styles.addButton, cursorPointer]} accessibilityRole="button" onPress={startAdding}>
           <Text style={styles.addButtonText}>+ Ajouter une année</Text>
         </Pressable>
       ))}
 
+      {readOnly && <Text style={styles.footNote}>Les années et les droits sont gérés par l’administration.</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sidebar: {
-    flex: 1,
-    width: 240,
-    backgroundColor: "transparent",
-    borderWidth: 0,
-    padding: 0,
-    marginRight: 28,
-  },
-  headerRow: {
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  brand: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    color: colors.textSecondary,
-  },
-  list: {
-    flexGrow: 0,
-    flexShrink: 1,
-    marginBottom: 0,
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 50,
-    borderRadius: shape.row,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    marginBottom: 10,
-  },
-  itemSelected: {
-    borderColor: colors.primaryBorder,
-    backgroundColor: colors.primarySoft,
-  },
-  itemPressable: {
-    flex: 1,
-    minWidth: 0,
-  },
-  itemContent: {
-    flexDirection: "column",
-    justifyContent: "center",
-  },
-  yearRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 8,
-  },
-  itemText: {
-    fontFamily: fonts.base,
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  itemTextSelected: {
-    color: colors.textPrimary,
-  },
-  currentBadge: {
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.primaryBorder,
-    borderRadius: shape.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  currentBadgeSelected: {
-    backgroundColor: colors.panel,
-  },
-  currentBadgeText: {
-    fontFamily: fonts.base,
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  currentBadgeTextSelected: {
-    color: colors.primary,
-  },
-  remainingBadge: {
-    borderRadius: shape.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  remainingBadgePositive: {
-    backgroundColor: colors.positiveSoft,
-  },
-  remainingBadgeNegative: {
-    backgroundColor: colors.dangerSoft,
-  },
-  remainingBadgeSelected: {},
-  remainingBadgeText: {
-    fontFamily: fonts.base,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  remainingBadgeTextPositive: {
-    color: colors.positive,
-  },
-  remainingBadgeTextNegative: {
-    color: colors.danger,
-  },
-  remainingBadgeTextSelected: {},
-  actionButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 0,
-    marginVertical: -7,
-    marginRight: -7,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10,
-  },
-  iconButtonPressed: {
-    opacity: 0.6,
-  },
-  confirmItem: {
-    backgroundColor: colors.dangerSoft,
-    borderColor: "#F5C2C2",
-  },
-  confirmText: {
-    fontFamily: fonts.base,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.danger,
-  },
-  confirmYes: {
-    fontFamily: fonts.base,
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.danger,
-    paddingHorizontal: 4,
-  },
-  confirmNo: {
-    fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.textSecondary,
-    paddingHorizontal: 4,
-  },
-  addButton: {
-    marginTop: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: "center",
-    borderRadius: shape.row,
-    borderWidth: 1,
-    borderColor: colors.borderDashed,
-    borderStyle: "dashed",
-    alignItems: "center",
-  },
-  addButtonText: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  addInput: {
-    fontFamily: fonts.base,
-    marginTop: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 44,
-    borderRadius: shape.row,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.panel,
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  editInput: {
-    fontFamily: fonts.base,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 50,
-    borderRadius: shape.row,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.panel,
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
+  sidebar: { flex: 1 },
+  eyebrow: { fontFamily: fonts.base, fontSize: 11.5, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", color: colors.textSecondary, marginTop: 6, marginBottom: 10, marginLeft: 10 },
+  list: { flexGrow: 0, flexShrink: 1 },
+  item: { flexDirection: "row", alignItems: "center", minHeight: 48, borderRadius: 10, borderWidth: 1, borderColor: "transparent", marginBottom: 4, position: "relative" },
+  itemSelected: { backgroundColor: colors.panel, borderColor: colors.border },
+  selectedBar: { position: "absolute", left: -1, top: 12, bottom: 12, width: 3, borderTopRightRadius: 3, borderBottomRightRadius: 3, backgroundColor: colors.cta },
+  itemPressable: { flex: 1, minWidth: 0, minHeight: 46, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 12, paddingRight: 10 },
+  itemText: { fontFamily: fonts.base, fontSize: 15, fontWeight: "700", color: colors.textPrimary, flexShrink: 0 },
+  remaining: { marginLeft: "auto", fontFamily: fonts.base, fontSize: 12.5, color: colors.textSecondary, ...tabular },
+  remainingNegative: { color: colors.danger, fontWeight: "600" },
+  actionButtons: { flexDirection: "row", alignItems: "center" },
+  iconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10 },
+  iconButtonPressed: { opacity: 0.6 },
+  confirmItem: { backgroundColor: colors.dangerSoft, borderColor: colors.dangerBorder, paddingLeft: 12 },
+  confirmText: { fontFamily: fonts.base, flex: 1, fontSize: 13, fontWeight: "600", color: colors.danger },
+  confirmButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  addButton: { marginTop: 8, paddingHorizontal: 12, minHeight: 44, justifyContent: "center", borderRadius: 10, borderWidth: 1, borderColor: colors.borderDashed, borderStyle: "dashed", alignItems: "center" },
+  addButtonText: { fontFamily: fonts.base, fontSize: 13.5, fontWeight: "600", color: colors.textSecondary },
+  addInput: { fontFamily: fonts.base, marginTop: 8, paddingHorizontal: 12, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.panel, color: colors.textPrimary, fontSize: 15, fontWeight: "700", textAlign: "center" },
+  editInput: { fontFamily: fonts.base, paddingHorizontal: 12, minHeight: 48, borderRadius: 10, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.panel, color: colors.textPrimary, fontSize: 15, fontWeight: "700", marginBottom: 4 },
+  footNote: { fontFamily: fonts.base, fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 18, marginHorizontal: 10, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border },
 });

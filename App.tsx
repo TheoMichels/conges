@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
 import type { User } from "@supabase/supabase-js";
 import {
   KeyboardAvoidingView,
@@ -19,7 +18,7 @@ import { pullFromCloud } from "./src/services/syncService";
 import { useYearPlans } from "./src/hooks/useYearPlans";
 import { AuthScreen } from "./src/components/AuthScreen";
 import { LoadingScreen, LoadingSkeleton } from "./src/components/LoadingScreen";
-import { Header } from "./src/components/Header";
+import { AppSection, Header, NavProps, TabBar } from "./src/components/Header";
 import { SharedCalendar } from "./src/components/SharedCalendar";
 import { CompanyScreen } from "./src/components/CompanyScreen";
 import { LegacyRecovery } from "./src/components/LegacyRecovery";
@@ -31,7 +30,9 @@ import { SummaryFields } from "./src/components/SummaryFields";
 import { LeaveEntries } from "./src/components/LeaveEntries";
 import { MobileDashboard } from "./src/components/MobileDashboard";
 import { YearSelectorMobile } from "./src/components/YearSelectorMobile";
-import { colors, fonts, gradient, pearlBackground, shadows, shape, spacing } from "./src/theme/colors";
+import { Button } from "./src/components/ui/Button";
+import { Icon } from "./src/components/ui/Icon";
+import { colors, fonts, shadows, shape, spacing, webOnly } from "./src/theme/colors";
 import { cursorPointer } from "./src/theme/webCursor";
 import {
   calculatePlanRemaining,
@@ -40,19 +41,35 @@ import {
   calculatePlanBudget,
   findPreviousYearPlan,
 } from "./src/utils/yearPlanUtils";
+import { monthlyDays, plannedDays } from "./src/utils/leaveStats";
 
-// Matches Sidebar's own width (240) + marginRight (28).
-const SIDEBAR_TOTAL_WIDTH = 268;
+const SIDEBAR_WIDTH = 240;
 
-interface MainAppProps {
+type ShellProps = NavProps & {
   user?: User | null;
+  displayName?: string;
   onSignOut?: () => void;
-  onProfile?: () => void;
-  onAdmin?: () => void;
-  onSharedCalendar?: () => void;
+  children: ReactNode;
+};
+
+// Coquille commune : en-tête persistant sur toutes les pages, barre d'onglets en mobile.
+function AppShell({ user, displayName, onSignOut, children, ...nav }: ShellProps) {
+  const isMobile = useWindowDimensions().width < 768;
+  return (
+    <View style={styles.root}>
+      <SafeAreaView style={styles.flex}>
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <Header isMobile={isMobile} user={user} displayName={displayName} onSignOut={onSignOut} {...nav} />
+          <View style={styles.flex}>{children}</View>
+          {isMobile && <TabBar {...nav} />}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+      <StatusBar style="dark" />
+    </View>
+  );
 }
 
-function MainApp({ user, onSignOut, onProfile, onAdmin, onSharedCalendar }: MainAppProps) {
+function MainApp() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const {
@@ -69,6 +86,9 @@ function MainApp({ user, onSignOut, onProfile, onAdmin, onSharedCalendar }: Main
     removeEntry,
   } = useYearPlans();
   const [selectedId, setSelectedId] = useState<string>();
+  const [isAdding, setIsAdding] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const listY = useRef(0);
 
   useEffect(() => {
     if (!selectedId && plans.length > 0) {
@@ -77,6 +97,8 @@ function MainApp({ user, onSignOut, onProfile, onAdmin, onSharedCalendar }: Main
       setSelectedId(currentPlan ? currentPlan.id : plans[0].id);
     }
   }, [plans, selectedId]);
+
+  useEffect(() => { setIsAdding(false); }, [selectedId]);
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -132,133 +154,131 @@ function MainApp({ user, onSignOut, onProfile, onAdmin, onSharedCalendar }: Main
     runAction(() => removeEntry(selectedPlan.id, entryId));
   };
 
+  const startAdding = () => {
+    setIsAdding(true);
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: Math.max(0, listY.current - 12), animated: true }));
+  };
+
   const previousPlan = selectedPlan ? findPreviousYearPlan(plans, selectedPlan) : undefined;
   const totalPlanned = selectedPlan ? calculatePlanTaken(selectedPlan) : 0;
   const remaining = selectedPlan ? calculatePlanRemaining(selectedPlan) : 0;
   const totalEntitlement = selectedPlan ? calculatePlanBudget(selectedPlan) : 0;
+  const upcoming = selectedPlan ? plannedDays(selectedPlan.entries, selectedPlan.year) : 0;
+  const isCurrentYear = selectedPlan?.year === String(new Date().getFullYear());
+
+  const addButton = (
+    <Button
+      testID="add-leave-button"
+      variant="primary"
+      icon="plus"
+      label={isMobile ? "Ajouter" : "Ajouter un congé"}
+      onPress={startAdding}
+      style={isMobile ? [styles.fab, webOnly({ boxShadow: "0 8px 20px rgba(238, 106, 36, 0.35)" })] : undefined}
+    />
+  );
 
   return (
-    <LinearGradient
-      colors={gradient.colors}
-      locations={gradient.locations}
-      start={gradient.start}
-      end={gradient.end}
-      style={styles.root}
-    >
-      <SafeAreaView style={styles.flex}>
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <Header
-            isMobile={isMobile}
-            user={user}
-            onSignOut={onSignOut}
-            onProfile={onProfile}
-            onAdmin={onAdmin}
-            onSharedCalendar={onSharedCalendar}
-          />
+    <View style={styles.flex}>
+      {isMobile && (
+        <YearSelectorMobile
+          readOnly={!isLocalMode}
+          plans={plans}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onAdd={handleAddYear}
+        />
+      )}
 
-          {isMobile && (
-            <YearSelectorMobile
-              readOnly={!isLocalMode}
-              plans={plans}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onAdd={handleAddYear}
-            />
+      <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
+        <View style={styles.layout}>
+          {!isMobile && (
+            <View style={styles.sidebarWrapper}>
+              <Sidebar
+                readOnly={!isLocalMode}
+                plans={plans}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onAdd={handleAddYear}
+                onRename={handleRenameYear}
+                onDelete={handleRemoveYear}
+              />
+            </View>
           )}
 
-          <View style={[styles.pageContent, isMobile && styles.pageContentMobile]}>
-            <View style={styles.layout}>
-              {!isMobile && (
-                <View style={styles.sidebarWrapper}>
-                  <Sidebar
-                    readOnly={!isLocalMode}
-                    plans={plans}
-                    selectedId={selectedId}
-                    onSelect={setSelectedId}
-                    onAdd={handleAddYear}
-                    onRename={handleRenameYear}
-                    onDelete={handleRemoveYear}
+          <View style={styles.mainArea}>
+            {actionError && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{actionError}</Text>
+                <Pressable
+                  accessibilityLabel="Fermer l'alerte"
+                  accessibilityRole="button"
+                  onPress={() => setActionError(null)}
+                  hitSlop={8}
+                  style={[styles.errorBannerClose, cursorPointer]}
+                >
+                  <Icon name="x" size={16} color={colors.danger} />
+                </Pressable>
+              </View>
+            )}
+
+            {error ? (
+              <View testID="error-state" style={styles.stateContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <Button label="Réessayer" onPress={retry} style={styles.stateButton} />
+              </View>
+            ) : loading ? (
+              <View testID="loading-state" style={styles.stateContainer}>
+                <LoadingSkeleton />
+              </View>
+            ) : !selectedPlan || plans.length === 0 ? (
+              <View testID="empty-state" style={styles.stateContainer}>
+                <Text style={styles.empty}>{isLocalMode ? "Aucune année de congés enregistrée." : "Aucune année de congés activée"}</Text>
+                {!isLocalMode && <Text style={styles.emptyHint}>Votre administrateur doit activer l’année avant que vous puissiez poser des congés.</Text>}
+                {isLocalMode && (
+                  <Button
+                    variant="primary"
+                    label="+ Créer une année"
+                    onPress={() => handleAddYear(new Date().getFullYear().toString())}
+                    style={styles.stateButton}
                   />
-                </View>
-              )}
-
-              <View style={styles.mainArea}>
-                {actionError && (
-                  <View style={styles.errorBanner}>
-                    <Text style={styles.errorBannerText}>{actionError}</Text>
-                    <Pressable
-                      accessibilityLabel="Fermer l'alerte"
-                      accessibilityRole="button"
-                      onPress={() => setActionError(null)}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.errorBannerClose}>✕</Text>
-                    </Pressable>
-                  </View>
                 )}
-
-                {error ? (
-                  <View testID="error-state" style={styles.stateContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      style={[styles.retryButton, cursorPointer]}
-                      onPress={retry}
-                    >
-                      <Text style={styles.retryText}>Réessayer</Text>
-                    </Pressable>
-                  </View>
-                ) : loading ? (
-                  <View testID="loading-state" style={styles.stateContainer}>
-                    <LoadingSkeleton />
-                  </View>
-                ) : !selectedPlan || plans.length === 0 ? (
-                  <View testID="empty-state" style={styles.stateContainer}>
-                    <Text style={styles.empty}>{isLocalMode ? "Aucune année de congés enregistrée." : "Aucune année de congés activée"}</Text>
-                    {isLocalMode && <Pressable
-                      accessibilityRole="button"
-                      style={[styles.retryButton, styles.ctaButton, cursorPointer]}
-                      onPress={() => handleAddYear(new Date().getFullYear().toString())}
-                    >
-                      <Text style={styles.ctaText}>+ Créer une année</Text>
-                    </Pressable>}
-                  </View>
-                ) : (
-                  <ScrollView
-                    style={[styles.content, isMobile && styles.contentMobile]}
-                    contentContainerStyle={[styles.contentInner, isMobile && styles.contentInnerMobile]}
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {!isMobile && (
-                      <View style={styles.titleRow}>
-                        <Text style={styles.header}>Mes congés</Text>
-                        <Text style={styles.headerYear}>{selectedPlan.year}</Text>
+              </View>
+            ) : (
+              <>
+                <ScrollView
+                  ref={scrollRef}
+                  style={styles.content}
+                  contentContainerStyle={[styles.contentInner, isMobile && styles.contentInnerMobile]}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {!isMobile && (
+                    <View style={styles.titleRow}>
+                      <View style={styles.titleBlock}>
+                        <View style={styles.titleLine}>
+                          <Text style={styles.header}>Mes congés</Text>
+                          <Text style={styles.headerYear}>{selectedPlan.year}</Text>
+                        </View>
+                        <Text style={styles.subtitle}>
+                          {isLocalMode ? "Données enregistrées sur cet appareil" : "Droits définis par l’administration"}
+                        </Text>
                       </View>
-                    )}
+                      {!isAdding && addButton}
+                    </View>
+                  )}
 
-                    <KpiCards
-                      remaining={remaining}
-                      taken={totalPlanned}
-                      total={totalEntitlement}
-                    />
-
+                  <View style={[styles.overview, isMobile && styles.overviewMobile]}>
+                    <View style={!isMobile && styles.overviewMain}>
+                      <KpiCards
+                        remaining={remaining}
+                        taken={totalPlanned}
+                        total={totalEntitlement}
+                        upcoming={upcoming}
+                        months={isMobile ? undefined : monthlyDays(selectedPlan.entries, selectedPlan.year)}
+                        currentMonth={isCurrentYear ? new Date().getMonth() : undefined}
+                      />
+                    </View>
                     {isMobile ? (
                       <MobileDashboard
-                        readOnly={!isLocalMode}
-                        initialLeave={selectedPlan.initialLeave}
-                        carriedOver={selectedPlan.carriedOver}
-                        csupp={selectedPlan.csupp}
-                        holidayIsManual={selectedPlan.holidayOverride !== null}
-                        publicHolidays={calculatePlanHolidays(selectedPlan)}
-                        onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
-                        onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
-                        onChangeCsupp={(value) => handleUpdate({ csupp: value })}
-                      />
-                    ) : (
-                      <SummaryFields
                         readOnly={!isLocalMode}
                         year={selectedPlan.year}
                         initialLeave={selectedPlan.initialLeave}
@@ -266,31 +286,52 @@ function MainApp({ user, onSignOut, onProfile, onAdmin, onSharedCalendar }: Main
                         csupp={selectedPlan.csupp}
                         holidayIsManual={selectedPlan.holidayOverride !== null}
                         publicHolidays={calculatePlanHolidays(selectedPlan)}
-                        taken={totalPlanned}
-                        remaining={remaining}
+                        total={totalEntitlement}
                         previousYear={previousPlan?.year}
                         onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
                         onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
                         onChangeCsupp={(value) => handleUpdate({ csupp: value })}
                       />
+                    ) : (
+                      <View style={styles.overviewSide}>
+                        <SummaryFields
+                          readOnly={!isLocalMode}
+                          year={selectedPlan.year}
+                          initialLeave={selectedPlan.initialLeave}
+                          carriedOver={selectedPlan.carriedOver}
+                          csupp={selectedPlan.csupp}
+                          holidayIsManual={selectedPlan.holidayOverride !== null}
+                          publicHolidays={calculatePlanHolidays(selectedPlan)}
+                          total={totalEntitlement}
+                          previousYear={previousPlan?.year}
+                          onChangeInitialLeave={(value) => handleUpdate({ initialLeave: value })}
+                          onChangeCarriedOver={(value) => handleUpdate({ carriedOver: value })}
+                          onChangeCsupp={(value) => handleUpdate({ csupp: value })}
+                        />
+                      </View>
                     )}
+                  </View>
 
+                  <View onLayout={(event) => { listY.current = event.nativeEvent.layout.y; }}>
                     <LeaveEntries
                       year={selectedPlan.year}
                       entries={selectedPlan.entries}
+                      remaining={remaining}
+                      isAdding={isAdding}
+                      onCloseAdd={() => setIsAdding(false)}
                       onAdd={handleAddEntry}
                       onUpdate={handleUpdateEntry}
                       onRemove={handleRemoveEntry}
                     />
-                  </ScrollView>
-                )}
-              </View>
-            </View>
+                  </View>
+                </ScrollView>
+                {isMobile && !isAdding && addButton}
+              </>
+            )}
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-      <StatusBar style="dark" />
-    </LinearGradient>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -298,7 +339,7 @@ export default function App() {
   useEffect(() => {
     if (Platform.OS === "web") {
       document.documentElement.style.colorScheme = "only light";
-      document.documentElement.style.backgroundColor = colors.background;
+      document.documentElement.style.backgroundColor = colors.canvas;
     }
   }, []);
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
@@ -322,7 +363,7 @@ export default function App() {
   const [isPulling, setIsPulling] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [screen, setScreen] = useState<"home" | "admin" | "profile" | "calendar">(() =>
+  const [screen, setScreen] = useState<AppSection>(() =>
     Platform.OS === "web" && window.location.pathname === "/administration" ? "admin" : "home"
   );
   useEffect(() => {
@@ -343,72 +384,48 @@ export default function App() {
     })();
     return () => { cancelled = true; };
   }, [user?.id, attempt, storageReady]);
-  const navigate = (next: "home" | "admin" | "profile" | "calendar") => {
+  const navigate = (next: AppSection) => {
     setScreen(next);
     if (Platform.OS === "web") window.history.pushState({}, "", next === "admin" ? "/administration" : "/");
   };
-  if (storageError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="storage-error"><Text style={styles.errorText}>{storageError}</Text><Pressable onPress={() => setStorageAttempt(n => n + 1)} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Réessayer</Text></Pressable></View></View>;
+  if (storageError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="storage-error"><Text style={styles.errorText}>{storageError}</Text><Button label="Réessayer" onPress={() => setStorageAttempt(n => n + 1)} style={styles.stateButton} /></View></View>;
   if (!storageReady) return <LoadingScreen />;
   if (recoveryPending) return <LegacyRecovery onDone={() => setRecoveryPending(false)} />;
   if (!isLocalMode && (isLoading || isPulling || (user && !account && !accountError))) return <LoadingScreen />;
   if (!isLocalMode && !isAuthenticated) return <AuthScreen />;
-  if (!isLocalMode && accountError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="account-error"><Text style={styles.errorText}>{accountError}</Text><Pressable onPress={() => setAttempt(n => n + 1)} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Réessayer</Text></Pressable><Pressable onPress={signOut} style={[styles.retryButton, cursorPointer]}><Text style={styles.retryText}>Se déconnecter</Text></Pressable></View></View>;
-  if (isLocalMode && screen === "admin") return <CompanyScreen account={{ active: true, is_admin: true, display_name: "Démonstration" }} userId="demo-admin" admin demo onClose={() => navigate("home")} />;
-  if (!isLocalMode && account && screen === "calendar") return <SharedCalendar onClose={() => navigate("home")} />;
-  if (!isLocalMode && user && account && screen !== "home") return <CompanyScreen account={account} userId={user.id} admin={screen === "admin"} onClose={() => navigate("home")} onName={name => setAccount({ ...account, display_name: name })} />;
-  return <MainApp key={user?.id ?? "local"} user={user} onSignOut={signOut} onProfile={account ? () => navigate("profile") : undefined} onAdmin={isLocalMode || account?.is_admin ? () => navigate("admin") : undefined} onSharedCalendar={account ? () => navigate("calendar") : undefined} />;
+  if (!isLocalMode && accountError) return <View style={styles.screenState}><View style={[styles.stateContainer, styles.stateCard]} testID="account-error"><Text style={styles.errorText}>{accountError}</Text><Button label="Réessayer" onPress={() => setAttempt(n => n + 1)} style={styles.stateButton} /><Button label="Se déconnecter" variant="ghost" onPress={signOut} style={styles.stateButton} /></View></View>;
+
+  const nav: NavProps = {
+    active: screen,
+    onHome: () => navigate("home"),
+    onSharedCalendar: account ? () => navigate("calendar") : undefined,
+    onProfile: account ? () => navigate("profile") : undefined,
+    onAdmin: isLocalMode || account?.is_admin ? () => navigate("admin") : undefined,
+  };
+  let content: ReactNode;
+  if (isLocalMode && screen === "admin") content = <CompanyScreen account={{ active: true, is_admin: true, display_name: "Démonstration" }} userId="demo-admin" admin demo onClose={() => navigate("home")} />;
+  else if (!isLocalMode && account && screen === "calendar") content = <SharedCalendar />;
+  else if (!isLocalMode && user && account && screen !== "home") content = <CompanyScreen account={account} userId={user.id} admin={screen === "admin"} onClose={() => navigate("home")} onName={name => setAccount({ ...account, display_name: name })} />;
+  else content = <MainApp key={user?.id ?? "local"} />;
+  return (
+    <AppShell {...nav} user={user} displayName={account?.display_name} onSignOut={isLocalMode ? undefined : signOut}>
+      {content}
+    </AppShell>
+  );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    ...pearlBackground,
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  pageContent: {
-    flex: 1,
-    paddingTop: 36,
-    paddingHorizontal: 40,
-    width: "100%",
-    alignSelf: "center",
-  },
-  pageContentMobile: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-  },
-  layout: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  mainArea: {
-    flex: 1,
-    flexDirection: "column",
-  },
-  sidebarWrapper: {
-    width: SIDEBAR_TOTAL_WIDTH,
-    overflow: "hidden",
-  },
-  content: {
-    flex: 1,
-    backgroundColor: "transparent",
-  },
-  contentMobile: {
-    backgroundColor: "transparent",
-  },
-  contentInner: {
-    paddingBottom: 44,
-  },
-  contentInnerMobile: {
-    paddingBottom: 24,
-  },
-  screenState: {
-    ...pearlBackground,
-    flex: 1,
-    padding: spacing.xl,
-    justifyContent: "center",
-  },
+  root: { flex: 1, backgroundColor: colors.canvas },
+  flex: { flex: 1 },
+  pageContent: { flex: 1, paddingTop: 28, paddingHorizontal: 32, width: "100%", alignSelf: "center" },
+  pageContentMobile: { paddingHorizontal: 16, paddingTop: 14 },
+  layout: { flex: 1, flexDirection: "row" },
+  mainArea: { flex: 1, flexDirection: "column", minWidth: 0 },
+  sidebarWrapper: { width: SIDEBAR_WIDTH, marginRight: 32 },
+  content: { flex: 1, backgroundColor: "transparent" },
+  contentInner: { paddingBottom: 44 },
+  contentInnerMobile: { paddingBottom: 96 },
+  screenState: { flex: 1, padding: spacing.xl, justifyContent: "center", backgroundColor: colors.canvas },
   stateContainer: {
     flex: 1,
     borderRadius: shape.card,
@@ -419,103 +436,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 220,
+    gap: 8,
   },
-  stateCard: {
-    flex: 0,
-    width: "100%",
-    maxWidth: 560,
-    alignSelf: "center",
-    ...shadows.md,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: spacing.xl,
-  },
-  header: {
-    fontFamily: fonts.base,
-    fontSize: 30,
-    fontWeight: "700",
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
+  stateCard: { flex: 0, width: "100%", maxWidth: 560, alignSelf: "center", ...shadows.md },
+  stateButton: { alignSelf: "center", marginTop: 8 },
+  titleRow: { flexDirection: "row", alignItems: "flex-end", flexWrap: "wrap", gap: 16, marginBottom: 22 },
+  titleBlock: { flex: 1, minWidth: 240 },
+  titleLine: { flexDirection: "row", alignItems: "center", gap: 10 },
+  header: { fontFamily: fonts.base, fontSize: 26, fontWeight: "700", color: colors.textPrimary, letterSpacing: -0.4 },
   headerYear: {
     fontFamily: fonts.base,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
-    color: colors.cta,
+    color: colors.ctaText,
     backgroundColor: colors.ctaSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: shape.pill,
     overflow: "hidden",
   },
-  empty: {
-    fontFamily: fonts.base,
-    textAlign: "center",
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  errorText: {
-    fontFamily: fonts.base,
-    textAlign: "center",
-    color: colors.danger,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  retryButton: {
-    alignSelf: "center",
-    marginTop: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    minHeight: 44,
-    justifyContent: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-  },
-  retryText: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  ctaButton: {
-    borderColor: colors.cta,
-    backgroundColor: colors.cta,
-  },
-  ctaText: {
-    fontFamily: fonts.base,
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.textOnBrand,
-  },
+  subtitle: { fontFamily: fonts.base, fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+  overview: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", gap: 20, marginBottom: 20 },
+  overviewMobile: { flexDirection: "column", alignItems: "stretch", gap: 12, marginBottom: 12 },
+  overviewMain: { flexGrow: 1.35, flexBasis: 420, minWidth: 0 },
+  overviewSide: { flexGrow: 1, flexBasis: 320, minWidth: 0 },
+  empty: { fontFamily: fonts.base, textAlign: "center", color: colors.textPrimary, fontSize: 16, fontWeight: "600" },
+  emptyHint: { fontFamily: fonts.base, textAlign: "center", color: colors.textSecondary, fontSize: 14, maxWidth: 360 },
+  errorText: { fontFamily: fonts.base, textAlign: "center", color: colors.danger, fontSize: 16, fontWeight: "600" },
+  fab: { position: "absolute", right: 0, bottom: 16, minHeight: 50, borderRadius: 16, paddingHorizontal: 18, alignSelf: "auto" },
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: "#F5C2C2",
+    borderColor: colors.dangerBorder,
     borderRadius: shape.row,
     paddingHorizontal: 16,
     paddingVertical: 10,
     minHeight: 44,
     marginBottom: 16,
   },
-  errorBannerText: {
-    fontFamily: fonts.base,
-    color: colors.danger,
-    flex: 1,
-    fontWeight: "600",
-  },
-  errorBannerClose: {
-    fontFamily: fonts.base,
-    color: colors.danger,
-    fontWeight: "600",
-    marginLeft: 12,
-    padding: 4,
-  },
+  errorBannerText: { fontFamily: fonts.base, color: colors.danger, flex: 1, fontWeight: "600" },
+  errorBannerClose: { marginLeft: 12, padding: 4 },
 });

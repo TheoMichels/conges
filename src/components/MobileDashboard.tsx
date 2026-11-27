@@ -1,97 +1,40 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts, shape } from '../theme/colors';
-import { NumberField } from './NumberField';
-import { formatDayNumber } from '../utils/format';
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { colors, fonts, tabular } from "../theme/colors";
+import { cursorPointer } from "../theme/webCursor";
+import { formatDayNumber } from "../utils/format";
+import { RightsBreakdown, RightsProps } from "./SummaryFields";
+import { Card } from "./ui/Card";
+import { Icon } from "./ui/Icon";
 
-type Props = {
-  readOnly?: boolean;
-  holidayIsManual: boolean;
-  initialLeave: number;
-  carriedOver: number;
-  csupp: number;
-  publicHolidays: number;
-  onChangeInitialLeave: (value: number) => void;
-  onChangeCarriedOver: (value: number) => void;
-  onChangeCsupp: (value: number) => void;
-};
+type Props = Omit<RightsProps, "year"> & { year?: string };
 
-export function MobileDashboard({
-  readOnly = false,
-  holidayIsManual,
-  initialLeave,
-  carriedOver,
-  csupp,
-  publicHolidays,
-  onChangeInitialLeave,
-  onChangeCarriedOver,
-  onChangeCsupp,
-}: Props) {
+// Mobile : composition des droits repliable sous la carte de solde.
+export function MobileDashboard({ year = String(new Date().getFullYear()), ...props }: Props) {
+  const [open, setOpen] = useState(false);
   return (
-    <View testID="mobile-dashboard" style={styles.card}>
-      <View style={styles.grid}>
-        <View style={styles.gridItem}>
-          <NumberField readOnly={readOnly} label="Congés" value={initialLeave} onChange={onChangeInitialLeave} />
-        </View>
-        <View style={styles.gridItem}>
-          <NumberField readOnly={readOnly} label="Report" value={carriedOver} onChange={onChangeCarriedOver} />
-        </View>
-        <View style={styles.gridItem}>
-          <NumberField readOnly={readOnly} label="Csupp" value={csupp} onChange={onChangeCsupp} />
-        </View>
-        <View style={styles.gridItem}>
-          <View style={styles.readOnlyContainer}>
-            <Text style={styles.readOnlyLabel}>Fériés ({holidayIsManual ? 'manuel' : 'auto'})</Text>
-            <View style={styles.readOnlyBox}>
-              <Text style={styles.readOnlyValue}>{formatDayNumber(publicHolidays)}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    </View>
+    <Card testID="mobile-dashboard" style={styles.card}>
+      <Pressable
+        testID="mobile-dashboard-toggle"
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((v) => !v)}
+        style={[styles.head, cursorPointer]}
+      >
+        <Text style={styles.title}>Composition des droits</Text>
+        <Text style={styles.total}>{formatDayNumber(props.total)} j</Text>
+        <View style={open && styles.chevronOpen}><Icon name="down" size={18} color={colors.textFaint} /></View>
+      </Pressable>
+      {open && <View style={styles.body}><RightsBreakdown {...props} year={year} /></View>}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.panel,
-    borderRadius: shape.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    marginBottom: 14,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  gridItem: {
-    flex: 1,
-    minWidth: '45%',
-  },
-  readOnlyContainer: {
-    flex: 1,
-  },
-  readOnlyLabel: {
-    fontFamily: fonts.base,
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  readOnlyBox: {
-    backgroundColor: colors.panelSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 46,
-    justifyContent: 'center',
-  },
-  readOnlyValue: {
-    fontFamily: fonts.base,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
+  card: { paddingHorizontal: 14 },
+  head: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 50 },
+  title: { flex: 1, fontFamily: fonts.base, fontSize: 14.5, fontWeight: "600", color: colors.textPrimary },
+  total: { fontFamily: fonts.base, fontSize: 14.5, fontWeight: "700", color: colors.textPrimary, ...tabular },
+  chevronOpen: { transform: [{ rotate: "180deg" }] },
+  body: { borderTopWidth: 1, borderTopColor: colors.divider, paddingBottom: 6 },
 });
