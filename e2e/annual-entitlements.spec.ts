@@ -79,10 +79,16 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId("member-search").fill("");
   await admin.setViewportSize({ width: 1600, height: 1000 });
   const wideRow = admin.getByTestId(`annual-member-${memberId}`);
-  const rowPositions = await Promise.all(["identity", "fields", "actions"].map(group => admin.getByTestId(`annual-${group}-${memberId}`).evaluate(element => {
+  const getRowPositions = () => Promise.all(["identity", "fields", "actions"].map(group => admin.getByTestId(`annual-${group}-${memberId}`).evaluate(element => {
     const bounds = element.getBoundingClientRect();
     return { center: bounds.y + bounds.height / 2, left: bounds.left, right: bounds.right };
   })));
+  await expect.poll(async () => {
+    const positions = await getRowPositions();
+    const centers = positions.map(position => position.center);
+    return Math.max(...centers) - Math.min(...centers);
+  }).toBeLessThan(2);
+  const rowPositions = await getRowPositions();
   const centers = rowPositions.map(position => position.center);
   expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
   expect(rowPositions[0].right).toBeLessThanOrEqual(rowPositions[1].left);
@@ -98,6 +104,14 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
   await admin.getByTestId(`annual-initial-${memberId}`).fill("26");
   await admin.getByTestId(`annual-save-${memberId}`).click();
   await expect(admin.getByTestId("annual-notice")).toContainText("enregistrés");
+  for (const testId of ["fields", "auto", "save"]) {
+    const memberBounds = await admin.getByTestId(`annual-${testId}-${memberId}`).boundingBox();
+    const activeBounds = await admin.getByTestId(`annual-${testId}-${otherMemberId}`).boundingBox();
+    expect(memberBounds).not.toBeNull();
+    expect(activeBounds).not.toBeNull();
+    expect(Math.abs(memberBounds!.x - activeBounds!.x)).toBeLessThan(2);
+    expect(Math.abs(memberBounds!.width - activeBounds!.width), `${testId}: ${memberBounds!.width} vs ${activeBounds!.width}`).toBeLessThan(2);
+  }
   await page.reload();
   await expect(page.getByTestId("empty-state")).toBeVisible();
   await admin.reload();
