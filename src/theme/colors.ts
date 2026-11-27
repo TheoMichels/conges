@@ -45,6 +45,8 @@ export const colors = {
   textMuted: "#6B7280",
   textBody: "#374151",
   textOnBrand: "#FFFFFF",
+  // Texte décoratif / désactivé uniquement (contraste 2,6:1).
+  textFaint: "#9AA1AD",
 
   // Surfaces
   panel: "#FFFFFF",
@@ -55,6 +57,8 @@ export const colors = {
   accentSurface: "#EAF1F8",
   selection: "#EAF1F8",
   background: "#FFFFFF",
+  // Fond de page (refonte v2) : gris perle sous des cartes blanches.
+  canvas: "#F8F9FB",
 
   // Bordures & séparateurs
   border: "#E6E8EE",
@@ -73,6 +77,10 @@ export const colors = {
 
   // Overlays
   backdrop: "rgba(27, 43, 58, 0.40)",
+  focusRing: "rgba(31, 78, 121, 0.16)",
+  dangerBorder: "#F5C2C2",
+  warningBorder: "#F3E0B5",
+  positiveBorder: "#BFE8CD",
 
   // Alias rétrocompatibles
   accent: "#1F4E79",
@@ -104,6 +112,18 @@ export const selectedInset: ViewStyle = isNativeRuntime
 // Halo autour du point de statut des KPI (web uniquement).
 export const statusHalo = (color: string): ViewStyle =>
   isNativeRuntime ? {} : ({ boxShadow: `0 0 0 4px ${color}` } as unknown as ViewStyle);
+
+// Style réservé au web (box-shadow, transitions…) ; ignoré en natif.
+export const webOnly = (style: Record<string, unknown>): ViewStyle =>
+  isNativeRuntime ? {} : (style as unknown as ViewStyle);
+
+// Anneau de focus de marque (remplace le contour noir du navigateur).
+export const focusRing: ViewStyle = webOnly({ boxShadow: "0 0 0 3px rgba(31, 78, 121, 0.16)", outlineStyle: "none" });
+
+// Ombres web légères des cartes (refonte v2).
+export const cardShadow: ViewStyle = webOnly({ boxShadow: "0 1px 2px rgba(20, 30, 60, 0.04)" });
+export const popShadow: ViewStyle = webOnly({ boxShadow: "0 12px 32px rgba(20, 30, 60, 0.12), 0 2px 6px rgba(20, 30, 60, 0.06)" });
+export const raisedShadow: ViewStyle = webOnly({ boxShadow: "0 1px 3px rgba(20, 30, 60, 0.08), 0 1px 2px rgba(20, 30, 60, 0.04)" });
 
 export const shadows = {
   sm: {
@@ -141,7 +161,21 @@ export const shape = {
   row: 14,
   card: 18,
   pill: 999,
+  // Boutons et champs (refonte v2).
+  control: 10,
 };
+
+// Échelle typographique (refonte v2).
+export const type = {
+  h1: 26,
+  cardTitle: 15,
+  body: 14,
+  small: 12.5,
+  eyebrow: 11.5,
+};
+
+// Chiffres tabulaires pour les montants alignés.
+export const tabular = { fontVariant: ["tabular-nums" as const] };
 
 export const spacing = {
   xs: 4,
