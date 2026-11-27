@@ -14,8 +14,7 @@ async function setup(page: Page, state: "normal" | "no-teams" | "error" | "loadi
   if (url.includes('/year_plans')) body = [];
   if (url.includes('/rpc/my_calendar_teams')) body = state === 'no-teams' ? [] : [{ id:team, name:'Alpha' }];
   if (url.includes('/rpc/shared_calendar') && state === 'error' && !failed) { failed = true; await route.fulfill({ status:200, contentType:'application/json', body:'{}' }); return; }
-  if (url.includes('/rpc/shared_calendar')) { const p = route.request().postDataJSON() as { month_start:string }; body = p.month_start === '2026-03-01' || p.month_start === '2026-02-01' ? [{ id:'entry', display_name:'Camille', start_date:'2026-02-27', end_date:'2026-03-03', start_half:'afternoon', end_half:'morning' }] : p.month_start === '2026-04-01' ? [{ id:'future-entry', display_name:'Camille', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' }] : []; }
-  if (state === 'colors') body = [];
+  if (url.includes('/rpc/shared_calendar')) { const p = route.request().postDataJSON() as { month_start:string }; body = state === 'colors' ? [] : p.month_start === '2026-03-01' || p.month_start === '2026-02-01' ? [{ id:'entry', display_name:'Camille', start_date:'2026-02-27', end_date:'2026-03-03', start_half:'afternoon', end_half:'morning' }] : p.month_start === '2026-04-01' ? [{ id:'future-entry', display_name:'Camille', start_date:'2026-04-07', end_date:'2026-04-07', start_half:'morning', end_half:'afternoon' }] : []; }
   if (url.includes('/rpc/shared_calendar') && Array.isArray(body)) {
    const rows = body.map(entry => ({ ...entry, member_key:'camille', kind:'dates', month:null, days:null, reserved_ids:[], created_at:'2026-01-01T00:00:00Z' }));
    if (state === 'colors') {
