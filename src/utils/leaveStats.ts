@@ -43,3 +43,10 @@ export function monthlyDays(entries: LeaveEntry[], year: string): number[] {
 export function publicHolidayMap(yearNum: number): Map<string, string> {
   return new Map(getLuxembourgPublicHolidays(yearNum).map((holiday) => [toISODate(holiday.date), holiday.name]));
 }
+
+// Cumul des jours posés en fin de chaque mois (13 points : 1er janvier puis fin de chaque mois).
+export function cumulativeDays(months: number[]): number[] {
+  const points = [0];
+  for (const days of months) points.push(Math.round((points[points.length - 1] + days) * 100) / 100);
+  return points;
+}

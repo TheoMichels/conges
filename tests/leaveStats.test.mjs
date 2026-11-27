@@ -50,7 +50,7 @@ export async function load(url, context, nextLoad) {
 const loaderUrl = "data:text/javascript," + encodeURIComponent(loaderSource);
 register(loaderUrl, import.meta.url, { data: { tsPath } });
 
-const { isUpcomingEntry, plannedDays, monthlyDays, publicHolidayMap } = await import("../src/utils/leaveStats.ts");
+const { isUpcomingEntry, plannedDays, monthlyDays, publicHolidayMap, cumulativeDays } = await import("../src/utils/leaveStats.ts");
 
 const dated = (id, startDate, endDate, extra = {}) => ({ id, createdAt: 1, kind: "dates", label: id, startDate, endDate, ...extra });
 
@@ -80,6 +80,14 @@ describe("Refonte v2 : statistiques de congés", () => {
     assert.equal(months[0], 0.5);
     assert.equal(months[1], 1);
     assert.equal(months[11], 4);
+  });
+  it("cumule les jours posés de mois en mois", () => {
+    const points = cumulativeDays([0, 5, 0, 0, 1, 0, 5, 10, 0, 0.5, 0, 4]);
+    assert.equal(points.length, 13);
+    assert.equal(points[0], 0);
+    assert.equal(points[2], 5);
+    assert.equal(points[8], 21);
+    assert.equal(points[12], 25.5);
   });
   it("indexe les fériés luxembourgeois", () => {
     const holidays = publicHolidayMap(2026);
