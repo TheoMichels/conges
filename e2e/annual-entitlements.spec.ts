@@ -110,7 +110,7 @@ test("activation par l’admin et consultation après rechargement", async ({ pa
     expect(memberBounds).not.toBeNull();
     expect(activeBounds).not.toBeNull();
     expect(Math.abs(memberBounds!.x - activeBounds!.x)).toBeLessThan(2);
-    expect(Math.abs(memberBounds!.width - activeBounds!.width)).toBeLessThan(2);
+    expect(Math.abs(memberBounds!.width - activeBounds!.width), `${testId}: ${memberBounds!.width} vs ${activeBounds!.width}`).toBeLessThan(2);
   }
   await page.reload();
   await expect(page.getByTestId("empty-state")).toBeVisible();
