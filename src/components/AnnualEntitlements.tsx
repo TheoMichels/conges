@@ -34,7 +34,7 @@ function EntitlementRow({ row, year, wide, onSaved }: { row: AnnualEntitlement; 
       <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>CSupp</Text><TextInput testID={`annual-csupp-${row.user_id}`} accessibilityLabel={`CSupp de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={csupp} onChangeText={setCsupp} keyboardType="decimal-pad" /></View>
       <View style={[styles.field, wide && styles.fieldWide]}><Text style={styles.fieldLabel}>Fériés {holiday === "" ? `auto (${row.automatic_holidays})` : "manuel"}</Text><TextInput testID={`annual-holiday-${row.user_id}`} accessibilityLabel={`Fériés de ${row.display_name}`} style={[styles.input, wide && styles.inputWide]} value={holiday} onChangeText={setHoliday} placeholder={String(row.automatic_holidays)} keyboardType="decimal-pad" /></View>
     </View>
-    <View testID={`annual-actions-${row.user_id}`} style={[styles.row, wide && styles.rowWide]}><Pressable testID={`annual-auto-${row.user_id}`} style={[styles.button, wide && styles.buttonWide]} onPress={() => setHoliday("")}><Text style={styles.buttonText}>{wide ? "Auto" : "Mode automatique"}</Text></Pressable><Pressable testID={`annual-save-${row.user_id}`} disabled={busy} style={[styles.button, styles.primaryButton, wide && styles.buttonWide, busy && styles.disabled]} onPress={() => void save(!!row.year_active)}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable>{!row.year_active ? <Pressable testID={`annual-activate-${row.user_id}`} disabled={busy} style={[styles.button, wide && styles.buttonWide]} onPress={() => void save(true)}><Text style={styles.buttonText}>{wide ? "Activer" : "Activer l’année"}</Text></Pressable> : wide ? <View pointerEvents="none" style={[styles.button, styles.buttonWide, styles.reservedAction]} /> : null}</View>
+    <View testID={`annual-actions-${row.user_id}`} style={[styles.row, wide && styles.rowWide, wide && styles.actionsWide]}><Pressable testID={`annual-auto-${row.user_id}`} style={[styles.button, wide && styles.buttonWide]} onPress={() => setHoliday("")}><Text style={styles.buttonText}>{wide ? "Auto" : "Mode automatique"}</Text></Pressable><Pressable testID={`annual-save-${row.user_id}`} disabled={busy} style={[styles.button, styles.primaryButton, wide && styles.buttonWide, busy && styles.disabled]} onPress={() => void save(!!row.year_active)}><Text style={styles.primaryButtonText}>Enregistrer</Text></Pressable>{!row.year_active && <Pressable testID={`annual-activate-${row.user_id}`} disabled={busy} style={[styles.button, wide && styles.buttonWide]} onPress={() => void save(true)}><Text style={styles.buttonText}>{wide ? "Activer" : "Activer l’année"}</Text></Pressable>}</View>
   </View>;
 }
 
@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
   heading: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
   rowWide: { flexWrap: "nowrap", flexShrink: 0, gap: spacing.xs },
+  actionsWide: { width: 212 },
   buttonWide: { minHeight: 40, paddingHorizontal: 8, paddingVertical: 8 },
-  reservedAction: { width: 67, opacity: 0 },
   fields: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.lg, columnGap: 20 },
   fieldsWide: { flex: 1, minWidth: 0, flexWrap: "nowrap", columnGap: spacing.sm },
   field: { flexGrow: 1, minWidth: 120, gap: 8 },
