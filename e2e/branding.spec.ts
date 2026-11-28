@@ -10,15 +10,17 @@ test("serves the new Holy logo in the app and as install and browser icons", asy
   await expect(headerImage).toHaveJSProperty("naturalWidth", 1024);
   const headerSource = await headerImage.evaluate((image) => (image as HTMLImageElement).currentSrc);
   const iconLinks = [
-    ['link[rel="apple-touch-icon"][sizes="180x180"]', "/apple-touch-icon.png", 180],
-    ['link[rel="apple-touch-icon-precomposed"]', "/apple-touch-icon-precomposed.png", 180],
-    ['link[rel="icon"][sizes="16x16"]', "/favicon-16.png", 16],
-    ['link[rel="icon"][sizes="32x32"]', "/favicon-32.png", 32],
+    ['link[rel="apple-touch-icon"][sizes="180x180"]', "/apple-touch-icon.png", 180, false],
+    ['link[rel="apple-touch-icon-precomposed"]', "/apple-touch-icon-precomposed.png", 180, false],
+    ['link[rel="icon"][sizes="16x16"]', "/favicon-16.png", 16, true],
+    ['link[rel="icon"][sizes="32x32"]', "/favicon-32.png", 32, true],
+    ['link[rel="icon"][sizes="64x64"]', "/favicon.png", 64, true],
   ] as const;
 
   for (const [selector, path] of iconLinks) {
     await expect(page.locator(selector)).toHaveAttribute("href", path);
   }
+  await expect(page.locator('link[rel="icon"]')).toHaveCount(3);
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/manifest.json");
   const manifest = await page.request.get("/manifest.json");
   await expect(manifest).toBeOK();
@@ -31,7 +33,7 @@ test("serves the new Holy logo in the app and as install and browser icons", asy
 
   for (const [path, size, hasAlpha] of [
     [headerSource, 1024, true],
-    ...iconLinks.map(([, path, size]) => [path, size, false] as const),
+    ...iconLinks.map(([, path, size, hasAlpha]) => [path, size, hasAlpha] as const),
     ["/favicon-192.png", 192, false],
     ["/icon-512.png", 512, false],
   ] as const) {
@@ -41,7 +43,11 @@ test("serves the new Holy logo in the app and as install and browser icons", asy
     const image = sharp(await response.body());
     expect(await image.metadata(), path).toMatchObject({ width: size, height: size, hasAlpha });
     const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
-    expect([...data.subarray(0, info.channels)], path).toEqual(hasAlpha ? [0, 0, 0, 0] : [255, 255, 255]);
+    if (hasAlpha) {
+      expect(data[3], path).toBe(0);
+    } else {
+      expect([...data.subarray(0, 3)], path).toEqual([255, 255, 255]);
+    }
     const hasOrangeSail = data.some((red, offset) => {
       const green = data[offset + 1];
       const blue = data[offset + 2];
@@ -55,5 +61,14 @@ test("serves the new Holy logo in the app and as install and browser icons", asy
   await expect(icoResponse).toBeOK();
   const ico = await icoResponse.body();
   expect([...ico.subarray(0, 6)]).toEqual([0, 0, 1, 0, 3, 0]);
-  expect([ico[6], ico[22], ico[38]]).toEqual([16, 32, 48]);
+  for (const [index, size] of [16, 32, 48].entries()) {
+    const entry = 6 + index * 16;
+    const length = ico.readUInt32LE(entry + 8);
+    const offset = ico.readUInt32LE(entry + 12);
+    const icon = sharp(ico.subarray(offset, offset + length));
+    expect(await icon.metadata()).toMatchObject({ width: size, height: size, hasAlpha: true });
+    const pixels = await icon.raw().toBuffer();
+    expect(pixels[3]).toBe(0);
+    expect(pixels[4 * Math.floor(size / 2) + 3]).toBe(255);
+  }
 });
