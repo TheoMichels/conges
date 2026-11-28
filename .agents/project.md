@@ -35,6 +35,6 @@
 - Primitives `src/components/ui/` : `Button` (primary/secondary/ghost/danger, md 44 / sm 36), `Icon` (SVG à trait, plus d'Unicode), `Badge` (statuts), `Segmented`, `Card`. Shell `AppShell` (App.tsx) : `Header` persistant + `TabBar` mobile · admin à onglets (`admin-tab-*`, sessionStorage) · mockup `.agents/handoff/visual-refresh-v2/`.
 
 ## Déploiement & Sécurité
-- Logo officiel : masters 1024 px, fond perle `#F5F5EE` ; `scripts/generate-logo-icons.py --input <RGBA>` (Pillow).
+- Logo officiel : voilier bleu et orange, masters 1024 px, fond blanc et coins transparents pour les favicons ; `python3 scripts/generate-logo-icons.py` (Pillow).
 - Vercel (`vercel.json`) : build `npm run build`, SPA rewrites ; production `https://holy-its4u.vercel.app`.
 - Mode piloté par `app.config.js` (`extra.storageMode`) et résolu par `src/config/storageMode.ts`.
